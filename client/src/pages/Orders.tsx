@@ -1,374 +1,289 @@
-import { useAuth } from "@/hooks/useAuth";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { useEffect, useState } from "react";
+import { useLocation } from 'wouter';
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Sidebar } from "@/components/Layout/Sidebar";
-import { TopBar } from "@/components/Layout/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ShoppingCart, ArrowLeft, Eye, Clock, CheckCircle, Truck } from "lucide-react";
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  restaurantName: string;
+  driverName?: string;
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'delivered' | 'cancelled';
+  totalAmount: number;
+  createdAt: string;
+  deliveryAddress: string;
+}
+
+interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  restaurantId?: string;
+}
 
 export default function Orders() {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const { toast } = useToast();
-  const { lastMessage } = useWebSocket('/ws');
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
-  // Redirect to home if not authenticated
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
+    checkAuth();
+    loadOrders();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/admin/me', {
+        credentials: 'include'
       });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["/api/orders"],
-    enabled: isAuthenticated,
-  });
-
-  // Handle real-time order updates
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === 'order_created' || lastMessage.type === 'order_status_updated') {
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-        if (lastMessage.type === 'order_created') {
-          toast({
-            title: "New Order",
-            description: `Order #${lastMessage.data.orderNumber} received`,
-          });
-        }
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        setLocation('/admin-login');
       }
+    } catch (error) {
+      setLocation('/admin-login');
+    } finally {
+      setIsLoading(false);
     }
-  }, [lastMessage, toast]);
+  };
 
-  const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string, status: string }) => {
-      await apiRequest("PUT", `/api/orders/${orderId}/status`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      toast({ title: "Order status updated successfully" });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
+  const loadOrders = async () => {
+    try {
+      const response = await fetch('/api/orders', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data);
+      }
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      if (response.ok) {
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
+          title: 'Success',
+          description: 'Order status updated successfully',
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
+        loadOrders();
       }
-      toast({ title: "Failed to update order status", variant: "destructive" });
-    },
-  });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update order status',
+        variant: 'destructive',
+      });
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-blue"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const filteredOrders = orders?.filter((order: any) => {
+  const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerId.toLowerCase().includes(searchTerm.toLowerCase());
-    
+                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.restaurantName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
-  }) || [];
+  });
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { bg: "bg-yellow-100", text: "text-yellow-800", icon: "fas fa-clock" },
-      confirmed: { bg: "bg-blue-100", text: "text-blue-800", icon: "fas fa-check" },
-      preparing: { bg: "bg-orange-100", text: "text-orange-800", icon: "fas fa-fire" },
-      ready: { bg: "bg-green-100", text: "text-green-800", icon: "fas fa-check-circle" },
-      assigned: { bg: "bg-purple-100", text: "text-purple-800", icon: "fas fa-motorcycle" },
-      picked_up: { bg: "bg-indigo-100", text: "text-indigo-800", icon: "fas fa-shipping-fast" },
-      delivered: { bg: "bg-emerald-100", text: "text-emerald-800", icon: "fas fa-check-double" },
-      cancelled: { bg: "bg-red-100", text: "text-red-800", icon: "fas fa-times" },
+    const variants = {
+      pending: { variant: "secondary" as const, text: "Pending", icon: Clock },
+      confirmed: { variant: "default" as const, text: "Confirmed", icon: CheckCircle },
+      preparing: { variant: "default" as const, text: "Preparing", icon: Clock },
+      ready: { variant: "default" as const, text: "Ready", icon: CheckCircle },
+      picked_up: { variant: "default" as const, text: "Picked Up", icon: Truck },
+      delivered: { variant: "default" as const, text: "Delivered", icon: CheckCircle },
+      cancelled: { variant: "destructive" as const, text: "Cancelled", icon: Clock }
     };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    const displayStatus = status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-
+    const config = variants[status as keyof typeof variants] || variants.pending;
+    const Icon = config.icon;
     return (
-      <Badge className={`${config.bg} ${config.text}`}>
-        <i className={`${config.icon} mr-1`}></i>
-        {displayStatus}
+      <Badge variant={config.variant} className="flex items-center gap-1">
+        <Icon className="h-3 w-3" />
+        {config.text}
       </Badge>
     );
   };
 
-  const getOrderItems = (order: any) => {
-    try {
-      return Array.isArray(order.items) ? order.items : JSON.parse(order.items || '[]');
-    } catch {
-      return [];
-    }
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-ET', {
+      style: 'currency',
+      currency: 'ETB',
+      minimumFractionDigits: 2
+    }).format(amount);
   };
 
-  const statusCounts = {
-    total: orders?.length || 0,
-    pending: orders?.filter((o: any) => o.status === 'pending').length || 0,
-    active: orders?.filter((o: any) => ['confirmed', 'preparing', 'ready', 'assigned', 'picked_up'].includes(o.status)).length || 0,
-    delivered: orders?.filter((o: any) => o.status === 'delivered').length || 0,
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      <Sidebar user={user} />
-      
-      <main className="flex-1 ml-64">
-        <TopBar 
-          title="Orders Management" 
-          subtitle="Monitor and manage all orders in real-time"
-          user={user}
-        />
-        
-        <div className="p-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <i className="fas fa-shopping-bag text-blue-600"></i>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statusCounts.total}</div>
-                <p className="text-xs text-muted-foreground">All time</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-                <i className="fas fa-clock text-yellow-600"></i>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statusCounts.pending}</div>
-                <p className="text-xs text-muted-foreground">Awaiting confirmation</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-                <i className="fas fa-fire text-orange-600"></i>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statusCounts.active}</div>
-                <p className="text-xs text-muted-foreground">In progress</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Delivered</CardTitle>
-                <i className="fas fa-check-double text-green-600"></i>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{statusCounts.delivered}</div>
-                <p className="text-xs text-muted-foreground">Completed</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Input
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="preparing">Preparing</SelectItem>
-                  <SelectItem value="ready">Ready</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="picked_up">Picked Up</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button variant="ghost" size="sm" onClick={() => setLocation('/superadmin')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Order Management
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {user.firstName} {user.lastName}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          {/* Search and Stats */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Input
+                    placeholder="Search orders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
+                  <option value="picked_up">Picked Up</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Badge variant="outline">
+                  Total: {orders.length}
+                </Badge>
+                <Badge variant="secondary">
+                  Pending: {orders.filter(o => o.status === 'pending').length}
+                </Badge>
+                <Badge variant="default">
+                  Active: {orders.filter(o => ['confirmed', 'preparing', 'ready', 'picked_up'].includes(o.status)).length}
+                </Badge>
+              </div>
             </div>
           </div>
 
           {/* Orders Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Orders ({filteredOrders.length})</CardTitle>
+              <CardTitle className="flex items-center">
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Orders ({filteredOrders.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {ordersLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-16 bg-gray-200 rounded"></div>
-                    </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Restaurant</TableHead>
+                    <TableHead>Driver</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">#{order.orderNumber}</TableCell>
+                      <TableCell>{order.customerName}</TableCell>
+                      <TableCell>{order.restaurantName}</TableCell>
+                      <TableCell>{order.driverName || 'Unassigned'}</TableCell>
+                      <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          {order.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Confirm
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-12">
-                  <i className="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No orders found</h3>
-                  <p className="text-gray-500">
-                    {searchTerm || statusFilter !== "all" 
-                      ? "Try adjusting your search criteria" 
-                      : "No orders have been placed yet"}
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium">Order ID</th>
-                        <th className="text-left py-3 px-4 font-medium">Customer</th>
-                        <th className="text-left py-3 px-4 font-medium">Restaurant</th>
-                        <th className="text-left py-3 px-4 font-medium">Amount</th>
-                        <th className="text-left py-3 px-4 font-medium">Status</th>
-                        <th className="text-left py-3 px-4 font-medium">Date</th>
-                        <th className="text-left py-3 px-4 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredOrders.map((order: any) => (
-                        <tr key={order.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <span className="font-medium">#{order.orderNumber}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-sm">{order.customerId}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-sm">{order.restaurantId}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-medium">₹{order.total}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            {getStatusBadge(order.status)}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-sm text-gray-600">
-                              {new Date(order.createdAt).toLocaleDateString()}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex space-x-2">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => setSelectedOrder(order)}
-                                  >
-                                    <i className="fas fa-eye mr-1"></i>
-                                    View
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
-                                  <DialogHeader>
-                                    <DialogTitle>Order Details - #{order.orderNumber}</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <label className="text-sm font-medium">Customer ID</label>
-                                        <p className="text-sm text-gray-600">{order.customerId}</p>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium">Restaurant ID</label>
-                                        <p className="text-sm text-gray-600">{order.restaurantId}</p>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium">Status</label>
-                                        <div className="mt-1">{getStatusBadge(order.status)}</div>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium">Total Amount</label>
-                                        <p className="text-sm text-gray-600">₹{order.total}</p>
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <label className="text-sm font-medium">Order Items</label>
-                                      <div className="mt-2 space-y-2">
-                                        {getOrderItems(order).map((item: any, index: number) => (
-                                          <div key={index} className="flex justify-between text-sm border-b pb-2">
-                                            <span>{item.quantity}x {item.name}</span>
-                                            <span>₹{item.price * item.quantity}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-
-                                    <div>
-                                      <label className="text-sm font-medium">Delivery Address</label>
-                                      <p className="text-sm text-gray-600">{order.deliveryAddress}</p>
-                                    </div>
-
-                                    {order.customerNotes && (
-                                      <div>
-                                        <label className="text-sm font-medium">Customer Notes</label>
-                                        <p className="text-sm text-gray-600">{order.customerNotes}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-
-                              {order.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700"
-                                  onClick={() => updateOrderStatusMutation.mutate({ orderId: order.id, status: 'confirmed' })}
-                                  disabled={updateOrderStatusMutation.isPending}
-                                >
-                                  <i className="fas fa-check mr-1"></i>
-                                  Confirm
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                </TableBody>
+              </Table>
+              {filteredOrders.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No orders found
                 </div>
               )}
             </CardContent>

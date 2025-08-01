@@ -139,6 +139,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Dashboard stats endpoint
+  app.get('/api/dashboard/stats', requireSession, async (req, res) => {
+    try {
+      const restaurants = await storage.getAllRestaurants();
+      const drivers = await storage.getAllDrivers();
+      const orders = await storage.getAllOrders();
+      
+      const activeRestaurants = restaurants.filter(r => r.isActive).length;
+      const activeDrivers = drivers.filter(d => d.status === 'active').length;
+      const pendingDrivers = drivers.filter(d => d.status === 'pending').length;
+      const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+      res.json({
+        totalRestaurants: restaurants.length,
+        activeRestaurants,
+        totalDrivers: drivers.length,
+        activeDrivers,
+        pendingDrivers,
+        totalOrders: orders.length,
+        revenue: totalRevenue
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+    }
+  });
+
   // Initialize superadmin (development only)
   app.post('/api/init-superadmin', async (req, res) => {
     try {

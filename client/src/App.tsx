@@ -32,7 +32,11 @@ function Router() {
       <Route path="/admin" component={RestaurantAdminDashboard} />
       <Route path="/kitchen" component={KitchenDashboard} />
       
-      {/* Admin Panel Routes */}
+      {/* Admin Panel Routes - Available to admin users */}
+      <Route path="/restaurants" component={Restaurants} />
+      <Route path="/restaurants/create" component={CreateRestaurant} />
+      <Route path="/drivers" component={Drivers} />
+      <Route path="/orders" component={Orders} />
       <Route path="/customers" component={Customers} />
       <Route path="/payments" component={Payments} />
       <Route path="/analytics" component={Analytics} />
@@ -45,11 +49,7 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={SuperadminDashboard} />
-          <Route path="/restaurants" component={Restaurants} />
-          <Route path="/restaurants/create" component={CreateRestaurant} />
           <Route path="/restaurant" component={RestaurantDashboard} />
-          <Route path="/drivers" component={Drivers} />
-          <Route path="/orders" component={Orders} />
         </>
       )}
       <Route component={NotFound} />
