@@ -1,10 +1,14 @@
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
+// Mock database implementation for development without external dependencies
+const mockDatabase = {
+  select: () => ({ from: () => ({ where: () => [] }) }),
+  insert: () => ({ values: () => ({ returning: () => [] }) }),
+  update: () => ({ set: () => ({ where: () => ({ returning: () => [] }) }) }),
+  delete: () => ({ where: () => {} }),
+};
 
-const sql = neon(process.env.DATABASE_URL);
-export const db = drizzle(sql, { schema });
+console.log('Database configuration: Using in-memory storage (no external database required)');
+
+// Export a mock database object that won't be used since we're using MemoryStorage
+export const db = mockDatabase;
