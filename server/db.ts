@@ -1,15 +1,18 @@
-// Database configuration for Replit environment
-// Using in-memory storage for development and migration compatibility
+import mongoose from 'mongoose';
 
+const DATABASE_URL = process.env.DATABASE_URL || 'mongodb+srv://almeseged:A1l2m3e4s5@cluster0.t6sz6bo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+// Connect to MongoDB
 export const connectDB = async () => {
   try {
-    console.log('Using in-memory storage for development');
+    await mongoose.connect(DATABASE_URL);
+    console.log('Connected to MongoDB successfully');
     return true;
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('MongoDB connection error:', error);
     throw error;
   }
 };
 
-// Placeholder for future database connection if needed
-export const db = null;
+// Export mongoose connection
+export const db = mongoose;

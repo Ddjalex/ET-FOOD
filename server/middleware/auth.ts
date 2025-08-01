@@ -62,7 +62,7 @@ export const requireRole = (roles: string[]) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    if (!req.user.role || !roles.includes(req.user.role)) {
+    if (!req.user.role || !roles.includes(req.user.role as string)) {
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
 
@@ -91,7 +91,7 @@ export const requireSession = (req: Request, res: Response, next: NextFunction) 
 
 // Hash password utility
 export const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, 12);
 };
 
 // Verify password utility

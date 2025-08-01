@@ -14,8 +14,10 @@ export interface IUser extends Document {
   phoneNumber?: string;
   telegramUserId?: string;
   telegramUsername?: string;
+  password?: string;
   isActive: boolean;
   restaurantId?: string;
+  createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,8 +32,10 @@ const UserSchema = new Schema<IUser>({
   phoneNumber: String,
   telegramUserId: { type: String, sparse: true },
   telegramUsername: String,
+  password: String,
   isActive: { type: Boolean, default: true },
   restaurantId: String,
+  createdBy: String,
 }, { timestamps: true });
 
 // Restaurant Model

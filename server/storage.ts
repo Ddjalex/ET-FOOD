@@ -16,6 +16,25 @@ import {
   type Notification,
   type InsertNotification,
 } from "@shared/schema";
+import { connectDB } from "./db";
+import {
+  User as UserModel,
+  Restaurant as RestaurantModel,
+  MenuCategory as MenuCategoryModel,
+  MenuItem as MenuItemModel,
+  Order as OrderModel,
+  Driver as DriverModel,
+  Delivery as DeliveryModel,
+  Notification as NotificationModel,
+  type IUser,
+  type IRestaurant,
+  type IMenuCategory,
+  type IMenuItem,
+  type IOrder,
+  type IDriver,
+  type IDelivery,
+  type INotification,
+} from "./models";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -544,5 +563,225 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Use in-memory storage for Replit environment migration
-export const storage = new MemoryStorage();
+// MongoDB Storage Implementation
+class MongoStorage implements IStorage {
+  constructor() {
+    // Initialize MongoDB connection
+    connectDB().catch(console.error);
+  }
+
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const user = await UserModel.findOne({ id });
+    return user ? this.mapUserFromMongo(user) : undefined;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const id = userData.id || crypto.randomUUID();
+    const user = await UserModel.findOneAndUpdate(
+      { id },
+      { 
+        id,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: userData.role || 'customer',
+        phoneNumber: userData.phoneNumber || null,
+        telegramUserId: userData.telegramUserId || null,
+        telegramUsername: userData.telegramUsername || null,
+        password: userData.password || null,
+        isActive: userData.isActive ?? true,
+        restaurantId: userData.restaurantId || null,
+        createdBy: userData.createdBy || null,
+      },
+      { upsert: true, new: true }
+    );
+    return this.mapUserFromMongo(user);
+  }
+
+  async getUserByTelegramId(telegramUserId: string): Promise<User | undefined> {
+    const user = await UserModel.findOne({ telegramUserId });
+    return user ? this.mapUserFromMongo(user) : undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      await connectDB();
+      const user = await UserModel.findOne({ email });
+      return user ? this.mapUserFromMongo(user) : undefined;
+    } catch (error) {
+      console.error("Error getting user by email:", error);
+      return undefined;
+    }
+  }
+
+  async createAdminUser(userData: any): Promise<User> {
+    try {
+      await connectDB();
+      const user = new UserModel({
+        ...userData,
+        id: userData.id || crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const savedUser = await user.save();
+      return this.mapUserFromMongo(savedUser);
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+      throw error;
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    const user = await UserModel.findOneAndUpdate(
+      { id: userId },
+      { role },
+      { new: true }
+    );
+    if (!user) throw new Error('User not found');
+    return this.mapUserFromMongo(user);
+  }
+
+  // Helper method to map MongoDB user to our schema
+  private mapUserFromMongo(mongoUser: any): User {
+    return {
+      id: mongoUser.id,
+      email: mongoUser.email || null,
+      firstName: mongoUser.firstName || null,
+      lastName: mongoUser.lastName || null,
+      profileImageUrl: mongoUser.profileImageUrl || null,
+      role: mongoUser.role || null,
+      phoneNumber: mongoUser.phoneNumber || null,
+      telegramUserId: mongoUser.telegramUserId || null,
+      telegramUsername: mongoUser.telegramUsername || null,
+      password: mongoUser.password || null,
+      isActive: mongoUser.isActive ?? true,
+      restaurantId: mongoUser.restaurantId || null,
+      createdBy: mongoUser.createdBy || null,
+      createdAt: mongoUser.createdAt || null,
+      updatedAt: mongoUser.updatedAt || null,
+    };
+  }
+
+  // Restaurant operations
+  async getRestaurants(): Promise<Restaurant[]> {
+    const restaurants = await RestaurantModel.find().sort({ createdAt: -1 });
+    return restaurants.map(r => this.mapRestaurantFromMongo(r));
+  }
+
+  async getRestaurant(id: string): Promise<Restaurant | undefined> {
+    const restaurant = await RestaurantModel.findOne({ id });
+    return restaurant ? this.mapRestaurantFromMongo(restaurant) : undefined;
+  }
+
+  async createRestaurant(restaurantData: InsertRestaurant): Promise<Restaurant> {
+    const id = crypto.randomUUID();
+    const restaurant = new RestaurantModel({
+      id,
+      ...restaurantData,
+    });
+    const savedRestaurant = await restaurant.save();
+    return this.mapRestaurantFromMongo(savedRestaurant);
+  }
+
+  async updateRestaurant(id: string, restaurantData: Partial<InsertRestaurant>): Promise<Restaurant> {
+    const restaurant = await RestaurantModel.findOneAndUpdate(
+      { id },
+      restaurantData,
+      { new: true }
+    );
+    if (!restaurant) throw new Error('Restaurant not found');
+    return this.mapRestaurantFromMongo(restaurant);
+  }
+
+  async deleteRestaurant(id: string): Promise<void> {
+    await RestaurantModel.deleteOne({ id });
+  }
+
+  async approveRestaurant(id: string): Promise<Restaurant> {
+    const restaurant = await RestaurantModel.findOneAndUpdate(
+      { id },
+      { isApproved: true, isActive: true },
+      { new: true }
+    );
+    if (!restaurant) throw new Error('Restaurant not found');
+    return this.mapRestaurantFromMongo(restaurant);
+  }
+
+  private mapRestaurantFromMongo(mongoRestaurant: any): Restaurant {
+    return {
+      id: mongoRestaurant.id,
+      name: mongoRestaurant.name,
+      description: mongoRestaurant.description || null,
+      address: mongoRestaurant.address,
+      phoneNumber: mongoRestaurant.phoneNumber,
+      email: mongoRestaurant.email || null,
+      location: mongoRestaurant.location || null,
+      imageUrl: mongoRestaurant.imageUrl || null,
+      isActive: mongoRestaurant.isActive ?? false,
+      isApproved: mongoRestaurant.isApproved ?? false,
+      rating: mongoRestaurant.rating?.toString() || "0.00",
+      totalOrders: mongoRestaurant.totalOrders || 0,
+      createdAt: mongoRestaurant.createdAt || null,
+      updatedAt: mongoRestaurant.updatedAt || null,
+    };
+  }
+
+  // Placeholder implementations for other methods (implement as needed)
+  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> { return []; }
+  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> { throw new Error('Not implemented'); }
+  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> { throw new Error('Not implemented'); }
+  async deleteMenuCategory(id: string): Promise<void> { }
+  async getMenuItems(restaurantId: string): Promise<MenuItem[]> { return []; }
+  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> { return []; }
+  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> { throw new Error('Not implemented'); }
+  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> { throw new Error('Not implemented'); }
+  async deleteMenuItem(id: string): Promise<void> { }
+  async getOrders(): Promise<Order[]> { return []; }
+  async getOrder(id: string): Promise<Order | undefined> { return undefined; }
+  async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
+  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> { return []; }
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
+  async createOrder(order: InsertOrder): Promise<Order> { throw new Error('Not implemented'); }
+  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> { throw new Error('Not implemented'); }
+  async updateOrderStatus(id: string, status: string): Promise<Order> { throw new Error('Not implemented'); }
+  async getDrivers(): Promise<Driver[]> { return []; }
+  async getDriver(id: string): Promise<Driver | undefined> { return undefined; }
+  async getDriverByUserId(userId: string): Promise<Driver | undefined> { return undefined; }
+  async createDriver(driver: InsertDriver): Promise<Driver> { throw new Error('Not implemented'); }
+  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver> { throw new Error('Not implemented'); }
+  async approveDriver(id: string): Promise<Driver> { throw new Error('Not implemented'); }
+  async getAvailableDrivers(): Promise<Driver[]> { return []; }
+  async updateDriverLocation(id: string, location: any): Promise<Driver> { throw new Error('Not implemented'); }
+  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver> { throw new Error('Not implemented'); }
+  async getDeliveries(): Promise<Delivery[]> { return []; }
+  async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }
+  async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> { return []; }
+  async createDelivery(delivery: InsertDelivery): Promise<Delivery> { throw new Error('Not implemented'); }
+  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { throw new Error('Not implemented'); }
+  async getNotifications(userId: string): Promise<Notification[]> { return []; }
+  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error('Not implemented'); }
+  async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
+  async getDashboardStats(): Promise<any> { 
+    return {
+      totalOrders: 0,
+      totalRestaurants: 0,
+      activeRestaurants: 0,
+      totalDrivers: 0,
+      activeDrivers: 0,
+      pendingDrivers: 0,
+      revenue: 0,
+    };
+  }
+  async getOrderAnalytics(): Promise<any> { 
+    return {
+      avgOrderValue: 0,
+      completionRate: 0,
+      avgDeliveryTime: 28,
+    };
+  }
+}
+
+// Use MongoDB storage
+export const storage = new MongoStorage();

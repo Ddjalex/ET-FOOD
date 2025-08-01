@@ -65,6 +65,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
+      // Initialize superadmin if it doesn't exist
+      const existingSuperAdmin = await storage.getUserByEmail('superadmin@beu-delivery.com');
+      if (!existingSuperAdmin) {
+        const hashedPassword = await hashPassword('admin123');
+        await storage.createAdminUser({
+          email: 'superadmin@beu-delivery.com',
+          firstName: 'Super',
+          lastName: 'Admin',
+          role: UserRole.SUPERADMIN,
+          password: hashedPassword,
+          isActive: true
+        });
+        console.log('Superadmin created with email: superadmin@beu-delivery.com and password: admin123');
+      }
+
       const user = await storage.getUserByEmail(email);
       if (!user || !user.password) {
         return res.status(401).json({ message: 'Invalid credentials' });
