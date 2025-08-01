@@ -73,6 +73,11 @@ export default function AdminLogin() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-orange-600">BeU Delivery</CardTitle>
           <CardDescription>Admin Login</CardDescription>
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <div className="font-medium mb-1">Superadmin Access:</div>
+            <div>Email: superadmin@beu-delivery.com</div>
+            <div>Password: superadmin123</div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
