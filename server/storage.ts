@@ -1,12 +1,4 @@
 import {
-  users,
-  restaurants,
-  menuCategories,
-  menuItems,
-  orders,
-  drivers,
-  deliveries,
-  notifications,
   type User,
   type UpsertUser,
   type Restaurant,
@@ -24,8 +16,25 @@ import {
   type Notification,
   type InsertNotification,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc, and, inArray, sql, count } from "drizzle-orm";
+import { connectDB } from "./db";
+import {
+  User as UserModel,
+  Restaurant as RestaurantModel,
+  MenuCategory as MenuCategoryModel,
+  MenuItem as MenuItemModel,
+  Order as OrderModel,
+  Driver as DriverModel,
+  Delivery as DeliveryModel,
+  Notification as NotificationModel,
+  type IUser,
+  type IRestaurant,
+  type IMenuCategory,
+  type IMenuItem,
+  type IOrder,
+  type IDriver,
+  type IDelivery,
+  type INotification,
+} from "./models";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -873,5 +882,621 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use in-memory storage for development without database dependency
-export const storage = new MemoryStorage();
+class MongoStorage implements IStorage {
+  constructor() {
+    // Initialize MongoDB connection
+    connectDB().catch(console.error);
+  }
+
+  // User operations
+  async getUser(id: string): Promise<User | undefined> {
+    const user = await UserModel.findOne({ id });
+    return user ? this.mapUserFromMongo(user) : undefined;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const id = userData.id || crypto.randomUUID();
+    const user = await UserModel.findOneAndUpdate(
+      { id },
+      { 
+        id,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        role: userData.role || 'customer',
+        phoneNumber: userData.phoneNumber || null,
+        telegramUserId: userData.telegramUserId || null,
+        telegramUsername: userData.telegramUsername || null,
+        isActive: userData.isActive ?? true,
+        restaurantId: userData.restaurantId || null,
+      },
+      { upsert: true, new: true }
+    );
+    return this.mapUserFromMongo(user);
+  }
+
+  async getUserByTelegramId(telegramUserId: string): Promise<User | undefined> {
+    const user = await UserModel.findOne({ telegramUserId });
+    return user ? this.mapUserFromMongo(user) : undefined;
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    const user = await UserModel.findOneAndUpdate(
+      { id: userId },
+      { role },
+      { new: true }
+    );
+    if (!user) throw new Error('User not found');
+    return this.mapUserFromMongo(user);
+  }
+
+  // Restaurant operations
+  async getRestaurants(): Promise<Restaurant[]> {
+    const restaurants = await RestaurantModel.find().sort({ createdAt: -1 });
+    return restaurants.map(r => this.mapRestaurantFromMongo(r));
+  }
+
+  async getRestaurant(id: string): Promise<Restaurant | undefined> {
+    const restaurant = await RestaurantModel.findOne({ id });
+    return restaurant ? this.mapRestaurantFromMongo(restaurant) : undefined;
+  }
+
+  async createRestaurant(restaurantData: InsertRestaurant): Promise<Restaurant> {
+    const id = crypto.randomUUID();
+    const restaurant = new RestaurantModel({
+      id,
+      name: restaurantData.name,
+      description: restaurantData.description || null,
+      address: restaurantData.address,
+      phoneNumber: restaurantData.phoneNumber,
+      email: restaurantData.email || null,
+      location: restaurantData.location || null,
+      imageUrl: restaurantData.imageUrl || null,
+      isActive: false,
+      isApproved: false,
+      rating: 0,
+      totalOrders: 0,
+    });
+    await restaurant.save();
+    return this.mapRestaurantFromMongo(restaurant);
+  }
+
+  async updateRestaurant(id: string, restaurantData: Partial<InsertRestaurant>): Promise<Restaurant> {
+    const restaurant = await RestaurantModel.findOneAndUpdate(
+      { id },
+      restaurantData,
+      { new: true }
+    );
+    if (!restaurant) throw new Error('Restaurant not found');
+    return this.mapRestaurantFromMongo(restaurant);
+  }
+
+  async deleteRestaurant(id: string): Promise<void> {
+    await RestaurantModel.deleteOne({ id });
+  }
+
+  async approveRestaurant(id: string): Promise<Restaurant> {
+    const restaurant = await RestaurantModel.findOneAndUpdate(
+      { id },
+      { isApproved: true, isActive: true },
+      { new: true }
+    );
+    if (!restaurant) throw new Error('Restaurant not found');
+    return this.mapRestaurantFromMongo(restaurant);
+  }
+
+  // Menu operations
+  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> {
+    const categories = await MenuCategoryModel.find({ restaurantId }).sort({ sortOrder: 1 });
+    return categories.map(c => this.mapMenuCategoryFromMongo(c));
+  }
+
+  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> {
+    const id = crypto.randomUUID();
+    const newCategory = new MenuCategoryModel({
+      id,
+      restaurantId: category.restaurantId,
+      name: category.name,
+      description: category.description || null,
+      isActive: true,
+      sortOrder: 0,
+    });
+    await newCategory.save();
+    return this.mapMenuCategoryFromMongo(newCategory);
+  }
+
+  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> {
+    const updated = await MenuCategoryModel.findOneAndUpdate(
+      { id },
+      category,
+      { new: true }
+    );
+    if (!updated) throw new Error('Category not found');
+    return this.mapMenuCategoryFromMongo(updated);
+  }
+
+  async deleteMenuCategory(id: string): Promise<void> {
+    await MenuCategoryModel.deleteOne({ id });
+  }
+
+  async getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+    const items = await MenuItemModel.find({ restaurantId }).sort({ createdAt: -1 });
+    return items.map(i => this.mapMenuItemFromMongo(i));
+  }
+
+  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
+    const items = await MenuItemModel.find({ categoryId }).sort({ createdAt: -1 });
+    return items.map(i => this.mapMenuItemFromMongo(i));
+  }
+
+  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> {
+    const id = crypto.randomUUID();
+    const newItem = new MenuItemModel({
+      id,
+      restaurantId: item.restaurantId,
+      categoryId: item.categoryId,
+      name: item.name,
+      description: item.description || null,
+      price: item.price,
+      imageUrl: item.imageUrl || null,
+      isAvailable: true,
+      preparationTime: item.preparationTime || null,
+      ingredients: item.ingredients || null,
+      isVegetarian: false,
+      isVegan: false,
+      spicyLevel: 0,
+    });
+    await newItem.save();
+    return this.mapMenuItemFromMongo(newItem);
+  }
+
+  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
+    const updated = await MenuItemModel.findOneAndUpdate(
+      { id },
+      item,
+      { new: true }
+    );
+    if (!updated) throw new Error('Menu item not found');
+    return this.mapMenuItemFromMongo(updated);
+  }
+
+  async deleteMenuItem(id: string): Promise<void> {
+    await MenuItemModel.deleteOne({ id });
+  }
+
+  // Order operations
+  async getOrders(): Promise<Order[]> {
+    const orders = await OrderModel.find().sort({ createdAt: -1 });
+    return orders.map(o => this.mapOrderFromMongo(o));
+  }
+
+  async getOrder(id: string): Promise<Order | undefined> {
+    const order = await OrderModel.findOne({ id });
+    return order ? this.mapOrderFromMongo(order) : undefined;
+  }
+
+  async getOrdersByStatus(status: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ status }).sort({ createdAt: -1 });
+    return orders.map(o => this.mapOrderFromMongo(o));
+  }
+
+  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ restaurantId }).sort({ createdAt: -1 });
+    return orders.map(o => this.mapOrderFromMongo(o));
+  }
+
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> {
+    const orders = await OrderModel.find({ customerId }).sort({ createdAt: -1 });
+    return orders.map(o => this.mapOrderFromMongo(o));
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const id = crypto.randomUUID();
+    const orderNumber = `ORD-${Date.now()}`;
+    const newOrder = new OrderModel({
+      id,
+      orderNumber,
+      customerId: order.customerId,
+      restaurantId: order.restaurantId,
+      driverId: order.driverId || null,
+      status: 'pending',
+      items: order.items,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee || 0,
+      tax: order.tax || 0,
+      total: order.total,
+      paymentStatus: 'pending',
+      paymentMethod: order.paymentMethod || null,
+      deliveryAddress: order.deliveryAddress,
+      deliveryLocation: order.deliveryLocation || null,
+      customerNotes: order.customerNotes || null,
+      estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+      actualDeliveryTime: order.actualDeliveryTime || null,
+    });
+    await newOrder.save();
+    return this.mapOrderFromMongo(newOrder);
+  }
+
+  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> {
+    const updated = await OrderModel.findOneAndUpdate(
+      { id },
+      order,
+      { new: true }
+    );
+    if (!updated) throw new Error('Order not found');
+    return this.mapOrderFromMongo(updated);
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order> {
+    const updated = await OrderModel.findOneAndUpdate(
+      { id },
+      { status },
+      { new: true }
+    );
+    if (!updated) throw new Error('Order not found');
+    return this.mapOrderFromMongo(updated);
+  }
+
+  // Driver operations
+  async getDrivers(): Promise<Driver[]> {
+    const drivers = await DriverModel.find().sort({ createdAt: -1 });
+    return drivers.map(d => this.mapDriverFromMongo(d));
+  }
+
+  async getDriver(id: string): Promise<Driver | undefined> {
+    const driver = await DriverModel.findOne({ id });
+    return driver ? this.mapDriverFromMongo(driver) : undefined;
+  }
+
+  async getDriverByUserId(userId: string): Promise<Driver | undefined> {
+    const driver = await DriverModel.findOne({ userId });
+    return driver ? this.mapDriverFromMongo(driver) : undefined;
+  }
+
+  async createDriver(driver: InsertDriver): Promise<Driver> {
+    const id = crypto.randomUUID();
+    const newDriver = new DriverModel({
+      id,
+      userId: driver.userId,
+      licenseNumber: driver.licenseNumber,
+      vehicleType: driver.vehicleType,
+      vehiclePlate: driver.vehiclePlate,
+      licenseImageUrl: driver.licenseImageUrl || null,
+      vehicleImageUrl: driver.vehicleImageUrl || null,
+      idCardImageUrl: driver.idCardImageUrl || null,
+      currentLocation: driver.currentLocation || null,
+      isOnline: false,
+      isAvailable: false,
+      isApproved: false,
+      rating: 0,
+      totalDeliveries: 0,
+      totalEarnings: 0,
+      zone: driver.zone || null,
+    });
+    await newDriver.save();
+    return this.mapDriverFromMongo(newDriver);
+  }
+
+  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver> {
+    const updated = await DriverModel.findOneAndUpdate(
+      { id },
+      driver,
+      { new: true }
+    );
+    if (!updated) throw new Error('Driver not found');
+    return this.mapDriverFromMongo(updated);
+  }
+
+  async approveDriver(id: string): Promise<Driver> {
+    const driver = await DriverModel.findOneAndUpdate(
+      { id },
+      { isApproved: true },
+      { new: true }
+    );
+    if (!driver) throw new Error('Driver not found');
+    return this.mapDriverFromMongo(driver);
+  }
+
+  async getAvailableDrivers(): Promise<Driver[]> {
+    const drivers = await DriverModel.find({
+      isApproved: true,
+      isOnline: true,
+      isAvailable: true
+    });
+    return drivers.map(d => this.mapDriverFromMongo(d));
+  }
+
+  async updateDriverLocation(id: string, location: any): Promise<Driver> {
+    const driver = await DriverModel.findOneAndUpdate(
+      { id },
+      { currentLocation: location },
+      { new: true }
+    );
+    if (!driver) throw new Error('Driver not found');
+    return this.mapDriverFromMongo(driver);
+  }
+
+  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver> {
+    const driver = await DriverModel.findOneAndUpdate(
+      { id },
+      { isOnline, isAvailable },
+      { new: true }
+    );
+    if (!driver) throw new Error('Driver not found');
+    return this.mapDriverFromMongo(driver);
+  }
+
+  // Delivery operations
+  async getDeliveries(): Promise<Delivery[]> {
+    const deliveries = await DeliveryModel.find().sort({ createdAt: -1 });
+    return deliveries.map(d => this.mapDeliveryFromMongo(d));
+  }
+
+  async getDelivery(id: string): Promise<Delivery | undefined> {
+    const delivery = await DeliveryModel.findOne({ id });
+    return delivery ? this.mapDeliveryFromMongo(delivery) : undefined;
+  }
+
+  async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> {
+    const deliveries = await DeliveryModel.find({ driverId }).sort({ createdAt: -1 });
+    return deliveries.map(d => this.mapDeliveryFromMongo(d));
+  }
+
+  async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
+    const id = crypto.randomUUID();
+    const newDelivery = new DeliveryModel({
+      id,
+      orderId: delivery.orderId,
+      driverId: delivery.driverId,
+      status: 'assigned',
+      pickupTime: delivery.pickupTime || null,
+      deliveryTime: delivery.deliveryTime || null,
+      distance: delivery.distance || null,
+      earnings: delivery.earnings || null,
+      tips: 0,
+      notes: delivery.notes || null,
+    });
+    await newDelivery.save();
+    return this.mapDeliveryFromMongo(newDelivery);
+  }
+
+  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> {
+    const updated = await DeliveryModel.findOneAndUpdate(
+      { id },
+      delivery,
+      { new: true }
+    );
+    if (!updated) throw new Error('Delivery not found');
+    return this.mapDeliveryFromMongo(updated);
+  }
+
+  // Notification operations
+  async getNotifications(userId: string): Promise<Notification[]> {
+    const notifications = await NotificationModel.find({ userId }).sort({ createdAt: -1 });
+    return notifications.map(n => this.mapNotificationFromMongo(n));
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const id = crypto.randomUUID();
+    const newNotification = new NotificationModel({
+      id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data || null,
+      isRead: false,
+    });
+    await newNotification.save();
+    return this.mapNotificationFromMongo(newNotification);
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification> {
+    const notification = await NotificationModel.findOneAndUpdate(
+      { id },
+      { isRead: true },
+      { new: true }
+    );
+    if (!notification) throw new Error('Notification not found');
+    return this.mapNotificationFromMongo(notification);
+  }
+
+  // Analytics operations
+  async getDashboardStats(): Promise<any> {
+    const [totalOrders, totalRestaurants, activeRestaurants, totalDrivers, activeDrivers, pendingDrivers] = await Promise.all([
+      OrderModel.countDocuments(),
+      RestaurantModel.countDocuments(),
+      RestaurantModel.countDocuments({ isActive: true }),
+      DriverModel.countDocuments(),
+      DriverModel.countDocuments({ isApproved: true, isOnline: true }),
+      DriverModel.countDocuments({ isApproved: false }),
+    ]);
+
+    const revenueResult = await OrderModel.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$total' } } }
+    ]);
+
+    return {
+      totalOrders,
+      totalRestaurants,
+      activeRestaurants,
+      totalDrivers,
+      activeDrivers,
+      pendingDrivers,
+      revenue: revenueResult[0]?.total || 0,
+    };
+  }
+
+  async getOrderAnalytics(): Promise<any> {
+    const [avgResult, completedOrders, totalOrders] = await Promise.all([
+      OrderModel.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $group: { _id: null, avg: { $avg: '$total' } } }
+      ]),
+      OrderModel.countDocuments({ status: 'delivered' }),
+      OrderModel.countDocuments(),
+    ]);
+
+    const avgOrderValue = avgResult[0]?.avg || 0;
+    const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
+
+    return {
+      avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+      completionRate: Math.round(completionRate),
+      avgDeliveryTime: 28,
+    };
+  }
+
+  // Helper methods to map MongoDB documents to schema types
+  private mapUserFromMongo(user: IUser): User {
+    return {
+      id: user.id,
+      email: user.email || null,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      profileImageUrl: user.profileImageUrl || null,
+      role: user.role || null,
+      phoneNumber: user.phoneNumber || null,
+      telegramUserId: user.telegramUserId || null,
+      telegramUsername: user.telegramUsername || null,
+      isActive: user.isActive,
+      restaurantId: user.restaurantId || null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  private mapRestaurantFromMongo(restaurant: IRestaurant): Restaurant {
+    return {
+      id: restaurant.id,
+      name: restaurant.name,
+      description: restaurant.description || null,
+      address: restaurant.address,
+      phoneNumber: restaurant.phoneNumber,
+      email: restaurant.email || null,
+      location: restaurant.location || null,
+      imageUrl: restaurant.imageUrl || null,
+      isActive: restaurant.isActive,
+      isApproved: restaurant.isApproved,
+      rating: restaurant.rating.toString(),
+      totalOrders: restaurant.totalOrders,
+      createdAt: restaurant.createdAt,
+      updatedAt: restaurant.updatedAt,
+    };
+  }
+
+  private mapMenuCategoryFromMongo(category: IMenuCategory): MenuCategory {
+    return {
+      id: category.id,
+      restaurantId: category.restaurantId,
+      name: category.name,
+      description: category.description || null,
+      isActive: category.isActive,
+      sortOrder: category.sortOrder,
+      createdAt: category.createdAt,
+    };
+  }
+
+  private mapMenuItemFromMongo(item: IMenuItem): MenuItem {
+    return {
+      id: item.id,
+      restaurantId: item.restaurantId,
+      categoryId: item.categoryId,
+      name: item.name,
+      description: item.description || null,
+      price: item.price.toString(),
+      imageUrl: item.imageUrl || null,
+      isAvailable: item.isAvailable,
+      preparationTime: item.preparationTime || null,
+      ingredients: item.ingredients || null,
+      isVegetarian: item.isVegetarian,
+      isVegan: item.isVegan,
+      spicyLevel: item.spicyLevel,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    };
+  }
+
+  private mapOrderFromMongo(order: IOrder): Order {
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      restaurantId: order.restaurantId,
+      driverId: order.driverId || null,
+      status: order.status as any,
+      items: order.items,
+      subtotal: order.subtotal.toString(),
+      deliveryFee: order.deliveryFee.toString(),
+      tax: order.tax.toString(),
+      total: order.total.toString(),
+      paymentStatus: order.paymentStatus as any,
+      paymentMethod: order.paymentMethod || null,
+      deliveryAddress: order.deliveryAddress,
+      deliveryLocation: order.deliveryLocation || null,
+      customerNotes: order.customerNotes || null,
+      estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+      actualDeliveryTime: order.actualDeliveryTime || null,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    };
+  }
+
+  private mapDriverFromMongo(driver: IDriver): Driver {
+    return {
+      id: driver.id,
+      userId: driver.userId,
+      licenseNumber: driver.licenseNumber,
+      vehicleType: driver.vehicleType,
+      vehiclePlate: driver.vehiclePlate,
+      licenseImageUrl: driver.licenseImageUrl || null,
+      vehicleImageUrl: driver.vehicleImageUrl || null,
+      idCardImageUrl: driver.idCardImageUrl || null,
+      currentLocation: driver.currentLocation || null,
+      isOnline: driver.isOnline,
+      isAvailable: driver.isAvailable,
+      isApproved: driver.isApproved,
+      rating: driver.rating.toString(),
+      totalDeliveries: driver.totalDeliveries,
+      totalEarnings: driver.totalEarnings.toString(),
+      zone: driver.zone || null,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt,
+    };
+  }
+
+  private mapDeliveryFromMongo(delivery: IDelivery): Delivery {
+    return {
+      id: delivery.id,
+      orderId: delivery.orderId,
+      driverId: delivery.driverId,
+      status: delivery.status as any,
+      pickupTime: delivery.pickupTime || null,
+      deliveryTime: delivery.deliveryTime || null,
+      distance: delivery.distance?.toString() || null,
+      earnings: delivery.earnings?.toString() || null,
+      tips: delivery.tips.toString(),
+      notes: delivery.notes || null,
+      createdAt: delivery.createdAt,
+      updatedAt: delivery.updatedAt,
+    };
+  }
+
+  private mapNotificationFromMongo(notification: INotification): Notification {
+    return {
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data,
+      isRead: notification.isRead,
+      createdAt: notification.createdAt,
+    };
+  }
+}
+
+// Use MongoDB storage
+export const storage = new MongoStorage();

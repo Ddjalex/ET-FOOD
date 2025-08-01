@@ -1,14 +1,21 @@
-import * as schema from '@shared/schema';
+import mongoose from 'mongoose';
 
-// Mock database implementation for development without external dependencies
-const mockDatabase = {
-  select: () => ({ from: () => ({ where: () => [] }) }),
-  insert: () => ({ values: () => ({ returning: () => [] }) }),
-  update: () => ({ set: () => ({ where: () => ({ returning: () => [] }) }) }),
-  delete: () => ({ where: () => {} }),
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
+
+// Connect to MongoDB
+export const connectDB = async () => {
+  try {
+    await mongoose.connect(DATABASE_URL);
+    console.log('Connected to MongoDB successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
 };
 
-console.log('Database configuration: Using in-memory storage (no external database required)');
-
-// Export a mock database object that won't be used since we're using MemoryStorage
-export const db = mockDatabase;
+// Export mongoose connection
+export const db = mongoose;
