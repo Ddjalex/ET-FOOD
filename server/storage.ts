@@ -16,25 +16,6 @@ import {
   type Notification,
   type InsertNotification,
 } from "@shared/schema";
-import { connectDB } from "./db";
-import {
-  User as UserModel,
-  Restaurant as RestaurantModel,
-  MenuCategory as MenuCategoryModel,
-  MenuItem as MenuItemModel,
-  Order as OrderModel,
-  Driver as DriverModel,
-  Delivery as DeliveryModel,
-  Notification as NotificationModel,
-  type IUser,
-  type IRestaurant,
-  type IMenuCategory,
-  type IMenuItem,
-  type IOrder,
-  type IDriver,
-  type IDelivery,
-  type INotification,
-} from "./models";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -226,9 +207,9 @@ class MemoryStorage implements IStorage {
   async updateRestaurant(id: string, restaurantData: Partial<InsertRestaurant>): Promise<Restaurant> {
     const existing = this.restaurants.get(id);
     if (!existing) throw new Error('Restaurant not found');
-    const updated = { ...existing, ...restaurantData, updatedAt: new Date() };
-    this.restaurants.set(id, updated);
-    return updated;
+    const updatedRestaurant = { ...existing, ...restaurantData, updatedAt: new Date() };
+    this.restaurants.set(id, updatedRestaurant);
+    return updatedRestaurant;
   }
 
   async deleteRestaurant(id: string): Promise<void> {
@@ -238,37 +219,37 @@ class MemoryStorage implements IStorage {
   async approveRestaurant(id: string): Promise<Restaurant> {
     const restaurant = this.restaurants.get(id);
     if (!restaurant) throw new Error('Restaurant not found');
-    const updated = { ...restaurant, isApproved: true, isActive: true, updatedAt: new Date() };
-    this.restaurants.set(id, updated);
-    return updated;
+    const approved = { ...restaurant, isApproved: true, isActive: true, updatedAt: new Date() };
+    this.restaurants.set(id, approved);
+    return approved;
   }
 
   // Menu operations
   async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> {
     return Array.from(this.menuCategories.values())
-      .filter(cat => cat.restaurantId === restaurantId)
+      .filter(category => category.restaurantId === restaurantId)
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   }
 
-  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> {
+  async createMenuCategory(categoryData: InsertMenuCategory): Promise<MenuCategory> {
     const id = crypto.randomUUID();
-    const newCategory: MenuCategory = {
+    const category: MenuCategory = {
       id,
-      restaurantId: category.restaurantId,
-      name: category.name,
-      description: category.description || null,
-      isActive: true,
-      sortOrder: 0,
+      restaurantId: categoryData.restaurantId,
+      name: categoryData.name,
+      description: categoryData.description || null,
+      isActive: categoryData.isActive ?? true,
+      sortOrder: categoryData.sortOrder || 0,
       createdAt: new Date(),
     };
-    this.menuCategories.set(id, newCategory);
-    return newCategory;
+    this.menuCategories.set(id, category);
+    return category;
   }
 
-  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> {
+  async updateMenuCategory(id: string, categoryData: Partial<InsertMenuCategory>): Promise<MenuCategory> {
     const existing = this.menuCategories.get(id);
-    if (!existing) throw new Error('Category not found');
-    const updated = { ...existing, ...category };
+    if (!existing) throw new Error('Menu category not found');
+    const updated = { ...existing, ...categoryData };
     this.menuCategories.set(id, updated);
     return updated;
   }
@@ -280,42 +261,42 @@ class MemoryStorage implements IStorage {
   async getMenuItems(restaurantId: string): Promise<MenuItem[]> {
     return Array.from(this.menuItems.values())
       .filter(item => item.restaurantId === restaurantId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+      .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
   }
 
   async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
     return Array.from(this.menuItems.values())
       .filter(item => item.categoryId === categoryId)
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+      .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
   }
 
-  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> {
+  async createMenuItem(itemData: InsertMenuItem): Promise<MenuItem> {
     const id = crypto.randomUUID();
-    const newItem: MenuItem = {
+    const item: MenuItem = {
       id,
-      restaurantId: item.restaurantId,
-      categoryId: item.categoryId,
-      name: item.name,
-      description: item.description || null,
-      price: item.price,
-      imageUrl: item.imageUrl || null,
-      isAvailable: true,
-      preparationTime: item.preparationTime || null,
-      ingredients: item.ingredients || null,
-      isVegetarian: false,
-      isVegan: false,
-      spicyLevel: 0,
+      restaurantId: itemData.restaurantId,
+      categoryId: itemData.categoryId,
+      name: itemData.name,
+      description: itemData.description || null,
+      price: itemData.price,
+      imageUrl: itemData.imageUrl || null,
+      isAvailable: itemData.isAvailable ?? true,
+      preparationTime: itemData.preparationTime || null,
+      ingredients: itemData.ingredients || null,
+      isVegetarian: itemData.isVegetarian ?? false,
+      isVegan: itemData.isVegan ?? false,
+      spicyLevel: itemData.spicyLevel || 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.menuItems.set(id, newItem);
-    return newItem;
+    this.menuItems.set(id, item);
+    return item;
   }
 
-  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
+  async updateMenuItem(id: string, itemData: Partial<InsertMenuItem>): Promise<MenuItem> {
     const existing = this.menuItems.get(id);
     if (!existing) throw new Error('Menu item not found');
-    const updated = { ...existing, ...item, updatedAt: new Date() };
+    const updated = { ...existing, ...itemData, updatedAt: new Date() };
     this.menuItems.set(id, updated);
     return updated;
   }
@@ -326,8 +307,9 @@ class MemoryStorage implements IStorage {
 
   // Order operations
   async getOrders(): Promise<Order[]> {
-    return Array.from(this.orders.values())
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return Array.from(this.orders.values()).sort((a, b) => 
+      (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+    );
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
@@ -352,26 +334,39 @@ class MemoryStorage implements IStorage {
       .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 
-  async createOrder(order: InsertOrder): Promise<Order> {
+  async createOrder(orderData: InsertOrder): Promise<Order> {
     const id = crypto.randomUUID();
-    const orderNumber = `ORD-${Date.now()}`;
-    const newOrder: Order = {
-      ...order,
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    const order: Order = {
       id,
       orderNumber,
-      status: 'pending',
-      paymentStatus: 'pending',
+      customerId: orderData.customerId,
+      restaurantId: orderData.restaurantId,
+      driverId: orderData.driverId || null,
+      status: orderData.status || 'pending',
+      items: orderData.items,
+      subtotal: orderData.subtotal,
+      deliveryFee: orderData.deliveryFee || "0.00",
+      tax: orderData.tax || "0.00",
+      total: orderData.total,
+      paymentStatus: orderData.paymentStatus || 'pending',
+      paymentMethod: orderData.paymentMethod || null,
+      deliveryAddress: orderData.deliveryAddress,
+      deliveryLocation: orderData.deliveryLocation || null,
+      customerNotes: orderData.customerNotes || null,
+      estimatedDeliveryTime: orderData.estimatedDeliveryTime || null,
+      actualDeliveryTime: orderData.actualDeliveryTime || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.orders.set(id, newOrder);
-    return newOrder;
+    this.orders.set(id, order);
+    return order;
   }
 
-  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> {
+  async updateOrder(id: string, orderData: Partial<InsertOrder>): Promise<Order> {
     const existing = this.orders.get(id);
     if (!existing) throw new Error('Order not found');
-    const updated = { ...existing, ...order, updatedAt: new Date() };
+    const updated = { ...existing, ...orderData, updatedAt: new Date() };
     this.orders.set(id, updated);
     return updated;
   }
@@ -386,8 +381,9 @@ class MemoryStorage implements IStorage {
 
   // Driver operations
   async getDrivers(): Promise<Driver[]> {
-    return Array.from(this.drivers.values())
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return Array.from(this.drivers.values()).sort((a, b) => 
+      (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+    );
   }
 
   async getDriver(id: string): Promise<Driver | undefined> {
@@ -395,7 +391,7 @@ class MemoryStorage implements IStorage {
   }
 
   async getDriverByUserId(userId: string): Promise<Driver | undefined> {
-    for (const driver of this.drivers.values()) {
+    for (const driver of Array.from(this.drivers.values())) {
       if (driver.userId === userId) {
         return driver;
       }
@@ -403,28 +399,36 @@ class MemoryStorage implements IStorage {
     return undefined;
   }
 
-  async createDriver(driver: InsertDriver): Promise<Driver> {
+  async createDriver(driverData: InsertDriver): Promise<Driver> {
     const id = crypto.randomUUID();
-    const newDriver: Driver = {
-      ...driver,
+    const driver: Driver = {
       id,
-      isOnline: false,
-      isAvailable: false,
-      isApproved: false,
-      rating: "0.00",
-      totalDeliveries: 0,
-      totalEarnings: "0.00",
+      userId: driverData.userId,
+      licenseNumber: driverData.licenseNumber,
+      vehicleType: driverData.vehicleType,
+      vehiclePlate: driverData.vehiclePlate,
+      licenseImageUrl: driverData.licenseImageUrl || null,
+      vehicleImageUrl: driverData.vehicleImageUrl || null,
+      idCardImageUrl: driverData.idCardImageUrl || null,
+      currentLocation: driverData.currentLocation || null,
+      isOnline: driverData.isOnline ?? false,
+      isAvailable: driverData.isAvailable ?? false,
+      isApproved: driverData.isApproved ?? false,
+      rating: driverData.rating || "0.00",
+      totalDeliveries: driverData.totalDeliveries || 0,
+      totalEarnings: driverData.totalEarnings || "0.00",
+      zone: driverData.zone || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.drivers.set(id, newDriver);
-    return newDriver;
+    this.drivers.set(id, driver);
+    return driver;
   }
 
-  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver> {
+  async updateDriver(id: string, driverData: Partial<InsertDriver>): Promise<Driver> {
     const existing = this.drivers.get(id);
     if (!existing) throw new Error('Driver not found');
-    const updated = { ...existing, ...driver, updatedAt: new Date() };
+    const updated = { ...existing, ...driverData, updatedAt: new Date() };
     this.drivers.set(id, updated);
     return updated;
   }
@@ -432,9 +436,9 @@ class MemoryStorage implements IStorage {
   async approveDriver(id: string): Promise<Driver> {
     const driver = this.drivers.get(id);
     if (!driver) throw new Error('Driver not found');
-    const updated = { ...driver, isApproved: true, updatedAt: new Date() };
-    this.drivers.set(id, updated);
-    return updated;
+    const approved = { ...driver, isApproved: true, updatedAt: new Date() };
+    this.drivers.set(id, approved);
+    return approved;
   }
 
   async getAvailableDrivers(): Promise<Driver[]> {
@@ -443,25 +447,26 @@ class MemoryStorage implements IStorage {
   }
 
   async updateDriverLocation(id: string, location: any): Promise<Driver> {
-    const driver = this.drivers.get(id);
-    if (!driver) throw new Error('Driver not found');
-    const updated = { ...driver, currentLocation: location, updatedAt: new Date() };
+    const existing = this.drivers.get(id);
+    if (!existing) throw new Error('Driver not found');
+    const updated = { ...existing, currentLocation: location, updatedAt: new Date() };
     this.drivers.set(id, updated);
     return updated;
   }
 
   async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver> {
-    const driver = this.drivers.get(id);
-    if (!driver) throw new Error('Driver not found');
-    const updated = { ...driver, isOnline, isAvailable, updatedAt: new Date() };
+    const existing = this.drivers.get(id);
+    if (!existing) throw new Error('Driver not found');
+    const updated = { ...existing, isOnline, isAvailable, updatedAt: new Date() };
     this.drivers.set(id, updated);
     return updated;
   }
 
   // Delivery operations
   async getDeliveries(): Promise<Delivery[]> {
-    return Array.from(this.deliveries.values())
-      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return Array.from(this.deliveries.values()).sort((a, b) => 
+      (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+    );
   }
 
   async getDelivery(id: string): Promise<Delivery | undefined> {
@@ -474,18 +479,24 @@ class MemoryStorage implements IStorage {
       .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
   }
 
-  async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
+  async createDelivery(deliveryData: InsertDelivery): Promise<Delivery> {
     const id = crypto.randomUUID();
-    const newDelivery: Delivery = {
-      ...delivery,
+    const delivery: Delivery = {
       id,
-      status: 'assigned',
-      tips: "0.00",
+      orderId: deliveryData.orderId,
+      driverId: deliveryData.driverId,
+      status: deliveryData.status || 'assigned',
+      pickupTime: deliveryData.pickupTime || null,
+      deliveryTime: deliveryData.deliveryTime || null,
+      distance: deliveryData.distance || null,
+      earnings: deliveryData.earnings || null,
+      tips: deliveryData.tips || "0.00",
+      notes: deliveryData.notes || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.deliveries.set(id, newDelivery);
-    return newDelivery;
+    this.deliveries.set(id, delivery);
+    return delivery;
   }
 
   async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> {
@@ -506,8 +517,12 @@ class MemoryStorage implements IStorage {
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const id = crypto.randomUUID();
     const newNotification: Notification = {
-      ...notification,
       id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data || null,
       isRead: false,
       createdAt: new Date(),
     };
@@ -563,225 +578,5 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// MongoDB Storage Implementation
-class MongoStorage implements IStorage {
-  constructor() {
-    // Initialize MongoDB connection
-    connectDB().catch(console.error);
-  }
-
-  // User operations
-  async getUser(id: string): Promise<User | undefined> {
-    const user = await UserModel.findOne({ id });
-    return user ? this.mapUserFromMongo(user) : undefined;
-  }
-
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const id = userData.id || crypto.randomUUID();
-    const user = await UserModel.findOneAndUpdate(
-      { id },
-      { 
-        id,
-        email: userData.email || null,
-        firstName: userData.firstName || null,
-        lastName: userData.lastName || null,
-        profileImageUrl: userData.profileImageUrl || null,
-        role: userData.role || 'customer',
-        phoneNumber: userData.phoneNumber || null,
-        telegramUserId: userData.telegramUserId || null,
-        telegramUsername: userData.telegramUsername || null,
-        password: userData.password || null,
-        isActive: userData.isActive ?? true,
-        restaurantId: userData.restaurantId || null,
-        createdBy: userData.createdBy || null,
-      },
-      { upsert: true, new: true }
-    );
-    return this.mapUserFromMongo(user);
-  }
-
-  async getUserByTelegramId(telegramUserId: string): Promise<User | undefined> {
-    const user = await UserModel.findOne({ telegramUserId });
-    return user ? this.mapUserFromMongo(user) : undefined;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      await connectDB();
-      const user = await UserModel.findOne({ email });
-      return user ? this.mapUserFromMongo(user) : undefined;
-    } catch (error) {
-      console.error("Error getting user by email:", error);
-      return undefined;
-    }
-  }
-
-  async createAdminUser(userData: any): Promise<User> {
-    try {
-      await connectDB();
-      const user = new UserModel({
-        ...userData,
-        id: userData.id || crypto.randomUUID(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      const savedUser = await user.save();
-      return this.mapUserFromMongo(savedUser);
-    } catch (error) {
-      console.error("Error creating admin user:", error);
-      throw error;
-    }
-  }
-
-  async updateUserRole(userId: string, role: string): Promise<User> {
-    const user = await UserModel.findOneAndUpdate(
-      { id: userId },
-      { role },
-      { new: true }
-    );
-    if (!user) throw new Error('User not found');
-    return this.mapUserFromMongo(user);
-  }
-
-  // Helper method to map MongoDB user to our schema
-  private mapUserFromMongo(mongoUser: any): User {
-    return {
-      id: mongoUser.id,
-      email: mongoUser.email || null,
-      firstName: mongoUser.firstName || null,
-      lastName: mongoUser.lastName || null,
-      profileImageUrl: mongoUser.profileImageUrl || null,
-      role: mongoUser.role || null,
-      phoneNumber: mongoUser.phoneNumber || null,
-      telegramUserId: mongoUser.telegramUserId || null,
-      telegramUsername: mongoUser.telegramUsername || null,
-      password: mongoUser.password || null,
-      isActive: mongoUser.isActive ?? true,
-      restaurantId: mongoUser.restaurantId || null,
-      createdBy: mongoUser.createdBy || null,
-      createdAt: mongoUser.createdAt || null,
-      updatedAt: mongoUser.updatedAt || null,
-    };
-  }
-
-  // Restaurant operations
-  async getRestaurants(): Promise<Restaurant[]> {
-    const restaurants = await RestaurantModel.find().sort({ createdAt: -1 });
-    return restaurants.map(r => this.mapRestaurantFromMongo(r));
-  }
-
-  async getRestaurant(id: string): Promise<Restaurant | undefined> {
-    const restaurant = await RestaurantModel.findOne({ id });
-    return restaurant ? this.mapRestaurantFromMongo(restaurant) : undefined;
-  }
-
-  async createRestaurant(restaurantData: InsertRestaurant): Promise<Restaurant> {
-    const id = crypto.randomUUID();
-    const restaurant = new RestaurantModel({
-      id,
-      ...restaurantData,
-    });
-    const savedRestaurant = await restaurant.save();
-    return this.mapRestaurantFromMongo(savedRestaurant);
-  }
-
-  async updateRestaurant(id: string, restaurantData: Partial<InsertRestaurant>): Promise<Restaurant> {
-    const restaurant = await RestaurantModel.findOneAndUpdate(
-      { id },
-      restaurantData,
-      { new: true }
-    );
-    if (!restaurant) throw new Error('Restaurant not found');
-    return this.mapRestaurantFromMongo(restaurant);
-  }
-
-  async deleteRestaurant(id: string): Promise<void> {
-    await RestaurantModel.deleteOne({ id });
-  }
-
-  async approveRestaurant(id: string): Promise<Restaurant> {
-    const restaurant = await RestaurantModel.findOneAndUpdate(
-      { id },
-      { isApproved: true, isActive: true },
-      { new: true }
-    );
-    if (!restaurant) throw new Error('Restaurant not found');
-    return this.mapRestaurantFromMongo(restaurant);
-  }
-
-  private mapRestaurantFromMongo(mongoRestaurant: any): Restaurant {
-    return {
-      id: mongoRestaurant.id,
-      name: mongoRestaurant.name,
-      description: mongoRestaurant.description || null,
-      address: mongoRestaurant.address,
-      phoneNumber: mongoRestaurant.phoneNumber,
-      email: mongoRestaurant.email || null,
-      location: mongoRestaurant.location || null,
-      imageUrl: mongoRestaurant.imageUrl || null,
-      isActive: mongoRestaurant.isActive ?? false,
-      isApproved: mongoRestaurant.isApproved ?? false,
-      rating: mongoRestaurant.rating?.toString() || "0.00",
-      totalOrders: mongoRestaurant.totalOrders || 0,
-      createdAt: mongoRestaurant.createdAt || null,
-      updatedAt: mongoRestaurant.updatedAt || null,
-    };
-  }
-
-  // Placeholder implementations for other methods (implement as needed)
-  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> { return []; }
-  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> { throw new Error('Not implemented'); }
-  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> { throw new Error('Not implemented'); }
-  async deleteMenuCategory(id: string): Promise<void> { }
-  async getMenuItems(restaurantId: string): Promise<MenuItem[]> { return []; }
-  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> { return []; }
-  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> { throw new Error('Not implemented'); }
-  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> { throw new Error('Not implemented'); }
-  async deleteMenuItem(id: string): Promise<void> { }
-  async getOrders(): Promise<Order[]> { return []; }
-  async getOrder(id: string): Promise<Order | undefined> { return undefined; }
-  async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
-  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> { return []; }
-  async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
-  async createOrder(order: InsertOrder): Promise<Order> { throw new Error('Not implemented'); }
-  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> { throw new Error('Not implemented'); }
-  async updateOrderStatus(id: string, status: string): Promise<Order> { throw new Error('Not implemented'); }
-  async getDrivers(): Promise<Driver[]> { return []; }
-  async getDriver(id: string): Promise<Driver | undefined> { return undefined; }
-  async getDriverByUserId(userId: string): Promise<Driver | undefined> { return undefined; }
-  async createDriver(driver: InsertDriver): Promise<Driver> { throw new Error('Not implemented'); }
-  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver> { throw new Error('Not implemented'); }
-  async approveDriver(id: string): Promise<Driver> { throw new Error('Not implemented'); }
-  async getAvailableDrivers(): Promise<Driver[]> { return []; }
-  async updateDriverLocation(id: string, location: any): Promise<Driver> { throw new Error('Not implemented'); }
-  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver> { throw new Error('Not implemented'); }
-  async getDeliveries(): Promise<Delivery[]> { return []; }
-  async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }
-  async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> { return []; }
-  async createDelivery(delivery: InsertDelivery): Promise<Delivery> { throw new Error('Not implemented'); }
-  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { throw new Error('Not implemented'); }
-  async getNotifications(userId: string): Promise<Notification[]> { return []; }
-  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error('Not implemented'); }
-  async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
-  async getDashboardStats(): Promise<any> { 
-    return {
-      totalOrders: 0,
-      totalRestaurants: 0,
-      activeRestaurants: 0,
-      totalDrivers: 0,
-      activeDrivers: 0,
-      pendingDrivers: 0,
-      revenue: 0,
-    };
-  }
-  async getOrderAnalytics(): Promise<any> { 
-    return {
-      avgOrderValue: 0,
-      completionRate: 0,
-      avgDeliveryTime: 28,
-    };
-  }
-}
-
-// Use MongoDB storage
-export const storage = new MongoStorage();
+// Use in-memory storage for Replit environment
+export const storage = new MemoryStorage();

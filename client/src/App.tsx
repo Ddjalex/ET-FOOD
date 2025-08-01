@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
-import SuperadminDashboard from "@/pages/SuperadminDashboard";
+import SuperadminDashboard from "@/pages/SuperAdminDashboard";
 import RestaurantDashboard from "@/pages/RestaurantDashboard";
 import KitchenDashboard from "@/pages/KitchenDashboard";
 import Restaurants from "@/pages/Restaurants";

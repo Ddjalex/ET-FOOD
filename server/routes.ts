@@ -129,13 +129,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/admin/me', requireSession, (req, res) => {
+    const user = req.user as any;
     res.json({
-      id: req.user!.id,
-      email: req.user!.email,
-      firstName: req.user!.firstName,
-      lastName: req.user!.lastName,
-      role: req.user!.role,
-      restaurantId: req.user!.restaurantId
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      restaurantId: user.restaurantId
     });
   });
 
@@ -265,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         role: UserRole.RESTAURANT_ADMIN,
         restaurantId: restaurantId || null,
-        createdBy: req.user!.id,
+        createdBy: (req.user as any).id,
         isActive: true
       });
 
@@ -311,8 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         password: hashedPassword,
         role: UserRole.KITCHEN_STAFF,
-        restaurantId: req.user!.restaurantId,
-        createdBy: req.user!.id,
+        restaurantId: (req.user as any).restaurantId,
+        createdBy: (req.user as any).id,
         isActive: true
       });
 
