@@ -1,0 +1,108 @@
+"Project Title: Like BeU Delivery system Ethiopia Inspired Telegram Food Delivery System (Node.js, MongoDB, Vite/React)
+
+Project Overview:
+This project aims to develop a full-fledged food delivery platform, conceptually similar to BeU Delivery in Ethiopia, but uniquely built around Telegram's ecosystem. It will feature five interconnected components: a Superadmin Dashboard, Restaurant Admin Dashboard, Kitchen Staff Dashboard (all web-based using Vite/React), and dedicated Driver and Customer Telegram Bots (leveraging Telegram's Bot API and Mini Web Apps). The backend for all components will be powered by Node.js with MongoDB as the database.
+
+Core Functionality Breakdown for AI Agent:
+
+Backend Architecture (Node.js/Express.js & MongoDB):
+
+Database Schema Design: Create robust MongoDB schemas for Users (Superadmin, Restaurant Admin, Kitchen Staff, Driver, Customer with distinct roles/permissions), Restaurants, MenuCategories, MenuItems, Orders, Deliveries, Payments, DriverApplications, and Notifications.
+
+API Development: Build RESTful APIs using Express.js to support all dashboard functionalities (CRUD for restaurants, menus, users; order status updates, driver/payment approvals) and all bot interactions (user registration, location updates, order placement, order status, real-time tracking data).
+
+Telegram Bot API Integration: Implement a Telegram bot library (e.g., telegraf.js or node-telegram-bot-api) to handle incoming messages, commands, inline queries, and webhook events.
+
+Real-time Capabilities: Utilize WebSockets (e.g., Socket.IO) for real-time order updates to dashboards, driver location tracking, and customer order status notifications.
+
+Location Services: Integrate with a geolocation API (e.g., Google Maps API, OpenStreetMap API) for distance calculations, nearby restaurant finding, and driver-customer matching. Store geospatial data in MongoDB (e.g., GeoJSON Point type).
+
+Image Uploads: Implement file upload handling (e.g., multer) for government ID images (drivers) and menu item images. Consider cloud storage (e.g., AWS S3, Cloudinary) for these assets.
+
+Authentication & Authorization: Implement secure user authentication (e.g., JWT) for all dashboard users and token-based authentication for bot interactions. Role-based access control (RBAC) is essential.
+
+Frontend Development (Vite/React):
+
+Reusable Components: Develop a set of reusable React components for dashboards (tables, forms, buttons, modals, navigation).
+
+State Management: Choose an effective state management solution (e.g., React Context API, Redux, Zustand) for complex data flows.
+
+Routing: Implement client-side routing for seamless navigation within dashboards.
+
+Telegram Mini Web Apps:
+
+Develop dedicated React applications for the Driver Registration form and the Customer Ordering/Browse interface, designed to run within Telegram's web_app environment.
+
+Utilize Telegram Web App SDK (@twa-dev/sdk or @telegram-apps/sdk) for seamless integration with Telegram's UI, back button, and data transfer between the Mini App and the main bot.
+
+Ensure responsive design for mobile screens.
+
+Specific Component Interactions & Data Flow:
+
+Driver & Customer Onboarding:
+
+Bot receives /start, asks for request_contact and request_location (live location).
+
+Upon receiving contact/location, bot sends a web_app keyboard button to open the respective Mini App for registration/ordering.
+
+Mini App sends form data to Node.js backend via API calls.
+
+Backend processes data, stores in MongoDB, handles image uploads.
+
+Driver registration requires Superadmin approval via their dashboard.
+
+Order Lifecycle:
+
+Customer places order via Mini App -> Backend.
+
+Backend notifies Restaurant Admin Dashboard (real-time).
+
+Restaurant Admin confirms order -> Backend -> Notifies Customer Bot.
+
+Restaurant Admin assigns to Kitchen Staff -> Kitchen Staff Dashboard.
+
+Kitchen Staff checks availability/starts prep/marks ready -> Backend -> Notifies Restaurant Admin Dashboard & Customer Bot.
+
+Backend matches available drivers based on location and notifies Driver Bot.
+
+Driver accepts/rejects order -> Backend -> Notifies Customer Bot (driver assigned) and Restaurant Admin.
+
+Driver updates status (picked up, delivered) -> Backend -> Notifies Customer Bot & all dashboards.
+
+Real-time Location:
+
+Driver Bot continuously sends live location updates to the backend.
+
+Backend stores/updates driver's current location in MongoDB.
+
+Customer Bot's tracking link or Mini App can fetch driver's location from the backend.
+
+Menu & Availability Updates:
+
+Restaurant Admin and Kitchen Staff update menu item availability/details on their dashboards.
+
+Backend updates MongoDB.
+
+Customer Mini App dynamically fetches and displays the latest menu, reflecting availability changes immediately.
+
+Desired AI Agent Contribution:
+
+The Replit AI Agent should focus on providing guidance, code snippets, and architectural suggestions for:
+
+Initial Project Setup: Configuring a Node.js Express server with MongoDB, and a Vite/React project with Telegram Mini App integration.
+
+Database Schema Definitions: Help design efficient MongoDB schemas for all entities with appropriate indexing (especially for geospatial queries).
+
+API Endpoint Design: Suggest routes and request/response structures for various interactions (e.g., /api/restaurants, /api/orders, /api/drivers/register, /api/bot/update).
+
+Telegram Bot Integration: Provide examples of how to use a Node.js Telegram bot library for handling user input, sending messages, and generating web_app keyboard buttons.
+
+Telegram Mini App Development Best Practices: Guide on securely communicating between the Mini App and your backend, handling Telegram-specific UI elements, and data exchange.
+
+Real-time Implementation (WebSockets): Provide a basic setup for Socket.IO or similar for live updates.
+
+Authentication & Authorization Logic: Help implement JWT-based authentication for dashboards and secure API access.
+
+Code Structure and Modularity: Suggest a clean and scalable project structure for both backend and frontend to ensure maintainability.
+
+Deployment Considerations: (Optional, but good to keep in mind) basic advice on deploying Node.js and React apps.
