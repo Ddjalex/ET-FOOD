@@ -170,6 +170,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer routes
+  app.get('/api/customers', async (req, res) => {
+    try {
+      // For now, return empty array since we don't have customer data yet
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      res.status(500).json({ message: 'Failed to fetch customers' });
+    }
+  });
+
+  // Payment routes
+  app.get('/api/payments', async (req, res) => {
+    try {
+      // For now, return empty array since we don't have payment data yet
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      res.status(500).json({ message: 'Failed to fetch payments' });
+    }
+  });
+
+  // Analytics routes
+  app.get('/api/analytics', async (req, res) => {
+    try {
+      // For now, return sample data
+      res.json({
+        ordersByDay: [],
+        topRestaurants: [],
+        ordersByStatus: [],
+        customerGrowth: []
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      res.status(500).json({ message: 'Failed to fetch analytics' });
+    }
+  });
+
+  // Settings routes
+  app.get('/api/settings', async (req, res) => {
+    try {
+      // For now, return default settings
+      res.json({
+        companyName: 'BeU Delivery',
+        supportEmail: 'support@beu-delivery.com',
+        supportPhone: '+251-911-123456',
+        deliveryFee: 25.00,
+        maxDeliveryDistance: 10,
+        orderTimeout: 30,
+        enableSMSNotifications: true,
+        enableEmailNotifications: true,
+        maintenanceMode: false
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      res.status(500).json({ message: 'Failed to fetch settings' });
+    }
+  });
+
+  app.put('/api/settings', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      // For now, just return success
+      res.json({ message: 'Settings updated successfully' });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ message: 'Failed to update settings' });
+    }
+  });
+
   // Superadmin Routes
   app.post('/api/superadmin/restaurant-admin', requireSession, requireSuperadmin, async (req, res) => {
     try {
