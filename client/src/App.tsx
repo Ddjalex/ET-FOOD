@@ -10,6 +10,7 @@ import SuperadminDashboard from "@/pages/SuperadminDashboard";
 import RestaurantDashboard from "@/pages/RestaurantDashboard";
 import KitchenDashboard from "@/pages/KitchenDashboard";
 import Restaurants from "@/pages/Restaurants";
+import CreateRestaurant from "@/pages/CreateRestaurant";
 import Drivers from "@/pages/Drivers";
 import Orders from "@/pages/Orders";
 
@@ -24,6 +25,7 @@ function Router() {
         <>
           <Route path="/" component={SuperadminDashboard} />
           <Route path="/restaurants" component={Restaurants} />
+          <Route path="/restaurants/create" component={CreateRestaurant} />
           <Route path="/restaurant" component={RestaurantDashboard} />
           <Route path="/kitchen" component={KitchenDashboard} />
           <Route path="/drivers" component={Drivers} />

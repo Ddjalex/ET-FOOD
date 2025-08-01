@@ -76,6 +76,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User hierarchy management routes
+  
+  // Superadmin: Create restaurant admin and restaurant
+  app.post('/api/admin/restaurants', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'superadmin') {
+        return res.status(403).json({ message: "Only superadmin can create restaurants" });
+      }
+
+      const { restaurantData, adminData } = req.body;
+      
+      // Create restaurant first
+      const restaurant = await storage.createRestaurant(restaurantData);
+      
+      // Create restaurant admin user
+      const restaurantAdmin = await storage.upsertUser({
+        ...adminData,
+        role: 'restaurant_admin',
+        restaurantId: restaurant.id
+      });
+
+      res.json({ restaurant, admin: restaurantAdmin });
+    } catch (error) {
+      console.error("Error creating restaurant and admin:", error);
+      res.status(500).json({ message: "Failed to create restaurant and admin" });
+    }
+  });
+
+  // Restaurant Admin: Create kitchen staff
+  app.post('/api/restaurant/kitchen-staff', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'restaurant_admin') {
+        return res.status(403).json({ message: "Only restaurant admin can create kitchen staff" });
+      }
+
+      const staffData = {
+        ...req.body,
+        role: 'kitchen_staff',
+        restaurantId: user.restaurantId
+      };
+      
+      const kitchenStaff = await storage.upsertUser(staffData);
+      res.json(kitchenStaff);
+    } catch (error) {
+      console.error("Error creating kitchen staff:", error);
+      res.status(500).json({ message: "Failed to create kitchen staff" });
+    }
+  });
+
   // Restaurant routes
   app.get('/api/restaurants', isAuthenticated, async (req, res) => {
     try {

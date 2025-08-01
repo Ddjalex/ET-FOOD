@@ -128,7 +128,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Restaurant operations
+  // Restaurant operations  
+  async createRestaurant(restaurantData: any): Promise<Restaurant> {
+    const [restaurant] = await db
+      .insert(restaurants)
+      .values(restaurantData)
+      .returning();
+    return restaurant;
+  }
+
   async getRestaurants(): Promise<Restaurant[]> {
     return await db.select().from(restaurants).orderBy(desc(restaurants.createdAt));
   }
@@ -138,10 +146,7 @@ export class DatabaseStorage implements IStorage {
     return restaurant;
   }
 
-  async createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant> {
-    const [newRestaurant] = await db.insert(restaurants).values(restaurant).returning();
-    return newRestaurant;
-  }
+
 
   async updateRestaurant(id: string, restaurant: Partial<InsertRestaurant>): Promise<Restaurant> {
     const [updatedRestaurant] = await db
