@@ -43,9 +43,9 @@ export function Sidebar({ user }: SidebarProps) {
         <div className="px-3">
           {navigationItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a
+              <div
                 className={cn(
-                  "group flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-1 transition-colors",
+                  "group flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-1 transition-colors cursor-pointer",
                   location === item.href
                     ? "text-brand-blue bg-blue-50"
                     : "text-gray-700 hover:text-brand-blue hover:bg-gray-50"
@@ -65,7 +65,7 @@ export function Sidebar({ user }: SidebarProps) {
                     {item.badge}
                   </span>
                 )}
-              </a>
+              </div>
             </Link>
           ))}
         </div>
@@ -75,9 +75,9 @@ export function Sidebar({ user }: SidebarProps) {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">System</p>
           {systemItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a
+              <div
                 className={cn(
-                  "group flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-1 transition-colors",
+                  "group flex items-center px-3 py-2 text-sm font-medium rounded-lg mb-1 transition-colors cursor-pointer",
                   location === item.href
                     ? "text-brand-blue bg-blue-50"
                     : "text-gray-700 hover:text-brand-blue hover:bg-gray-50"
@@ -88,7 +88,7 @@ export function Sidebar({ user }: SidebarProps) {
                 {item.hasNotification && (
                   <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
                 )}
-              </a>
+              </div>
             </Link>
           ))}
         </div>

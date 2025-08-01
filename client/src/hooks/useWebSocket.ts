@@ -7,7 +7,8 @@ export function useWebSocket(url: string) {
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const port = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
+    const wsUrl = `${protocol}//${window.location.hostname}:${port}/ws`;
     
     ws.current = new WebSocket(wsUrl);
 

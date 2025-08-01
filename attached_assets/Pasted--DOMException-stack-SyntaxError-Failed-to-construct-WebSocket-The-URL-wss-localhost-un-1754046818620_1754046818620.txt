@@ -1,0 +1,28 @@
+
+DOMException {}
+stack: "SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=QsyPwtN74_lw' is invalid.↵ at new t (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:218737)↵ at setupWebSocket (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@vite/client:536:19)↵ at fallback (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@vite/client:509:16)↵ at WebSocket.<anonymous> (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@vite/client:555:7)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: DOMException
+
+at t.value (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=6d8c5aa9:337:18
+    at div
+    at nav
+    at aside
+    at Sidebar (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/src/components/Layout/Sidebar.tsx:20:27)
+    at div
+    at SuperadminDashboard (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/src/pages/SuperadminDashboard.tsx:31:48)
+    at Route (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=6d8c5aa9:323:16)
+    at Switch (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=6d8c5aa9:379:17)
+    at Router (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/src/App.tsx?v=5oDYayrhqUOoaWMMlknHu:37:42)
+    at Provider (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MV53PHM7.js?v=6d8c5aa9:48:15)
+    at TooltipProvider (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=6d8c5aa9:59:5)
+    at QueryClientProvider (https://2b55a898-9b71-4d9a-8425-76dbfb721582-00-3765j1p17z935.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=6d8c5aa9:2805:3)
+    at App
