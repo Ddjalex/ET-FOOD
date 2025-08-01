@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { setupTelegramBot } from "./telegram/bot";
+import { setupTelegramBots } from "./telegram/bot";
 import { orderService } from "./services/orderService";
 import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
@@ -14,8 +14,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Setup Telegram bot
-  await setupTelegramBot();
+  // Setup Telegram bots
+  await setupTelegramBots();
 
   const httpServer = createServer(app);
 

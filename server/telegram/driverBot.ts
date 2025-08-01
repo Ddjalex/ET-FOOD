@@ -2,6 +2,48 @@ import { Telegraf, Context } from 'telegraf';
 import { storage } from '../storage';
 
 export async function setupDriverBot(bot: Telegraf) {
+  console.log('Setting up Driver Bot (EnbelaDriver_bot) commands...');
+
+  // Start command for driver bot
+  bot.start(async (ctx: Context) => {
+    const telegramUserId = ctx.from?.id.toString();
+    const username = ctx.from?.username;
+    const firstName = ctx.from?.first_name;
+    const lastName = ctx.from?.last_name;
+
+    if (!telegramUserId) {
+      return ctx.reply('Unable to identify user. Please try again.');
+    }
+
+    // Check if user exists or create new driver
+    let user = await storage.getUserByTelegramId(telegramUserId);
+
+    if (!user) {
+      user = await storage.upsertUser({
+        telegramUserId,
+        telegramUsername: username,
+        firstName,
+        lastName,
+        role: 'driver',
+      });
+    }
+
+    const welcomeMessage = `🚗 Welcome to BeU Delivery Driver Portal!
+
+Hello ${firstName}! I'm your driver assistant for managing deliveries.
+
+Ready to start earning with BeU Delivery?`;
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📝 Register as Driver', web_app: { url: `${process.env.FRONTEND_URL || 'http://localhost:5000'}/driver-registration` } }],
+        [{ text: '🚗 Driver Dashboard', callback_data: 'driver_dashboard' }],
+        [{ text: '📋 Requirements', callback_data: 'driver_requirements' }]
+      ]
+    };
+
+    await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+  });
   // Driver command - main driver interface
   bot.command('driver', async (ctx) => {
     const telegramUserId = ctx.from?.id.toString();
@@ -38,8 +80,7 @@ export async function setupDriverBot(bot: Telegraf) {
         const keyboard = {
           inline_keyboard: [
             [
-              { text: driver.isOnline ? '🔴 Go Offline' : '🟢 Go Online', callback_data: driver.isOnline ? 'driver_offline' : 'driver_online' },
-              { text: '📍 Share Location', request_location: true }
+              { text: driver.isOnline ? '🔴 Go Offline' : '🟢 Go Online', callback_data: driver.isOnline ? 'driver_offline' : 'driver_online' }
             ],
             [
               { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
@@ -51,7 +92,7 @@ export async function setupDriverBot(bot: Telegraf) {
         await ctx.reply(`🚗 Driver Dashboard
 
 Status: ${statusText}
-Rating: ${driver.rating}⭐ (${driver.totalDeliveries} deliveries)
+Rating: ${driver.rating}⭐ (${driver.totalDeliveries || 0} deliveries)
 Zone: ${driver.zone || 'Not assigned'}
 
 Choose an option:`, { reply_markup: keyboard });
@@ -64,7 +105,7 @@ Choose an option:`, { reply_markup: keyboard });
 
   // Handle driver-specific callback queries
   bot.on('callback_query', async (ctx) => {
-    const data = ctx.callbackQuery?.data;
+    const data = 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
     const telegramUserId = ctx.from?.id.toString();
     
     if (!data || !telegramUserId) return;
@@ -116,7 +157,7 @@ Choose an option:`, { reply_markup: keyboard });
 
 Total Earnings: ₹${driver.totalEarnings}
 Total Deliveries: ${driver.totalDeliveries}
-Average per Delivery: ₹${driver.totalDeliveries > 0 ? (Number(driver.totalEarnings) / driver.totalDeliveries).toFixed(2) : '0'}
+Average per Delivery: ₹${(driver.totalDeliveries || 0) > 0 ? (Number(driver.totalEarnings) / (driver.totalDeliveries || 1)).toFixed(2) : '0'}
 
 Rating: ${driver.rating}⭐`);
           break;
