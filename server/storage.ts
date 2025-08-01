@@ -41,7 +41,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getUserByTelegramId(telegramUserId: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   updateUserRole(userId: string, role: string): Promise<User>;
+  createAdminUser(userData: any): Promise<User>;
 
   // Restaurant operations
   getRestaurants(): Promise<Restaurant[]>;
@@ -919,6 +921,34 @@ class MongoStorage implements IStorage {
   async getUserByTelegramId(telegramUserId: string): Promise<User | undefined> {
     const user = await UserModel.findOne({ telegramUserId });
     return user ? this.mapUserFromMongo(user) : undefined;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      await connectDB();
+      const user = await UserModel.findOne({ email });
+      return user ? this.mapUserFromMongo(user) : undefined;
+    } catch (error) {
+      console.error("Error getting user by email:", error);
+      return undefined;
+    }
+  }
+
+  async createAdminUser(userData: any): Promise<User> {
+    try {
+      await connectDB();
+      const user = new UserModel({
+        ...userData,
+        id: userData.id || crypto.randomUUID(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const savedUser = await user.save();
+      return this.mapUserFromMongo(savedUser);
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+      throw error;
+    }
   }
 
   async updateUserRole(userId: string, role: string): Promise<User> {

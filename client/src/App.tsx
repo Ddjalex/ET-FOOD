@@ -13,12 +13,21 @@ import Restaurants from "@/pages/Restaurants";
 import CreateRestaurant from "@/pages/CreateRestaurant";
 import Drivers from "@/pages/Drivers";
 import Orders from "@/pages/Orders";
+import AdminLogin from "@/pages/AdminLogin";
+import RestaurantAdminDashboard from "@/pages/RestaurantAdminDashboard";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
+      {/* Admin Login Routes - Always accessible */}
+      <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/superadmin" component={SuperadminDashboard} />
+      <Route path="/admin" component={RestaurantAdminDashboard} />
+      <Route path="/kitchen" component={KitchenDashboard} />
+      
+      {/* Regular routes with Replit Auth */}
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
@@ -27,7 +36,6 @@ function Router() {
           <Route path="/restaurants" component={Restaurants} />
           <Route path="/restaurants/create" component={CreateRestaurant} />
           <Route path="/restaurant" component={RestaurantDashboard} />
-          <Route path="/kitchen" component={KitchenDashboard} />
           <Route path="/drivers" component={Drivers} />
           <Route path="/orders" component={Orders} />
         </>

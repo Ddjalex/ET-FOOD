@@ -8,7 +8,8 @@ import { orderService } from "./services/orderService";
 import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
-import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema } from "@shared/schema";
+import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword } from "./middleware/auth";
+import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -52,6 +53,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Admin Authentication Routes
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Check if user has admin role
+      if (!user.role || !['superadmin', 'restaurant_admin', 'kitchen_staff'].includes(user.role)) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const bcrypt = require('bcryptjs');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: 'Account is disabled' });
+      }
+
+      // Store user in session
+      req.session.user = user;
+      res.json({ 
+        message: 'Login successful', 
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          restaurantId: user.restaurantId
+        }
+      });
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ message: 'Login failed' });
+    }
+  });
+
+  app.post('/api/admin/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Logout failed' });
+      }
+      res.json({ message: 'Logout successful' });
+    });
+  });
+
+  app.get('/api/admin/me', requireSession, (req, res) => {
+    res.json({
+      id: req.user!.id,
+      email: req.user!.email,
+      firstName: req.user!.firstName,
+      lastName: req.user!.lastName,
+      role: req.user!.role,
+      restaurantId: req.user!.restaurantId
+    });
+  });
+
+  // Initialize superadmin (development only)
+  app.post('/api/init-superadmin', async (req, res) => {
+    try {
+      // Check if superadmin already exists
+      const existingSuperAdmin = await storage.getUserByEmail('superadmin@beu-delivery.com');
+      if (existingSuperAdmin) {
+        return res.json({ message: 'Superadmin already exists', email: 'superadmin@beu-delivery.com' });
+      }
+
+      // Create superadmin
+      const hashedPassword = await hashPassword('superadmin123');
+      const superAdmin = await storage.createAdminUser({
+        email: 'superadmin@beu-delivery.com',
+        firstName: 'Super',
+        lastName: 'Admin',
+        role: UserRole.SUPERADMIN,
+        password: hashedPassword,
+        isActive: true
+      });
+
+      res.json({ 
+        message: 'Superadmin created successfully',
+        email: 'superadmin@beu-delivery.com',
+        password: 'superadmin123'
+      });
+    } catch (error) {
+      console.error('Error creating superadmin:', error);
+      res.status(500).json({ message: 'Failed to create superadmin' });
+    }
+  });
+
+  // Superadmin Routes
+  app.post('/api/superadmin/restaurant-admin', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { email, firstName, lastName, password, restaurantId } = req.body;
+
+      if (!email || !firstName || !lastName || !password) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
+      // Create restaurant admin
+      const adminUser = await storage.createAdminUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: UserRole.RESTAURANT_ADMIN,
+        restaurantId: restaurantId || null,
+        createdBy: req.user!.id,
+        isActive: true
+      });
+
+      res.status(201).json({
+        message: 'Restaurant admin created successfully',
+        user: {
+          id: adminUser.id,
+          email: adminUser.email,
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+          role: adminUser.role,
+          restaurantId: adminUser.restaurantId
+        }
+      });
+    } catch (error) {
+      console.error('Error creating restaurant admin:', error);
+      res.status(500).json({ message: 'Failed to create restaurant admin' });
+    }
+  });
+
+  // Restaurant Admin Routes
+  app.post('/api/admin/kitchen-staff', requireSession, requireRestaurantAdmin, async (req, res) => {
+    try {
+      const { email, firstName, lastName, password } = req.body;
+
+      if (!email || !firstName || !lastName || !password) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
+      // Create kitchen staff
+      const kitchenUser = await storage.createAdminUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: UserRole.KITCHEN_STAFF,
+        restaurantId: req.user!.restaurantId,
+        createdBy: req.user!.id,
+        isActive: true
+      });
+
+      res.status(201).json({
+        message: 'Kitchen staff created successfully',
+        user: {
+          id: kitchenUser.id,
+          email: kitchenUser.email,
+          firstName: kitchenUser.firstName,
+          lastName: kitchenUser.lastName,
+          role: kitchenUser.role,
+          restaurantId: kitchenUser.restaurantId
+        }
+      });
+    } catch (error) {
+      console.error('Error creating kitchen staff:', error);
+      res.status(500).json({ message: 'Failed to create kitchen staff' });
     }
   });
 

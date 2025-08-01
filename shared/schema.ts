@@ -45,8 +45,10 @@ export const users = pgTable("users", {
   phoneNumber: varchar("phone_number"),
   telegramUserId: varchar("telegram_user_id").unique(),
   telegramUsername: varchar("telegram_username"),
+  password: varchar("password"), // For admin login authentication
   isActive: boolean("is_active").default(true),
   restaurantId: varchar("restaurant_id"),
+  createdBy: varchar("created_by"), // Who created this user (for admin hierarchy)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
