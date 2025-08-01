@@ -8,7 +8,7 @@ import { orderService } from "./services/orderService";
 import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
-import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword } from "./middleware/auth";
+import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword } from "./middleware/auth";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Initialize superadmin if it doesn't exist
       const existingSuperAdmin = await storage.getUserByEmail('superadmin@beu-delivery.com');
       if (!existingSuperAdmin) {
-        const hashedPassword = await hashPassword('admin123');
+        const hashedPassword = await hashPassword('superadmin123');
         await storage.createAdminUser({
           email: 'superadmin@beu-delivery.com',
           firstName: 'Super',
@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: hashedPassword,
           isActive: true
         });
-        console.log('Superadmin created with email: superadmin@beu-delivery.com and password: admin123');
+        console.log('Superadmin created with email: superadmin@beu-delivery.com and password: superadmin123');
       }
 
       const user = await storage.getUserByEmail(email);
@@ -90,8 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      const bcrypt = require('bcryptjs');
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await verifyPassword(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
