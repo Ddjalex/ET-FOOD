@@ -21,6 +21,15 @@ interface AdminUser {
 export default function SuperAdminDashboard() {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [stats, setStats] = useState({
+    totalRestaurants: 0,
+    activeRestaurants: 0,
+    totalDrivers: 0,
+    activeDrivers: 0,
+    pendingDrivers: 0,
+    totalOrders: 0,
+    revenue: 0
+  });
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -34,7 +43,22 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     checkAuth();
+    loadDashboardStats();
   }, []);
+
+  const loadDashboardStats = async () => {
+    try {
+      const response = await fetch('/api/dashboard/stats', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+    }
+  };
 
   const checkAuth = async () => {
     try {
@@ -97,6 +121,7 @@ export default function SuperAdminDashboard() {
           password: '',
           restaurantId: ''
         });
+        loadDashboardStats(); // Refresh stats after creating admin
       } else {
         toast({
           title: 'Error',
@@ -147,46 +172,98 @@ export default function SuperAdminDashboard() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Restaurants</CardTitle>
                 <Store className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">24</div>
+                <div className="text-2xl font-bold">{stats.totalRestaurants}</div>
                 <p className="text-xs text-muted-foreground">
-                  +2 from last month
+                  {stats.activeRestaurants} active
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Drivers</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
                 <Truck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
+                <div className="text-2xl font-bold">{stats.totalDrivers}</div>
                 <p className="text-xs text-muted-foreground">
-                  +1 from last week
+                  {stats.activeDrivers} online
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
+                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">8</div>
+                <div className="text-2xl font-bold">{stats.pendingDrivers}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across all restaurants
+                  Driver applications
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                <p className="text-xs text-muted-foreground">
+                  ${stats.revenue.toFixed(2)} revenue
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Actions */}
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Restaurants</CardTitle>
+                <CardDescription>View and approve restaurant applications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" onClick={() => setLocation('/restaurants')}>
+                  <Store className="h-4 w-4 mr-2" />
+                  View Restaurants
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Drivers</CardTitle>
+                <CardDescription>View and approve driver applications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" onClick={() => setLocation('/drivers')}>
+                  <Truck className="h-4 w-4 mr-2" />
+                  View Drivers
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>View Orders</CardTitle>
+                <CardDescription>Monitor all system orders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" onClick={() => setLocation('/orders')}>
+                  <Users className="h-4 w-4 mr-2" />
+                  View Orders
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Admin Management */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
