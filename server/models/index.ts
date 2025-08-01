@@ -1,3 +1,6 @@
+// MongoDB models - kept for future reference but not used in current implementation
+// Current implementation uses in-memory storage for Replit environment compatibility
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 // User Model
