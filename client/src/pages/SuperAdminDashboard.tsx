@@ -38,7 +38,9 @@ export default function SuperAdminDashboard() {
 
   const checkAuth = async () => {
     try {
-      const response = await apiRequest('/api/admin/me');
+      const response = await fetch('/api/admin/me', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const userData = await response.json();
         if (userData.role !== 'superadmin') {
@@ -56,7 +58,10 @@ export default function SuperAdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      await apiRequest('/api/admin/logout', { method: 'POST' });
+      await fetch('/api/admin/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
       setLocation('/admin-login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -68,11 +73,12 @@ export default function SuperAdminDashboard() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest('/api/superadmin/restaurant-admin', {
+      const response = await fetch('/api/superadmin/restaurant-admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
