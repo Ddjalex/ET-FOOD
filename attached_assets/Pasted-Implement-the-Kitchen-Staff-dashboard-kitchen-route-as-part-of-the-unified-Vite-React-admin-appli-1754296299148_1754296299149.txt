@@ -1,0 +1,127 @@
+Implement the Kitchen Staff dashboard (/kitchen route) as part of the unified Vite/React admin application. This dashboard will be the primary interface for kitchen staff to manage menu items, receive and process customer orders, and update order statuses in real-time.
+
+Key Requirements:
+
+
+
+Unified Frontend Integration (/admin and /kitchen routes):
+
+Continue building within the existing Vite/React application.
+
+Implement role-based routing and rendering:
+
+When a kitchen_staff user logs in, they should be redirected to the /kitchen route.
+
+The /kitchen route should only display panels and features relevant to the kitchen staff role.
+
+Ensure that a restaurant_admin can also navigate to or view elements related to the Kitchen Staff dashboard for their restaurant (e.g., to monitor operations).
+
+Kitchen Staff Dashboard UI (/kitchen route, kitchen_staff role):
+
+Menu Management Panel:
+
+Display a list of food items for the specific restaurant the kitchen staff belongs to.
+
+Organize menu items by categories (e.g., "Appetizers," "Main Courses," "Drinks").
+
+Each menu item should show: name, description, price, and availability status (e.g., "Available", "Out of Stock").
+
+"Add New Item" Button: Opens a modal form for adding a new food product.
+
+Fields: itemName, description, price, category (dropdown/selector for existing categories or option to create new), imageUpload.
+
+Default availabilityStatus to "Available".
+
+"Edit Item" Button: For each item, an edit button to modify its details.
+
+Toggle Availability: A simple button or switch next to each item to quickly mark it as "Available" or "Unavailable" (e.g., "Out of Stock"). This should update the isAvailable status in the database and immediately reflect on the Customer Bot's menu.
+
+Category Management: A sub-panel or modal to add/edit/delete categories associated with the restaurant's menu.
+
+Customer Orders Panel (Real-time):
+
+Display incoming customer orders in a clear, organized list (e.g., Kanban-style columns for "New Orders," "Preparing," "Ready for Pickup").
+
+Orders should arrive in real-time (using WebSockets).
+
+Each order card/row should display:
+
+Order ID
+
+Customer Name (or a unique identifier if customer name isn't shared)
+
+List of Ordered Items with quantities and any special instructions.
+
+Time Since Order Placed (e.g., "5 mins ago").
+
+Order Action Buttons:
+
+"Check Availability" Button: (For New Orders) When clicked, it should present a confirmation for each item in the order. If any item is not available, the kitchen staff can mark it, which should then send a notification to the Restaurant Admin (who then handles communicating with the customer about the unavailable item or substitutes). If all items are available, it automatically transitions to "Start Prepare."
+
+"Start Prepare" Button: (For New Orders after availability confirmed) Changes the order status to "Preparing." This should notify the Customer Bot that their order is being prepared and potentially start a preparation timer visible on the order card.
+
+"Ready for Pickup" Button: (For Preparing orders) Changes the order status to "Ready for Pickup." This should notify the Restaurant Admin and trigger the system to look for an available Driver Bot to assign the delivery.
+
+Backend API Endpoints (Node.js/Express.js):
+
+Authentication & Authorization: All endpoints should be protected, accessible only by authenticated restaurant_admin or kitchen_staff users associated with the correct restaurant.
+
+Menu Management:
+
+POST /api/restaurants/:restaurantId/menu/categories: Create a new menu category for a specific restaurant.
+
+GET /api/restaurants/:restaurantId/menu/categories: Get all categories for a specific restaurant.
+
+POST /api/restaurants/:restaurantId/menu/items: Add a new menu item for a specific restaurant and category.
+
+PUT /api/restaurants/:restaurantId/menu/items/:itemId: Update an existing menu item's details (name, description, price, category, image).
+
+PATCH /api/restaurants/:restaurantId/menu/items/:itemId/availability: Toggle the isAvailable status of a menu item.
+
+Order Management (Kitchen Staff specific):
+
+GET /api/kitchen/:restaurantId/orders/new: Fetch new orders pending for the kitchen (real-time via WebSockets).
+
+GET /api/kitchen/:restaurantId/orders/preparing: Fetch orders currently being prepared.
+
+PUT /api/kitchen/:restaurantId/orders/:orderId/status: Update an order's status (e.g., from 'pending' to 'preparing', 'preparing' to 'ready_for_pickup').
+
+POST /api/kitchen/:restaurantId/orders/:orderId/availability-check: Endpoint to handle the "Check Availability" process, including identifying unavailable items and potentially notifying the Restaurant Admin.
+
+Kitchen Staff Creation (Restaurant Admin functionality):
+
+POST /api/restaurants/:restaurantId/staff: (Accessible by restaurant_admin only) Endpoint to create a new user with the kitchen_staff role, automatically associating them with the restaurantId.
+
+MongoDB Schema Updates:
+
+User Schema: Ensure it correctly handles the kitchen_staff role and its association with a restaurantId.
+
+Order Schema:
+
+Update order status enum to include kitchen-specific states (e.g., ['pending', 'confirmed_by_restaurant', 'kitchen_checking_availability', 'preparing', 'ready_for_pickup', ...]).
+
+Consider adding an unavailableItems array within an order document, to store items marked as unavailable during the kitchen check, along with a timestamp.
+
+Real-time Communication (WebSockets - Socket.IO):
+
+Set up Socket.IO on the Node.js backend.
+
+Establish WebSocket connections for the Kitchen Staff dashboard.
+
+When a new order comes in (via Customer Bot), broadcast it to the relevant Kitchen Staff dashboard(s) (io.to(restaurantId).emit('new_order', orderData)).
+
+When Kitchen Staff updates an order status, emit a WebSocket event to relevant dashboards (Restaurant Admin, Customer Bot) to reflect the change immediately.
+
+Final Output:
+
+The Replit AI Agent should provide the necessary code for:
+
+
+
+Frontend (Vite/React) components and pages for the Kitchen Staff dashboard, including menu management forms and the real-time order display.
+
+Backend (Node.js/Express.js) API routes for menu management and order status updates, ensuring proper authentication and authorization.
+
+Updated MongoDB schemas for User, MenuCategory, MenuItem, and Order models.
+
+Basic setup and integration of Socket.IO for real-time order updates to the kitchen dashboard.

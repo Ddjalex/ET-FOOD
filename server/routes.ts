@@ -891,5 +891,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver management endpoints
+  app.get('/api/superadmin/drivers', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const drivers = await storage.getAllDrivers();
+      res.json(drivers);
+    } catch (error) {
+      console.error('Failed to fetch drivers:', error);
+      res.status(500).json({ message: 'Failed to fetch drivers' });
+    }
+  });
+
+  app.post('/api/superadmin/drivers/:id/approve', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const driver = await storage.approveDriver(req.params.id);
+      res.json(driver);
+    } catch (error) {
+      console.error('Failed to approve driver:', error);
+      res.status(500).json({ message: 'Failed to approve driver' });
+    }
+  });
+
+  app.post('/api/superadmin/drivers/:id/reject', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      await storage.rejectDriver(req.params.id);
+      res.json({ message: 'Driver rejected successfully' });
+    } catch (error) {
+      console.error('Failed to reject driver:', error);
+      res.status(500).json({ message: 'Failed to reject driver' });
+    }
+  });
+
   return httpServer;
 }

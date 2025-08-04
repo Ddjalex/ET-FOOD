@@ -8,13 +8,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import DriversMap from '@/components/DriversMap';
 
 interface DashboardStats {
   totalRestaurants: number;
@@ -52,6 +53,36 @@ interface AdminUser {
   createdAt: string;
   restaurant?: {
     name: string;
+  };
+}
+
+interface Driver {
+  id: string;
+  userId: string;
+  licenseNumber: string;
+  vehicleType: string;
+  vehiclePlate: string;
+  licenseImageUrl?: string;
+  vehicleImageUrl?: string;
+  idCardImageUrl?: string;
+  currentLocation?: {
+    lat: number;
+    lng: number;
+  };
+  isOnline: boolean;
+  isAvailable: boolean;
+  isApproved: boolean;
+  rating: string;
+  totalDeliveries: number;
+  totalEarnings: string;
+  zone?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
   };
 }
 
@@ -185,13 +216,12 @@ export default function SuperAdminDashboard() {
     queryKey: ['/api/superadmin/admins'],
   });
 
-  const { data: settings } = useQuery<SystemSettings>({
+  const { data: drivers = [] } = useQuery<Driver[]>({
+    queryKey: ['/api/superadmin/drivers'],
+  });
+
+  const { data: settings } = useQuery({
     queryKey: ['/api/settings'],
-    onSuccess: (data) => {
-      if (data) {
-        settingsForm.reset(data);
-      }
-    }
   });
 
   // Mutations
@@ -370,6 +400,63 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  // Driver approval mutations
+  const approveDriverMutation = useMutation({
+    mutationFn: (driverId: string) => 
+      fetch(`/api/superadmin/drivers/${driverId}/approve`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to approve driver');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      toast({
+        title: 'Success',
+        description: 'Driver approved successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to approve driver',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const rejectDriverMutation = useMutation({
+    mutationFn: (driverId: string) => 
+      fetch(`/api/superadmin/drivers/${driverId}/reject`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to reject driver');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      toast({
+        title: 'Success',
+        description: 'Driver rejected'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reject driver',
+        variant: 'destructive'
+      });
+    }
+  });
+
   const onUpdateSettings = (data: SettingsFormData) => {
     updateSettingsMutation.mutate(data);
   };
@@ -411,6 +498,7 @@ export default function SuperAdminDashboard() {
           { id: 'overview', label: 'Overview' },
           { id: 'restaurants', label: 'Restaurants' },
           { id: 'admins', label: 'Admins' },
+          { id: 'drivers', label: 'Drivers' },
           { id: 'settings', label: 'System Settings' }
         ].map((tab) => (
           <button
@@ -851,6 +939,242 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
+      {/* Drivers Tab */}
+      {selectedTab === 'drivers' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Driver Management</h2>
+          </div>
+
+          {/* Driver Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{drivers.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {drivers.filter(d => !d.isApproved).length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Online Drivers</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {drivers.filter(d => d.isOnline && d.isApproved).length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Available Drivers</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {drivers.filter(d => d.isAvailable && d.isApproved).length}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Live Driver Map */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Live Driver Locations
+              </CardTitle>
+              <CardDescription>Real-time tracking of active drivers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DriversMap drivers={drivers} />
+            </CardContent>
+          </Card>
+
+          {/* Pending Driver Approvals */}
+          {drivers.filter(d => !d.isApproved).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Pending Driver Approvals
+                </CardTitle>
+                <CardDescription>
+                  Review and approve driver applications from Telegram bot
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {drivers.filter(d => !d.isApproved).map((driver) => (
+                    <div key={driver.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <h3 className="font-semibold text-lg">
+                                {driver.user?.firstName} {driver.user?.lastName}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {driver.user?.email} • {driver.user?.phoneNumber}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium">License:</span>
+                              <p>{driver.licenseNumber}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Vehicle Type:</span>
+                              <p className="capitalize">{driver.vehicleType}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Vehicle Plate:</span>
+                              <p>{driver.vehiclePlate}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium">Zone:</span>
+                              <p>{driver.zone || 'Not assigned'}</p>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            Applied: {new Date(driver.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 ml-4">
+                          <Button
+                            size="sm"
+                            onClick={() => approveDriverMutation.mutate(driver.id)}
+                            disabled={approveDriverMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            {approveDriverMutation.isPending ? 'Approving...' : 'Approve'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => rejectDriverMutation.mutate(driver.id)}
+                            disabled={rejectDriverMutation.isPending}
+                          >
+                            <XCircle className="w-4 h-4 mr-1" />
+                            {rejectDriverMutation.isPending ? 'Rejecting...' : 'Reject'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* All Drivers Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>All Drivers</CardTitle>
+              <CardDescription>Complete list of registered drivers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Driver Info</TableHead>
+                    <TableHead>Vehicle Details</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Performance</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {drivers.map((driver) => (
+                    <TableRow key={driver.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {driver.user?.firstName} {driver.user?.lastName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {driver.user?.phoneNumber}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="text-sm font-medium capitalize">{driver.vehicleType}</p>
+                          <p className="text-sm text-muted-foreground">{driver.vehiclePlate}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Badge variant={driver.isApproved ? 'default' : 'secondary'}>
+                            {driver.isApproved ? 'Approved' : 'Pending'}
+                          </Badge>
+                          {driver.isApproved && (
+                            <div className="flex gap-1">
+                              <Badge variant={driver.isOnline ? 'default' : 'outline'} className="text-xs">
+                                {driver.isOnline ? 'Online' : 'Offline'}
+                              </Badge>
+                              {driver.isAvailable && driver.isOnline && (
+                                <Badge variant="outline" className="text-xs bg-green-50">
+                                  Available
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p>⭐ {driver.rating}</p>
+                          <p className="text-muted-foreground">{driver.totalDeliveries} deliveries</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {driver.currentLocation ? (
+                            <span className="text-green-600">📍 Live location</span>
+                          ) : (
+                            <span className="text-muted-foreground">No location</span>
+                          )}
+                          {driver.zone && (
+                            <p className="text-muted-foreground text-xs">Zone: {driver.zone}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(driver.createdAt).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Settings Tab */}
       {selectedTab === 'settings' && (
         <div className="space-y-6">
@@ -1020,10 +1344,10 @@ export default function SuperAdminDashboard() {
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Company Logo</label>
                       <div className="space-y-4">
-                        {settings?.companyLogo && (
+                        {logoPreview && (
                           <div className="flex items-center space-x-2">
                             <img 
-                              src={settings.companyLogo} 
+                              src={logoPreview} 
                               alt="Current logo" 
                               className="h-12 w-12 object-contain border rounded"
                             />

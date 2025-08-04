@@ -91,6 +91,11 @@ export interface IStorage {
   // Password management methods
   verifyAdminPassword(adminId: string, password: string): Promise<boolean>;
   updateAdminPassword(adminId: string, newPassword: string): Promise<void>;
+  
+  // Driver management methods
+  getAllDrivers(): Promise<Driver[]>;
+  approveDriver(driverId: string): Promise<Driver>;
+  rejectDriver(driverId: string): Promise<void>;
 
   // Analytics operations
   getDashboardStats(): Promise<any>;
@@ -104,6 +109,83 @@ class MemoryStorage implements IStorage {
   private menuItems = new Map<string, MenuItem>();
   private orders = new Map<string, Order>();
   private drivers = new Map<string, Driver>();
+  
+  // Add sample drivers for demo
+  private initializeSampleDrivers() {
+    // Sample pending driver
+    const pendingDriverId = crypto.randomUUID();
+    const pendingUserId = crypto.randomUUID();
+    
+    this.users.set(pendingUserId, {
+      id: pendingUserId,
+      email: 'john.driver@example.com',
+      firstName: 'John',
+      lastName: 'Driver',
+      role: 'driver',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      phoneNumber: '+251-911-123456',
+      telegramUserId: '123456789'
+    });
+    
+    this.drivers.set(pendingDriverId, {
+      id: pendingDriverId,
+      userId: pendingUserId,
+      licenseNumber: 'DL-123456789',
+      vehicleType: 'motorcycle',
+      vehiclePlate: 'AA-12345',
+      currentLocation: null,
+      isOnline: false,
+      isAvailable: false,
+      isApproved: false,
+      rating: '0.00',
+      totalDeliveries: 0,
+      totalEarnings: '0.00',
+      zone: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      licenseImageUrl: null,
+      vehicleImageUrl: null,
+      idCardImageUrl: null
+    });
+
+    // Sample approved online driver  
+    const onlineDriverId = crypto.randomUUID();
+    const onlineUserId = crypto.randomUUID();
+    
+    this.users.set(onlineUserId, {
+      id: onlineUserId,
+      email: 'mary.online@example.com',
+      firstName: 'Mary',
+      lastName: 'Online',
+      role: 'driver',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      phoneNumber: '+251-911-654321',
+      telegramUserId: '987654321'
+    });
+    
+    this.drivers.set(onlineDriverId, {
+      id: onlineDriverId,
+      userId: onlineUserId,
+      licenseNumber: 'DL-987654321',
+      vehicleType: 'bicycle',
+      vehiclePlate: 'BB-54321',
+      currentLocation: { lat: 9.0155, lng: 38.7635 }, // Addis Ababa center
+      isOnline: true,
+      isAvailable: true,
+      isApproved: true,
+      rating: '4.50',
+      totalDeliveries: 125,
+      totalEarnings: '12500.00',
+      zone: 'Downtown',
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      updatedAt: new Date(),
+      licenseImageUrl: null,
+      vehicleImageUrl: null,
+      idCardImageUrl: null
+    });
+  }
   private deliveries = new Map<string, Delivery>();
   private notifications = new Map<string, Notification>();
 
@@ -592,7 +674,7 @@ class MemoryStorage implements IStorage {
 
   // Password management methods
   async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
-    const admin = this.adminUsers.find(u => u.id === adminId);
+    const admin = this.users.get(adminId);
     if (!admin) {
       return false;
     }
@@ -603,7 +685,7 @@ class MemoryStorage implements IStorage {
   }
 
   async updateAdminPassword(adminId: string, newPassword: string): Promise<void> {
-    const admin = this.adminUsers.find(u => u.id === adminId);
+    const admin = this.users.get(adminId);
     if (!admin) {
       throw new Error('Admin not found');
     }
@@ -611,6 +693,40 @@ class MemoryStorage implements IStorage {
     // In a real implementation, this would hash and store the new password
     // For now, just log the action
     console.log(`Password updated for admin: ${adminId}`);
+  }
+
+  // Driver management methods
+  async getAllDrivers(): Promise<any[]> {
+    return Array.from(this.drivers.values()).map(driver => ({
+      ...driver,
+      user: this.users.get(driver.userId)
+    }));
+  }
+
+  async approveDriver(driverId: string): Promise<any> {
+    const driver = this.drivers.get(driverId);
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
+    
+    const updatedDriver = { ...driver, isApproved: true, updatedAt: new Date() };
+    this.drivers.set(driverId, updatedDriver);
+    
+    return {
+      ...updatedDriver,
+      user: this.users.get(driver.userId)
+    };
+  }
+
+  async rejectDriver(driverId: string): Promise<void> {
+    const driver = this.drivers.get(driverId);
+    if (!driver) {
+      throw new Error('Driver not found');
+    }
+    
+    // In a real implementation, you might want to soft delete or mark as rejected
+    // For now, we'll remove the driver completely
+    this.drivers.delete(driverId);
   }
 
   // Analytics operations
@@ -655,3 +771,6 @@ class MemoryStorage implements IStorage {
 
 // Use in-memory storage for Replit environment
 export const storage = new MemoryStorage();
+
+// Initialize sample drivers after storage creation
+storage['initializeSampleDrivers']();
