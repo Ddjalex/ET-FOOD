@@ -600,16 +600,6 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-  async getDeliveriesByOrder(orderId: string): Promise<Delivery[]> {
-    try {
-      return await db.select().from(deliveries)
-        .where(eq(deliveries.orderId, orderId));
-    } catch (error) {
-      console.error('Error getting deliveries by order:', error);
-      return [];
-    }
-  }
-
   // Notification operations
   async getNotifications(userId: string): Promise<Notification[]> {
     try {

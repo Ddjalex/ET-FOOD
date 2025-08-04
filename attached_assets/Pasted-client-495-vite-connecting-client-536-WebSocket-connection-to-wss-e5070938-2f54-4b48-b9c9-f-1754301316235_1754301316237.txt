@@ -1,0 +1,64 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/?token=_VRZnAKbzvZb' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=_VRZnAKbzvZb' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+chunk-WERSD76P.js?v=7b658797:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=7b658797:840
+run @ @tanstack_react-query.js?v=7b658797:494
+start @ @tanstack_react-query.js?v=7b658797:536
+fetch @ @tanstack_react-query.js?v=7b658797:926
+executeFetch_fn @ @tanstack_react-query.js?v=7b658797:2211
+onSubscribe @ @tanstack_react-query.js?v=7b658797:1898
+subscribe @ @tanstack_react-query.js?v=7b658797:24
+(anonymous) @ @tanstack_react-query.js?v=7b658797:3022
+subscribeToStore @ chunk-WERSD76P.js?v=7b658797:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=7b658797:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=7b658797:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=7b658797:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=7b658797:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=7b658797:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=7b658797:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=7b658797:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=7b658797:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=7b658797:9119
+commitRootImpl @ chunk-WERSD76P.js?v=7b658797:19432
+commitRoot @ chunk-WERSD76P.js?v=7b658797:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=7b658797:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=7b658797:18718
+workLoop @ chunk-WERSD76P.js?v=7b658797:197
+flushWork @ chunk-WERSD76P.js?v=7b658797:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=7b658797:384
+RestaurantAdminLogin.tsx:20  POST https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/api/admin/login 401 (Unauthorized)
+mutationFn @ RestaurantAdminLogin.tsx:20
+fn @ @tanstack_react-query.js?v=7b658797:1189
+run @ @tanstack_react-query.js?v=7b658797:494
+start @ @tanstack_react-query.js?v=7b658797:536
+execute @ @tanstack_react-query.js?v=7b658797:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=7b658797:2630
+(anonymous) @ @tanstack_react-query.js?v=7b658797:3295
+handleSubmit @ RestaurantAdminLogin.tsx:74
+callCallback2 @ chunk-WERSD76P.js?v=7b658797:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=7b658797:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=7b658797:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=7b658797:3736
+executeDispatch @ chunk-WERSD76P.js?v=7b658797:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=7b658797:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=7b658797:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=7b658797:7051
+(anonymous) @ chunk-WERSD76P.js?v=7b658797:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=7b658797:18913
+batchedUpdates @ chunk-WERSD76P.js?v=7b658797:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=7b658797:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=7b658797:5478
+dispatchEvent @ chunk-WERSD76P.js?v=7b658797:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=7b658797:5449
