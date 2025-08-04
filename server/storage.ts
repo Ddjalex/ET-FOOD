@@ -109,6 +109,12 @@ class MemoryStorage implements IStorage {
   private menuItems = new Map<string, MenuItem>();
   private orders = new Map<string, Order>();
   private drivers = new Map<string, Driver>();
+  private deliveries = new Map<string, Delivery>();
+  private notifications = new Map<string, Notification>();
+
+  constructor() {
+    this.initializeSampleDrivers();
+  }
   
   // Add sample drivers for demo
   private initializeSampleDrivers() {
@@ -121,11 +127,17 @@ class MemoryStorage implements IStorage {
       email: 'john.driver@example.com',
       firstName: 'John',
       lastName: 'Driver',
+      profileImageUrl: null,
       role: 'driver',
-      createdAt: new Date(),
-      updatedAt: new Date(),
       phoneNumber: '+251-911-123456',
-      telegramUserId: '123456789'
+      telegramUserId: '123456789',
+      telegramUsername: null,
+      password: null,
+      isActive: true,
+      restaurantId: null,
+      createdBy: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     
     this.drivers.set(pendingDriverId, {
@@ -158,11 +170,17 @@ class MemoryStorage implements IStorage {
       email: 'mary.online@example.com',
       firstName: 'Mary',
       lastName: 'Online',
+      profileImageUrl: null,
       role: 'driver',
-      createdAt: new Date(),
-      updatedAt: new Date(),
       phoneNumber: '+251-911-654321',
-      telegramUserId: '987654321'
+      telegramUserId: '987654321',
+      telegramUsername: null,
+      password: null,
+      isActive: true,
+      restaurantId: null,
+      createdBy: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     
     this.drivers.set(onlineDriverId, {
@@ -171,7 +189,7 @@ class MemoryStorage implements IStorage {
       licenseNumber: 'DL-987654321',
       vehicleType: 'bicycle',
       vehiclePlate: 'BB-54321',
-      currentLocation: { lat: 9.0155, lng: 38.7635 }, // Addis Ababa center
+      currentLocation: [9.0155, 38.7635], // Addis Ababa center
       isOnline: true,
       isAvailable: true,
       isApproved: true,
@@ -186,8 +204,6 @@ class MemoryStorage implements IStorage {
       idCardImageUrl: null
     });
   }
-  private deliveries = new Map<string, Delivery>();
-  private notifications = new Map<string, Notification>();
 
   // User operations
   async getUser(id: string): Promise<User | undefined> {
@@ -703,20 +719,7 @@ class MemoryStorage implements IStorage {
     }));
   }
 
-  async approveDriver(driverId: string): Promise<any> {
-    const driver = this.drivers.get(driverId);
-    if (!driver) {
-      throw new Error('Driver not found');
-    }
-    
-    const updatedDriver = { ...driver, isApproved: true, updatedAt: new Date() };
-    this.drivers.set(driverId, updatedDriver);
-    
-    return {
-      ...updatedDriver,
-      user: this.users.get(driver.userId)
-    };
-  }
+
 
   async rejectDriver(driverId: string): Promise<void> {
     const driver = this.drivers.get(driverId);
@@ -771,6 +774,3 @@ class MemoryStorage implements IStorage {
 
 // Use in-memory storage for Replit environment
 export const storage = new MemoryStorage();
-
-// Initialize sample drivers after storage creation
-storage['initializeSampleDrivers']();
