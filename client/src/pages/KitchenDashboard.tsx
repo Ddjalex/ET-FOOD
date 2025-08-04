@@ -275,12 +275,28 @@ export function KitchenDashboard() {
     </Card>
   );
 
-  if (!user || user.role !== 'kitchen_staff') {
+  // Allow kitchen staff, restaurant admins, and superadmins to access kitchen dashboard
+  // Temporarily allow access with superadmin role until kitchen staff user creation is fixed
+  if (!user || !['kitchen_staff', 'restaurant_admin', 'superadmin'].includes(user.role || '')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card>
           <CardContent className="p-6">
-            <p>Access denied. This page is only accessible to kitchen staff.</p>
+            <div className="text-center space-y-4">
+              <p>Access denied. This page is only accessible to kitchen staff.</p>
+              <p className="text-sm text-muted-foreground">
+                Please login with admin credentials to access this dashboard.
+              </p>
+              <p className="text-xs text-blue-600">
+                Temporary: You can login as superadmin (superadmin@beu-delivery.com / superadmin123) to test the kitchen dashboard.
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/admin-login'}
+                className="mt-4"
+              >
+                Go to Admin Login
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

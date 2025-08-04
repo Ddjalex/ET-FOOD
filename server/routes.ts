@@ -78,8 +78,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = await storage.getUserByEmail(email);
       if (!user || !user.password) {
+        console.log('User lookup failed for:', email, 'User found:', !!user, 'Has password:', !!user?.password);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
+      console.log('User found:', user.email, 'Role:', user.role);
 
       // Check if user has admin role
       if (!user.role || !['superadmin', 'restaurant_admin', 'kitchen_staff'].includes(user.role)) {
@@ -121,6 +123,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: 'Logout successful' });
     });
+  });
+
+  // Create kitchen staff endpoint (superadmin only)
+  app.post('/api/admin/create-kitchen-staff', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, restaurantId } = req.body;
+      
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'User already exists' });
+      }
+
+      // Create kitchen staff user without the problematic ID field
+      const hashedPassword = await hashPassword(password);
+      const kitchenUser = {
+        email,
+        firstName,
+        lastName,
+        role: UserRole.KITCHEN_STAFF,
+        password: hashedPassword,
+        isActive: true,
+        restaurantId: restaurantId || null
+      };
+
+      // Remove any undefined/null fields that might cause issues
+      Object.keys(kitchenUser).forEach(key => {
+        if (kitchenUser[key as keyof typeof kitchenUser] === undefined || kitchenUser[key as keyof typeof kitchenUser] === null) {
+          delete kitchenUser[key as keyof typeof kitchenUser];
+        }
+      });
+
+      const createdUser = await storage.createAdminUser(kitchenUser);
+      console.log('Kitchen staff user created successfully:', createdUser);
+      res.json({ 
+        message: 'Kitchen staff created successfully',
+        user: {
+          id: createdUser.id,
+          email: createdUser.email,
+          firstName: createdUser.firstName,
+          lastName: createdUser.lastName,
+          role: createdUser.role
+        }
+      });
+    } catch (error) {
+      console.error('Error creating kitchen staff:', error);
+      res.status(500).json({ message: 'Failed to create kitchen staff' });
+    }
   });
 
   // Get current admin user  
