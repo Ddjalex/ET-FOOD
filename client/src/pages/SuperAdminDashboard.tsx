@@ -512,7 +512,7 @@ function SuperAdminDashboardContent() {
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-sm text-muted-foreground">
-            Welcome, {user?.firstName || 'Super Admin'}
+            Welcome, {(user as any)?.firstName || 'Super Admin'}
           </span>
           <Button variant="outline" onClick={handleLogout}>
             Logout
@@ -1612,7 +1612,7 @@ export default function SuperAdminDashboard() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'superadmin') {
+  if (!isAuthenticated || (user as any)?.role !== 'superadmin') {
     navigate('/superadmin-login');
     return null;
   }
