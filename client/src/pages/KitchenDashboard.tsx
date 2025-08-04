@@ -75,12 +75,63 @@ interface MenuCategory {
 }
 
 export function KitchenDashboard() {
-  const { user } = useAdminAuth();
+  const { user, isLoading, isAuthenticated } = useAdminAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState('orders');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [availabilityCheck, setAvailabilityCheck] = useState<{[key: string]: boolean}>({});
+
+  // Redirect to login if not authenticated
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Kitchen Staff Login Required</CardTitle>
+            <CardDescription>
+              Please log in to access the kitchen dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => window.location.href = '/admin-login'}
+              className="w-full"
+            >
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Check if user has kitchen staff role
+  if (user.role !== 'kitchen_staff') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              Only kitchen staff can access this dashboard
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   // Get restaurant orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
