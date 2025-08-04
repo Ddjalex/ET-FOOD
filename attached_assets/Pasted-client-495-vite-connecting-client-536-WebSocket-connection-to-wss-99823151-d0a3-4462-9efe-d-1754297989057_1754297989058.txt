@@ -1,0 +1,129 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/?token=USDkS98jbGpR' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=USDkS98jbGpR' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+chunk-WERSD76P.js?v=2083b7eb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/api/admin/me 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=2083b7eb:840
+run @ @tanstack_react-query.js?v=2083b7eb:494
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+SuperAdminDashboard.tsx:1616 Warning: Cannot update a component (`SuperAdminDashboard`) while rendering a different component (`SuperAdminDashboard`). To locate the bad setState() call inside `SuperAdminDashboard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at SuperAdminDashboard (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/pages/SuperAdminDashboard.tsx:3342:48)
+    at Route (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:323:16)
+    at Switch (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:379:17)
+    at Router (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/App.tsx?v=-89sVEVdTxy0lB3WAUsNq:44:42)
+    at Provider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O46BVKQA.js?v=2083b7eb:48:15)
+    at TooltipProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2083b7eb:59:5)
+    at QueryClientProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2083b7eb:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=2083b7eb:521
+error @ chunk-WERSD76P.js?v=2083b7eb:505
+warnAboutRenderPhaseUpdatesInDEV @ chunk-WERSD76P.js?v=2083b7eb:19793
+scheduleUpdateOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18546
+forceStoreRerender @ chunk-WERSD76P.js?v=2083b7eb:11999
+handleStoreChange @ chunk-WERSD76P.js?v=2083b7eb:11981
+history.<computed> @ wouter.js?v=2083b7eb:224
+navigate @ wouter.js?v=2083b7eb:214
+(anonymous) @ wouter.js?v=2083b7eb:265
+(anonymous) @ wouter.js?v=2083b7eb:178
+SuperAdminDashboard @ SuperAdminDashboard.tsx:1616
+renderWithHooks @ chunk-WERSD76P.js?v=2083b7eb:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2083b7eb:14582
+beginWork @ chunk-WERSD76P.js?v=2083b7eb:15924
+beginWork$1 @ chunk-WERSD76P.js?v=2083b7eb:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=2083b7eb:19198
+workLoopSync @ chunk-WERSD76P.js?v=2083b7eb:19137
+renderRootSync @ chunk-WERSD76P.js?v=2083b7eb:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+onError @ @tanstack_react-query.js?v=2083b7eb:861
+reject @ @tanstack_react-query.js?v=2083b7eb:465
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:508
+Promise.catch
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+queryClient.ts:32  GET https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=2083b7eb:840
+run @ @tanstack_react-query.js?v=2083b7eb:494
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384

@@ -662,24 +662,26 @@ class MemoryStorage implements IStorage {
   }
 
   // System settings methods
+  private systemSettings: any = {
+    companyName: 'BeU Delivery',
+    supportEmail: 'support@beu-delivery.com',
+    supportPhone: '+251-911-123456',
+    deliveryFee: 25.00,
+    maxDeliveryDistance: 10,
+    orderTimeout: 30,
+    enableSMSNotifications: true,
+    enableEmailNotifications: true,
+    maintenanceMode: false
+  };
+
   async getSystemSettings(): Promise<any> {
-    return {
-      companyName: 'BeU Delivery',
-      supportEmail: 'support@beu-delivery.com',
-      supportPhone: '+251-911-123456',
-      deliveryFee: 25.00,
-      maxDeliveryDistance: 10,
-      orderTimeout: 30,
-      enableSMSNotifications: true,
-      enableEmailNotifications: true,
-      maintenanceMode: false
-    };
+    return { ...this.systemSettings };
   }
 
   async updateSystemSettings(settings: any): Promise<any> {
-    // In a real implementation, this would update the database
-    // For now, just return the updated settings
-    return settings;
+    // Update the stored system settings
+    this.systemSettings = { ...this.systemSettings, ...settings };
+    return { ...this.systemSettings };
   }
 
   async updateCompanyLogo(logoUrl: string): Promise<void> {
