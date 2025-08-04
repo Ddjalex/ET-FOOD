@@ -270,21 +270,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Settings routes
+  // Settings routes (using MongoDB storage)
   app.get('/api/settings', async (req, res) => {
     try {
-      // For now, return default settings
-      res.json({
-        companyName: 'BeU Delivery',
-        supportEmail: 'support@beu-delivery.com',
-        supportPhone: '+251-911-123456',
-        deliveryFee: 25.00,
-        maxDeliveryDistance: 10,
-        orderTimeout: 30,
-        enableSMSNotifications: true,
-        enableEmailNotifications: true,
-        maintenanceMode: false
-      });
+      const settings = await storage.getSystemSettings();
+      res.json(settings);
     } catch (error) {
       console.error('Error fetching settings:', error);
       res.status(500).json({ message: 'Failed to fetch settings' });
@@ -293,8 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/settings', requireSession, requireSuperadmin, async (req, res) => {
     try {
-      // For now, just return success
-      res.json({ message: 'Settings updated successfully' });
+      const updatedSettings = await storage.updateSystemSettings(req.body);
+      res.json({ message: 'Settings updated successfully', settings: updatedSettings });
     } catch (error) {
       console.error('Error updating settings:', error);
       res.status(500).json({ message: 'Failed to update settings' });
@@ -848,36 +838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Settings endpoints
-  app.get('/api/settings', requireSession, async (req, res) => {
-    try {
-      const user = req.session.user;
-      if (!user || user.role !== 'superadmin') {
-        return res.status(403).json({ message: 'Access denied' });
-      }
 
-      const settings = await storage.getSystemSettings();
-      res.json(settings);
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-      res.status(500).json({ message: 'Failed to fetch settings' });
-    }
-  });
-
-  app.put('/api/settings', requireSession, async (req, res) => {
-    try {
-      const user = req.session.user;
-      if (!user || user.role !== 'superadmin') {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-
-      const updatedSettings = await storage.updateSystemSettings(req.body);
-      res.json(updatedSettings);
-    } catch (error) {
-      console.error('Failed to update settings:', error);
-      res.status(500).json({ message: 'Failed to update settings' });
-    }
-  });
 
   // Password change endpoint
   app.post('/api/admin/change-password', requireSession, async (req, res) => {

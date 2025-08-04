@@ -1,0 +1,374 @@
+import { IStorage } from './storage';
+import { User } from './models/User';
+import { Restaurant } from './models/Restaurant';  
+import { Driver } from './models/Driver';
+import { SystemSettings } from './models/SystemSettings';
+import {
+  type User as UserType,
+  type UpsertUser,
+  type Restaurant as RestaurantType,
+  type InsertRestaurant,
+  type MenuCategory,
+  type InsertMenuCategory,
+  type MenuItem,
+  type InsertMenuItem,
+  type Order,
+  type InsertOrder,
+  type Driver as DriverType,
+  type InsertDriver,
+  type Delivery,
+  type InsertDelivery,
+  type Notification,
+  type InsertNotification,
+} from "@shared/schema";
+
+export class MongoStorage implements IStorage {
+  
+  // User operations (mandatory for Replit Auth)
+  async getUser(id: string): Promise<UserType | undefined> {
+    try {
+      const user = await User.findById(id).lean();
+      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<UserType> {
+    try {
+      const user = await User.findOneAndUpdate(
+        { $or: [{ email: userData.email }, { telegramUserId: userData.telegramUserId }] },
+        userData,
+        { upsert: true, new: true, runValidators: true }
+      ).lean();
+      return { ...user, id: user._id.toString() } as UserType;
+    } catch (error) {
+      console.error('Error upserting user:', error);
+      throw error;
+    }
+  }
+
+  async getUserByTelegramId(telegramUserId: string): Promise<UserType | undefined> {
+    try {
+      const user = await User.findOne({ telegramUserId }).lean();
+      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+    } catch (error) {
+      console.error('Error getting user by telegram ID:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<UserType | undefined> {
+    try {
+      const user = await User.findOne({ email }).lean();
+      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return undefined;
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<UserType> {
+    try {
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { role },
+        { new: true, runValidators: true }
+      ).lean();
+      if (!user) throw new Error('User not found');
+      return { ...user, id: user._id.toString() } as UserType;
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  }
+
+  async createAdminUser(userData: any): Promise<UserType> {
+    try {
+      const user = new User(userData);
+      const savedUser = await user.save();
+      return { ...savedUser.toObject(), id: savedUser._id.toString() } as UserType;
+    } catch (error) {
+      console.error('Error creating admin user:', error);
+      throw error;
+    }
+  }
+
+  // Restaurant operations
+  async getRestaurants(): Promise<RestaurantType[]> {
+    try {
+      const restaurants = await Restaurant.find({}).lean();
+      return restaurants.map(r => ({ ...r, id: r._id.toString() })) as RestaurantType[];
+    } catch (error) {
+      console.error('Error getting restaurants:', error);
+      return [];
+    }
+  }
+
+  async getAllRestaurants(): Promise<RestaurantType[]> {
+    return this.getRestaurants();
+  }
+
+  async getRestaurant(id: string): Promise<RestaurantType | undefined> {
+    try {
+      const restaurant = await Restaurant.findById(id).lean();
+      return restaurant ? { ...restaurant, id: restaurant._id.toString() } as RestaurantType : undefined;
+    } catch (error) {
+      console.error('Error getting restaurant:', error);
+      return undefined;
+    }
+  }
+
+  async createRestaurant(restaurantData: InsertRestaurant): Promise<RestaurantType> {
+    try {
+      const restaurant = new Restaurant(restaurantData);
+      const savedRestaurant = await restaurant.save();
+      return { ...savedRestaurant.toObject(), id: savedRestaurant._id.toString() } as RestaurantType;
+    } catch (error) {
+      console.error('Error creating restaurant:', error);
+      throw error;
+    }
+  }
+
+  async updateRestaurant(id: string, restaurantData: Partial<InsertRestaurant>): Promise<RestaurantType> {
+    try {
+      const restaurant = await Restaurant.findByIdAndUpdate(
+        id,
+        restaurantData,
+        { new: true, runValidators: true }
+      ).lean();
+      if (!restaurant) throw new Error('Restaurant not found');
+      return { ...restaurant, id: restaurant._id.toString() } as RestaurantType;
+    } catch (error) {
+      console.error('Error updating restaurant:', error);
+      throw error;
+    }
+  }
+
+  async deleteRestaurant(id: string): Promise<void> {
+    try {
+      await Restaurant.findByIdAndDelete(id);
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      throw error;
+    }
+  }
+
+  async approveRestaurant(id: string): Promise<RestaurantType> {
+    try {
+      const restaurant = await Restaurant.findByIdAndUpdate(
+        id,
+        { isApproved: true },
+        { new: true }
+      ).lean();
+      if (!restaurant) throw new Error('Restaurant not found');
+      return { ...restaurant, id: restaurant._id.toString() } as RestaurantType;
+    } catch (error) {
+      console.error('Error approving restaurant:', error);
+      throw error;
+    }
+  }
+
+  // Admin user operations
+  async getAllAdminUsers(): Promise<UserType[]> {
+    try {
+      const users = await User.find({ 
+        role: { $in: ['superadmin', 'restaurant_admin', 'kitchen_staff'] } 
+      }).lean();
+      return users.map(u => ({ ...u, id: u._id.toString() })) as UserType[];
+    } catch (error) {
+      console.error('Error getting admin users:', error);
+      return [];
+    }
+  }
+
+  // System settings methods
+  async getSystemSettings(): Promise<any> {
+    try {
+      console.log('🔍 Fetching system settings from MongoDB...');
+      let settings = await SystemSettings.findOne({}).lean();
+      if (!settings) {
+        console.log('🆕 No settings found, creating default settings');
+        // Create default settings if none exist
+        const defaultSettings = new SystemSettings({});
+        settings = await defaultSettings.save();
+      }
+      console.log('📋 Settings retrieved:', settings);
+      return { ...settings, id: settings._id.toString() };
+    } catch (error) {
+      console.error('❌ Error getting system settings:', error);
+      return {
+        companyName: 'BeU Delivery',
+        supportEmail: 'support@beu-delivery.com',
+        supportPhone: '+251-911-123456',
+        deliveryFee: 25.00,
+        maxDeliveryDistance: 10,
+        orderTimeout: 30,
+        enableSMSNotifications: true,
+        enableEmailNotifications: true,
+        maintenanceMode: false
+      };
+    }
+  }
+
+  async updateSystemSettings(settingsData: any): Promise<any> {
+    try {
+      console.log('📝 Updating settings with data:', settingsData);
+      let settings = await SystemSettings.findOne({});
+      if (!settings) {
+        console.log('🆕 Creating new settings document');
+        settings = new SystemSettings(settingsData);
+      } else {
+        console.log('📊 Updating existing settings document');
+        Object.assign(settings, settingsData);
+      }
+      const savedSettings = await settings.save();
+      console.log('✅ Settings saved successfully:', savedSettings.toObject());
+      return { ...savedSettings.toObject(), id: savedSettings._id.toString() };
+    } catch (error) {
+      console.error('❌ Error updating system settings:', error);
+      throw error;
+    }
+  }
+
+  async updateCompanyLogo(logoUrl: string): Promise<void> {
+    try {
+      await this.updateSystemSettings({ companyLogo: logoUrl });
+    } catch (error) {
+      console.error('Error updating company logo:', error);
+      throw error;
+    }
+  }
+
+  // Driver operations
+  async getDrivers(): Promise<DriverType[]> {
+    try {
+      const drivers = await Driver.find({}).lean();
+      return drivers.map(d => ({ ...d, id: d._id.toString() })) as DriverType[];
+    } catch (error) {
+      console.error('Error getting drivers:', error);
+      return [];
+    }
+  }
+
+  async getAllDrivers(): Promise<any[]> {
+    try {
+      const drivers = await Driver.find({}).populate('userId').lean();
+      return drivers.map(d => ({
+        ...d,
+        id: d._id.toString(),
+        user: d.userId
+      }));
+    } catch (error) {
+      console.error('Error getting all drivers:', error);
+      return [];
+    }
+  }
+
+  async approveDriver(driverId: string): Promise<DriverType> {
+    try {
+      const driver = await Driver.findByIdAndUpdate(
+        driverId,
+        { isApproved: true },
+        { new: true }
+      ).lean();
+      if (!driver) throw new Error('Driver not found');
+      return { ...driver, id: driver._id.toString() } as DriverType;
+    } catch (error) {
+      console.error('Error approving driver:', error);
+      throw error;
+    }
+  }
+
+  async rejectDriver(driverId: string): Promise<void> {
+    try {
+      await Driver.findByIdAndDelete(driverId);
+    } catch (error) {
+      console.error('Error rejecting driver:', error);
+      throw error;
+    }
+  }
+
+  // Password management methods
+  async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
+    // This would use bcrypt in a real implementation
+    return true;
+  }
+
+  async updateAdminPassword(adminId: string, newHashedPassword: string): Promise<void> {
+    try {
+      await User.findByIdAndUpdate(adminId, { password: newHashedPassword });
+    } catch (error) {
+      console.error('Error updating admin password:', error);
+      throw error;
+    }
+  }
+
+  // Analytics operations
+  async getDashboardStats(): Promise<any> {
+    try {
+      const totalRestaurants = await Restaurant.countDocuments({});
+      const activeRestaurants = await Restaurant.countDocuments({ isActive: true });
+      const totalDrivers = await Driver.countDocuments({});
+      const activeDrivers = await Driver.countDocuments({ isApproved: true, isOnline: true });
+      const pendingDrivers = await Driver.countDocuments({ isApproved: false });
+
+      return {
+        totalRestaurants,
+        activeRestaurants,
+        totalDrivers,
+        activeDrivers,
+        pendingDrivers,
+        totalOrders: 0, // TODO: Implement orders collection
+        revenue: 0,
+      };
+    } catch (error) {
+      console.error('Error getting dashboard stats:', error);
+      return {
+        totalRestaurants: 0,
+        activeRestaurants: 0,
+        totalDrivers: 0,
+        activeDrivers: 0,
+        pendingDrivers: 0,
+        totalOrders: 0,
+        revenue: 0,
+      };
+    }
+  }
+
+  // Stub implementations for other methods (to be implemented later)
+  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> { return []; }
+  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> { throw new Error('Not implemented'); }
+  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> { throw new Error('Not implemented'); }
+  async deleteMenuCategory(id: string): Promise<void> { throw new Error('Not implemented'); }
+  async getMenuItems(restaurantId: string): Promise<MenuItem[]> { return []; }
+  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> { return []; }
+  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> { throw new Error('Not implemented'); }
+  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> { throw new Error('Not implemented'); }
+  async deleteMenuItem(id: string): Promise<void> { throw new Error('Not implemented'); }
+  async getOrders(): Promise<Order[]> { return []; }
+  async getOrder(id: string): Promise<Order | undefined> { return undefined; }
+  async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
+  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> { return []; }
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
+  async createOrder(order: InsertOrder): Promise<Order> { throw new Error('Not implemented'); }
+  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> { throw new Error('Not implemented'); }
+  async updateOrderStatus(id: string, status: string): Promise<Order> { throw new Error('Not implemented'); }
+  async getDriver(id: string): Promise<DriverType | undefined> { return undefined; }
+  async getDriverByUserId(userId: string): Promise<DriverType | undefined> { return undefined; }
+  async createDriver(driver: InsertDriver): Promise<DriverType> { throw new Error('Not implemented'); }
+  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<DriverType> { throw new Error('Not implemented'); }
+  async getAvailableDrivers(): Promise<DriverType[]> { return []; }
+  async updateDriverLocation(id: string, location: any): Promise<DriverType> { throw new Error('Not implemented'); }
+  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<DriverType> { throw new Error('Not implemented'); }
+  async getDeliveries(): Promise<Delivery[]> { return []; }
+  async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }
+  async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> { return []; }
+  async createDelivery(delivery: InsertDelivery): Promise<Delivery> { throw new Error('Not implemented'); }
+  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { throw new Error('Not implemented'); }
+  async getNotifications(userId: string): Promise<Notification[]> { return []; }
+  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error('Not implemented'); }
+  async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
+  async getOrderAnalytics(): Promise<any> { return {}; }
+}
