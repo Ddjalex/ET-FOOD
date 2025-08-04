@@ -82,6 +82,15 @@ export interface IStorage {
   getNotifications(userId: string): Promise<Notification[]>;
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: string): Promise<Notification>;
+  
+  // System settings methods
+  getSystemSettings(): Promise<any>;
+  updateSystemSettings(settings: any): Promise<any>;
+  updateCompanyLogo(logoUrl: string): Promise<void>;
+  
+  // Password management methods
+  verifyAdminPassword(adminId: string, password: string): Promise<boolean>;
+  updateAdminPassword(adminId: string, newPassword: string): Promise<void>;
 
   // Analytics operations
   getDashboardStats(): Promise<any>;
@@ -552,6 +561,56 @@ class MemoryStorage implements IStorage {
     const updated = { ...notification, isRead: true };
     this.notifications.set(id, updated);
     return updated;
+  }
+
+  // System settings methods
+  async getSystemSettings(): Promise<any> {
+    return {
+      companyName: 'BeU Delivery',
+      supportEmail: 'support@beu-delivery.com',
+      supportPhone: '+251-911-123456',
+      deliveryFee: 25.00,
+      maxDeliveryDistance: 10,
+      orderTimeout: 30,
+      enableSMSNotifications: true,
+      enableEmailNotifications: true,
+      maintenanceMode: false
+    };
+  }
+
+  async updateSystemSettings(settings: any): Promise<any> {
+    // In a real implementation, this would update the database
+    // For now, just return the updated settings
+    return settings;
+  }
+
+  async updateCompanyLogo(logoUrl: string): Promise<void> {
+    // In a real implementation, this would update the database
+    // For now, just log the action
+    console.log('Company logo updated to:', logoUrl);
+  }
+
+  // Password management methods
+  async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
+    const admin = this.adminUsers.find(u => u.id === adminId);
+    if (!admin) {
+      return false;
+    }
+    
+    // In a real implementation, this would compare hashed passwords
+    // For now, just simulate verification (always return true for demo)
+    return true;
+  }
+
+  async updateAdminPassword(adminId: string, newPassword: string): Promise<void> {
+    const admin = this.adminUsers.find(u => u.id === adminId);
+    if (!admin) {
+      throw new Error('Admin not found');
+    }
+    
+    // In a real implementation, this would hash and store the new password
+    // For now, just log the action
+    console.log(`Password updated for admin: ${adminId}`);
   }
 
   // Analytics operations

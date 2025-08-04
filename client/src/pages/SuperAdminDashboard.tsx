@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,13 +73,54 @@ const adminFormSchema = z.object({
   restaurantId: z.string().min(1, 'Restaurant selection is required')
 });
 
+const settingsFormSchema = z.object({
+  companyName: z.string().min(1, 'Company name is required'),
+  supportEmail: z.string().email('Valid email is required'),
+  supportPhone: z.string().min(1, 'Phone number is required'),
+  deliveryFee: z.number().min(0, 'Delivery fee must be positive'),
+  maxDeliveryDistance: z.number().min(1, 'Distance must be positive'),
+  orderTimeout: z.number().min(1, 'Timeout must be positive'),
+  enableSMSNotifications: z.boolean(),
+  enableEmailNotifications: z.boolean(),
+  maintenanceMode: z.boolean()
+});
+
+const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Confirm password is required')
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
 type AdminFormData = z.infer<typeof adminFormSchema>;
+type SettingsFormData = z.infer<typeof settingsFormSchema>;
+type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
+
+interface SystemSettings {
+  companyName: string;
+  supportEmail: string;
+  supportPhone: string;
+  deliveryFee: number;
+  maxDeliveryDistance: number;
+  orderTimeout: number;
+  enableSMSNotifications: boolean;
+  enableEmailNotifications: boolean;
+  maintenanceMode: boolean;
+  companyLogo?: string;
+}
 
 export default function SuperAdminDashboard() {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [isRestaurantDialogOpen, setIsRestaurantDialogOpen] = useState(false);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -107,6 +148,30 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  const settingsForm = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsFormSchema),
+    defaultValues: {
+      companyName: 'BeU Delivery',
+      supportEmail: 'support@beu-delivery.com',
+      supportPhone: '+251-911-123456',
+      deliveryFee: 25.00,
+      maxDeliveryDistance: 10,
+      orderTimeout: 30,
+      enableSMSNotifications: true,
+      enableEmailNotifications: true,
+      maintenanceMode: false
+    }
+  });
+
+  const passwordForm = useForm<PasswordChangeData>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
+  });
+
   // Queries
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
@@ -118,6 +183,15 @@ export default function SuperAdminDashboard() {
 
   const { data: admins = [] } = useQuery<AdminUser[]>({
     queryKey: ['/api/superadmin/admins'],
+  });
+
+  const { data: settings } = useQuery<SystemSettings>({
+    queryKey: ['/api/settings'],
+    onSuccess: (data) => {
+      if (data) {
+        settingsForm.reset(data);
+      }
+    }
   });
 
   // Mutations
@@ -197,6 +271,131 @@ export default function SuperAdminDashboard() {
     createAdminMutation.mutate(data);
   };
 
+  const updateSettingsMutation = useMutation({
+    mutationFn: (data: SettingsFormData) => 
+      fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to update settings');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: 'Success',
+        description: 'System settings updated successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update settings',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: PasswordChangeData) => 
+      fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to change password');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      setIsPasswordDialogOpen(false);
+      passwordForm.reset();
+      toast({
+        title: 'Success',
+        description: 'Password changed successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to change password',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const uploadLogoMutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append('logo', file);
+      return fetch('/api/upload/logo', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to upload logo');
+        }
+        return res.json();
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: 'Success',
+        description: 'Company logo uploaded successfully'
+      });
+      setLogoFile(null);
+      setLogoPreview(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to upload logo',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const onUpdateSettings = (data: SettingsFormData) => {
+    updateSettingsMutation.mutate(data);
+  };
+
+  const onChangePassword = (data: PasswordChangeData) => {
+    changePasswordMutation.mutate(data);
+  };
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoUpload = () => {
+    if (logoFile) {
+      uploadLogoMutation.mutate(logoFile);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -211,7 +410,8 @@ export default function SuperAdminDashboard() {
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'restaurants', label: 'Restaurants' },
-          { id: 'admins', label: 'Admins' }
+          { id: 'admins', label: 'Admins' },
+          { id: 'settings', label: 'System Settings' }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -646,6 +846,396 @@ export default function SuperAdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {selectedTab === 'settings' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">System Settings</h2>
+            
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Change Admin Password</DialogTitle>
+                  <DialogDescription>
+                    Update your superadmin account password.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...passwordForm}>
+                  <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="space-y-4">
+                    <FormField
+                      control={passwordForm.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Current Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showCurrentPassword ? "text" : "password"} 
+                                placeholder="Enter current password" 
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              >
+                                {showCurrentPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
+                      name="newPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>New Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showNewPassword ? "text" : "password"} 
+                                placeholder="Enter new password" 
+                                {...field} 
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                              >
+                                {showNewPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={passwordForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm New Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Confirm new password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={changePasswordMutation.isPending}>
+                        {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Company Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Company Information</CardTitle>
+                <CardDescription>Update your company details and branding</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...settingsForm}>
+                  <form onSubmit={settingsForm.handleSubmit(onUpdateSettings)} className="space-y-4">
+                    <FormField
+                      control={settingsForm.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter company name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={settingsForm.control}
+                      name="supportEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Support Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="support@company.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={settingsForm.control}
+                      name="supportPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Support Phone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+251-911-123456" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Company Logo Upload */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Company Logo</label>
+                      <div className="space-y-4">
+                        {settings?.companyLogo && (
+                          <div className="flex items-center space-x-2">
+                            <img 
+                              src={settings.companyLogo} 
+                              alt="Current logo" 
+                              className="h-12 w-12 object-contain border rounded"
+                            />
+                            <span className="text-sm text-muted-foreground">Current logo</span>
+                          </div>
+                        )}
+                        
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                        />
+                        
+                        {logoPreview && (
+                          <div className="space-y-2">
+                            <img 
+                              src={logoPreview} 
+                              alt="Logo preview" 
+                              className="h-20 w-20 object-contain border rounded"
+                            />
+                            <Button 
+                              type="button" 
+                              onClick={handleLogoUpload}
+                              disabled={uploadLogoMutation.isPending}
+                              size="sm"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              {uploadLogoMutation.isPending ? 'Uploading...' : 'Upload Logo'}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button type="submit" disabled={updateSettingsMutation.isPending}>
+                      {updateSettingsMutation.isPending ? 'Saving...' : 'Save Company Settings'}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+
+            {/* Delivery Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Configuration</CardTitle>
+                <CardDescription>Configure delivery fees and operational settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...settingsForm}>
+                  <form onSubmit={settingsForm.handleSubmit(onUpdateSettings)} className="space-y-4">
+                    <FormField
+                      control={settingsForm.control}
+                      name="deliveryFee"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Delivery Fee (ETB)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              placeholder="25.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={settingsForm.control}
+                      name="maxDeliveryDistance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Delivery Distance (KM)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="10"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={settingsForm.control}
+                      name="orderTimeout"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Order Timeout (Minutes)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="30"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button type="submit" disabled={updateSettingsMutation.isPending}>
+                      {updateSettingsMutation.isPending ? 'Saving...' : 'Save Delivery Settings'}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* System Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle>System Configuration</CardTitle>
+              <CardDescription>Manage notification settings and system maintenance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...settingsForm}>
+                <form onSubmit={settingsForm.handleSubmit(onUpdateSettings)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Notification Settings</h4>
+                      
+                      <FormField
+                        control={settingsForm.control}
+                        name="enableSMSNotifications"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <FormLabel>SMS Notifications</FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                Send order updates via SMS
+                              </div>
+                            </div>
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={settingsForm.control}
+                        name="enableEmailNotifications"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <FormLabel>Email Notifications</FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                Send order confirmations via email
+                              </div>
+                            </div>
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-medium">System Status</h4>
+                      
+                      <FormField
+                        control={settingsForm.control}
+                        name="maintenanceMode"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <FormLabel>Maintenance Mode</FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                Disable new orders temporarily
+                              </div>
+                            </div>
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" disabled={updateSettingsMutation.isPending}>
+                    {updateSettingsMutation.isPending ? 'Saving...' : 'Save System Settings'}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </div>

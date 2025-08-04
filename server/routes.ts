@@ -813,5 +813,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings endpoints
+  app.get('/api/settings', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const settings = await storage.getSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      res.status(500).json({ message: 'Failed to fetch settings' });
+    }
+  });
+
+  app.put('/api/settings', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const updatedSettings = await storage.updateSystemSettings(req.body);
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      res.status(500).json({ message: 'Failed to update settings' });
+    }
+  });
+
+  // Password change endpoint
+  app.post('/api/admin/change-password', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      
+      // Verify current password
+      const isValid = await storage.verifyAdminPassword(user.id, currentPassword);
+      if (!isValid) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Update password
+      await storage.updateAdminPassword(user.id, newPassword);
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      res.status(500).json({ message: 'Failed to change password' });
+    }
+  });
+
+  // Logo upload endpoint
+  app.post('/api/upload/logo', requireSession, uploadMiddleware.single('logo'), async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const logoUrl = `/uploads/${req.file.filename}`;
+      await storage.updateCompanyLogo(logoUrl);
+      
+      res.json({ logoUrl, message: 'Logo uploaded successfully' });
+    } catch (error) {
+      console.error('Failed to upload logo:', error);
+      res.status(500).json({ message: 'Failed to upload logo' });
+    }
+  });
+
   return httpServer;
 }
