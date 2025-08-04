@@ -677,7 +677,21 @@ export class PostgresStorage implements IStorage {
     }
   }
 
-  // Driver management methods - removed duplicate getAllDrivers
+  // Driver management methods
+  async getAllDrivers(): Promise<Driver[]> {
+    return this.getDrivers();
+  }
+
+  async rejectDriver(driverId: string): Promise<void> {
+    try {
+      await db.update(drivers)
+        .set({ isApproved: false, updatedAt: new Date() })
+        .where(eq(drivers.id, driverId));
+    } catch (error) {
+      console.error('Error rejecting driver:', error);
+      throw error;
+    }
+  }
 
   // Analytics operations
   async getDashboardStats(): Promise<any> {
