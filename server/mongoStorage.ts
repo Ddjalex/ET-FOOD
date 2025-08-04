@@ -88,7 +88,11 @@ export class MongoStorage implements IStorage {
 
   async createAdminUser(userData: any): Promise<UserType> {
     try {
-      const user = new User(userData);
+      // Remove any id field that might cause conflicts
+      const cleanUserData = { ...userData };
+      delete cleanUserData.id;
+      
+      const user = new User(cleanUserData);
       const savedUser = await user.save();
       return { ...savedUser.toObject(), id: savedUser._id.toString() } as UserType;
     } catch (error) {

@@ -38,13 +38,24 @@ const UserSchema = new Schema<IUser>({
 }, {
   timestamps: true,
   toJSON: { 
-    transform: (doc, ret) => {
-      ret.id = ret._id;
+    transform: (doc: any, ret: any) => {
+      ret.id = ret._id.toString();
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  },
+  toObject: { 
+    transform: (doc: any, ret: any) => {
+      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
       return ret;
     }
   }
 });
+
+// Ensure no 'id' field index exists that conflicts with _id
+UserSchema.index({}, { background: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

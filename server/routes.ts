@@ -153,13 +153,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Remove any undefined/null fields that might cause issues
-      Object.keys(kitchenUser).forEach(key => {
-        if (kitchenUser[key as keyof typeof kitchenUser] === undefined || kitchenUser[key as keyof typeof kitchenUser] === null) {
-          delete kitchenUser[key as keyof typeof kitchenUser];
-        }
-      });
+      const cleanKitchenUser = Object.fromEntries(
+        Object.entries(kitchenUser).filter(([_, value]) => value !== undefined && value !== null)
+      );
 
-      const createdUser = await storage.createAdminUser(kitchenUser);
+      const createdUser = await storage.createAdminUser(cleanKitchenUser);
       console.log('Kitchen staff user created successfully:', createdUser);
       res.json({ 
         message: 'Kitchen staff created successfully',
