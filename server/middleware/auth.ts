@@ -98,3 +98,46 @@ export const hashPassword = async (password: string): Promise<string> => {
 export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> => {
   return bcrypt.compare(password, hashedPassword);
 };
+
+// Restaurant-specific authorization middleware
+export const requireRestaurantAccess = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ message: 'Please log in' });
+  }
+
+  const user = req.session.user as any;
+  const requestedRestaurantId = req.params.restaurantId || req.body.restaurantId;
+
+  // Superadmin can access any restaurant
+  if (user.role === UserRole.SUPERADMIN) {
+    req.user = user;
+    return next();
+  }
+
+  // Restaurant admin and kitchen staff can only access their own restaurant
+  if (user.role === UserRole.RESTAURANT_ADMIN || user.role === UserRole.KITCHEN_STAFF) {
+    if (!user.restaurantId) {
+      return res.status(403).json({ message: 'User not associated with any restaurant' });
+    }
+
+    if (requestedRestaurantId && user.restaurantId !== requestedRestaurantId) {
+      return res.status(403).json({ message: 'Access denied to this restaurant' });
+    }
+
+    req.user = user;
+    return next();
+  }
+
+  return res.status(403).json({ message: 'Insufficient permissions' });
+};
+
+// Generate random password for new staff
+export const generateRandomPassword = (): string => {
+  const length = 8;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return password;
+};

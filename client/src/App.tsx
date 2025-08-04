@@ -34,6 +34,7 @@ function Router() {
       <Route path="/restaurant-admin-login" component={RestaurantAdminLogin} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/admin" component={RestaurantAdminDashboard} />
+      <Route path="/restaurant-admin" component={RestaurantAdminDashboard} />
       <Route path="/kitchen" component={KitchenDashboard} />
       
       {/* Admin Panel Routes - Available to admin users */}

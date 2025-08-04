@@ -8,7 +8,7 @@ import { orderService } from "./services/orderService";
 import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
-import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword } from "./middleware/auth";
+import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -930,6 +930,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to reject driver:', error);
       res.status(500).json({ message: 'Failed to reject driver' });
+    }
+  });
+
+  // ==============================================
+  // RESTAURANT-SPECIFIC MULTI-TENANT API ROUTES
+  // ==============================================
+
+  // Get restaurant dashboard stats (restaurant admin only sees their restaurant)
+  app.get('/api/restaurants/:restaurantId/dashboard/stats', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const restaurantId = req.params.restaurantId;
+      const user = req.user as any;
+
+      // For restaurant admin, use their restaurant ID
+      const targetRestaurantId = user.role === UserRole.RESTAURANT_ADMIN ? user.restaurantId : restaurantId;
+
+      const orders = await storage.getOrdersByRestaurant(targetRestaurantId);
+      const menuItems = await storage.getMenuItems(targetRestaurantId);
+
+      const todayOrders = orders.filter(order => {
+        if (!order.createdAt) return false;
+        const orderDate = new Date(order.createdAt);
+        const today = new Date();
+        return orderDate.toDateString() === today.toDateString();
+      });
+
+      const stats = {
+        todayOrders: todayOrders.length,
+        todaySales: todayOrders.reduce((sum, order) => sum + parseFloat(order.total), 0),
+        totalMenuItems: menuItems.length,
+        activeMenuItems: menuItems.filter(item => item.isAvailable).length,
+        pendingOrders: orders.filter(order => order.status === 'pending').length,
+        preparingOrders: orders.filter(order => order.status === 'preparing').length
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching restaurant dashboard stats:', error);
+      res.status(500).json({ message: 'Failed to fetch dashboard stats' });
+    }
+  });
+
+  // Create kitchen staff (restaurant admin only)
+  app.post('/api/restaurants/:restaurantId/staff', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { firstName, lastName, email } = req.body;
+
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: 'First name, last name, and email are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Generate random password
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await hashPassword(randomPassword);
+
+      // Create kitchen staff
+      const staffMember = await storage.createAdminUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: UserRole.KITCHEN_STAFF,
+        restaurantId: user.restaurantId, // Always use the restaurant admin's restaurant
+        createdBy: user.id,
+        isActive: true
+      });
+
+      res.status(201).json({
+        message: 'Kitchen staff created successfully',
+        user: {
+          id: staffMember.id,
+          email: staffMember.email,
+          firstName: staffMember.firstName,
+          lastName: staffMember.lastName,
+          role: staffMember.role,
+          restaurantId: staffMember.restaurantId
+        },
+        temporaryPassword: randomPassword // Return password to be shared with staff
+      });
+    } catch (error) {
+      console.error('Error creating kitchen staff:', error);
+      res.status(500).json({ message: 'Failed to create kitchen staff' });
+    }
+  });
+
+  // Get restaurant menu
+  app.get('/api/restaurants/:restaurantId/menu', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const targetRestaurantId = user.role === UserRole.RESTAURANT_ADMIN ? user.restaurantId : req.params.restaurantId;
+
+      const categories = await storage.getMenuCategories(targetRestaurantId);
+      const items = await storage.getMenuItems(targetRestaurantId);
+
+      // Group items by category
+      const menuWithCategories = categories.map(category => ({
+        ...category,
+        items: items.filter(item => item.categoryId === category.id)
+      }));
+
+      res.json(menuWithCategories);
+    } catch (error) {
+      console.error('Error fetching restaurant menu:', error);
+      res.status(500).json({ message: 'Failed to fetch menu' });
+    }
+  });
+
+  // Create menu category
+  app.post('/api/restaurants/:restaurantId/menu/categories', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { name, description } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ message: 'Category name is required' });
+      }
+
+      const category = await storage.createMenuCategory({
+        restaurantId: user.restaurantId,
+        name,
+        description: description || null,
+        isActive: true,
+        sortOrder: 0
+      });
+
+      res.status(201).json(category);
+    } catch (error) {
+      console.error('Error creating menu category:', error);
+      res.status(500).json({ message: 'Failed to create menu category' });
+    }
+  });
+
+  // Create menu item
+  app.post('/api/restaurants/:restaurantId/menu/items', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { categoryId, name, description, price, isAvailable, preparationTime, ingredients, isVegetarian, isVegan, spicyLevel } = req.body;
+
+      if (!categoryId || !name || !price) {
+        return res.status(400).json({ message: 'Category ID, name, and price are required' });
+      }
+
+      const menuItem = await storage.createMenuItem({
+        restaurantId: user.restaurantId,
+        categoryId,
+        name,
+        description: description || null,
+        price: price.toString(),
+        imageUrl: null,
+        isAvailable: isAvailable !== false,
+        preparationTime: preparationTime || null,
+        ingredients: ingredients || [],
+        isVegetarian: isVegetarian || false,
+        isVegan: isVegan || false,
+        spicyLevel: spicyLevel || 0
+      });
+
+      res.status(201).json(menuItem);
+    } catch (error) {
+      console.error('Error creating menu item:', error);
+      res.status(500).json({ message: 'Failed to create menu item' });
+    }
+  });
+
+  // Update menu item
+  app.put('/api/restaurants/:restaurantId/menu/items/:itemId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const updateData = req.body;
+
+      const updatedItem = await storage.updateMenuItem(itemId, updateData);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      res.status(500).json({ message: 'Failed to update menu item' });
+    }
+  });
+
+  // Delete menu item
+  app.delete('/api/restaurants/:restaurantId/menu/items/:itemId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      await storage.deleteMenuItem(itemId);
+      res.json({ message: 'Menu item deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      res.status(500).json({ message: 'Failed to delete menu item' });
+    }
+  });
+
+  // Get restaurant orders
+  app.get('/api/restaurants/:restaurantId/orders', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const targetRestaurantId = user.role === UserRole.RESTAURANT_ADMIN ? user.restaurantId : req.params.restaurantId;
+
+      const orders = await storage.getOrdersByRestaurant(targetRestaurantId);
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching restaurant orders:', error);
+      res.status(500).json({ message: 'Failed to fetch orders' });
+    }
+  });
+
+  // Update order status (restaurant admin and kitchen staff)
+  app.put('/api/restaurants/:restaurantId/orders/:orderId/status', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: 'Status is required' });
+      }
+
+      const updatedOrder = await storage.updateOrderStatus(orderId, status);
+      broadcast({ type: 'order_status_updated', data: updatedOrder });
+      
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      res.status(500).json({ message: 'Failed to update order status' });
+    }
+  });
+
+  // Get restaurant staff (restaurant admin only)
+  app.get('/api/restaurants/:restaurantId/staff', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      
+      if (user.role !== UserRole.RESTAURANT_ADMIN) {
+        return res.status(403).json({ message: 'Only restaurant admins can view staff' });
+      }
+
+      const admins = await storage.getAllAdminUsers();
+      const restaurantStaff = admins.filter(admin => 
+        admin.restaurantId === user.restaurantId && 
+        (admin.role === UserRole.KITCHEN_STAFF || admin.role === UserRole.RESTAURANT_ADMIN)
+      );
+
+      res.json(restaurantStaff);
+    } catch (error) {
+      console.error('Error fetching restaurant staff:', error);
+      res.status(500).json({ message: 'Failed to fetch staff' });
     }
   });
 

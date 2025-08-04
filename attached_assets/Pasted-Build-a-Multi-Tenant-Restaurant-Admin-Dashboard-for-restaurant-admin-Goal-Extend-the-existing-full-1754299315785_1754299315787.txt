@@ -1,0 +1,67 @@
+Build a Multi-Tenant Restaurant Admin Dashboard for restaurant_admin
+
+Goal: Extend the existing full-stack application (Vite/React, Node.js/Express.js, MongoDB) to include a secure and fully functional dashboard for users with the restaurant_admin role. This dashboard will allow them to manage their specific restaurant, including menus, orders, and staff.
+
+Key Features and User Flow:
+
+Dashboard Access:
+
+The /admin route must now handle two roles: superadmin and restaurant_admin.
+
+The frontend should use the user.role from the authentication context to render the appropriate dashboard UI.
+
+The restaurant_admin should only see and interact with data related to their assigned restaurant. Access to any other restaurant's data must be prevented at the backend.
+
+restaurant_admin Dashboard Functionality:
+
+Dashboard View: A clean, modern UI (using Tailwind CSS) that provides a quick overview of the restaurant's daily sales, new orders, and menu status. It should be distinct from the superadmin's dashboard.
+
+Menu Management: A CRUD interface for the restaurant admin to manage their menu. This includes:
+
+Creating, editing, and deleting menu categories (e.g., Appetizers, Entrees).
+
+Creating, editing, and deleting menu items within a category. Each item should have a name, description, price, and a toggle for "available" status.
+
+Staff Management: The restaurant admin needs the ability to create new user accounts for their staff, assigning them the kitchen_staff role.
+
+The creation form should take the staff member's name and email.
+
+A random password should be generated and displayed to the restaurant_admin upon successful creation, which they can then share with the new staff member.
+
+Crucially, the newly created kitchen_staff user must be automatically linked to the restaurant_admin's restaurant in the database.
+
+Order Management: A real-time view of all orders for their specific restaurant.
+
+Orders should display key details like orderId, customerName, items, total, and status.
+
+The admin should be able to view the order details and update the order status.
+
+Backend API & Logic:
+
+Authorization Middleware:
+
+Create a middleware function that checks the user's role and, for restaurant_admin, verifies that the restaurantId in the request (whether in the URL, body, or query) matches the restaurantId associated with the authenticated user.
+
+This middleware must be applied to all new and updated API endpoints to enforce strict data isolation between restaurants.
+
+New API Endpoints (Node.js/Express.js):
+
+POST /api/restaurants/:restaurantId/staff: Endpoint for a restaurant_admin to create a kitchen_staff user. The request body will contain the new staff member's details.
+
+Backend logic must assign the kitchen_staff role and automatically link the new user to the restaurantId from the URL parameter.
+
+GET /api/restaurants/:restaurantId/menu: Endpoint to fetch the menu for a specific restaurant.
+
+PUT/DELETE /api/restaurants/:restaurantId/menu/:menuItemId: Endpoints to update or delete a specific menu item.
+
+GET /api/restaurants/:restaurantId/orders: Endpoint to get all orders for a specific restaurant.
+
+Database Schema (MongoDB):
+
+Ensure the existing User schema contains role and restaurantId fields. The restaurantId should be a reference to the Restaurant collection.
+
+The Restaurant schema should be defined to hold the menu, orders, and a list of staff.
+
+Final Output:
+
+Provide the full, updated code for both the frontend (React) and the backend (Node.js) that implements these features. The code should be well-commented and use a modern, professional structure. Explain how the authentication and authorization flow works, especially the role-based access control.
