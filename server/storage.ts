@@ -103,6 +103,11 @@ export interface IStorage {
   // Analytics operations
   getDashboardStats(): Promise<any>;
   getOrderAnalytics(): Promise<any>;
+
+  // Kitchen operations (missing functions)
+  getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]>;
+  getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]>;
+  getRestaurantMenu(restaurantId: string): Promise<{ categories: MenuCategory[], items: MenuItem[] }>;
 }
 
 class MemoryStorage implements IStorage {
@@ -780,6 +785,25 @@ class MemoryStorage implements IStorage {
       completionRate: Math.round(completionRate),
       avgDeliveryTime: 28,
     };
+  }
+
+  // Kitchen operations (missing functions)
+  async getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]> {
+    return Array.from(this.menuItems.values())
+      .filter(item => item.restaurantId === restaurantId && item.status === status)
+      .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+  }
+
+  async getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]> {
+    return Array.from(this.menuCategories.values())
+      .filter(category => category.restaurantId === restaurantId && category.status === status)
+      .sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+  }
+
+  async getRestaurantMenu(restaurantId: string): Promise<{ categories: MenuCategory[], items: MenuItem[] }> {
+    const categories = await this.getMenuCategories(restaurantId);
+    const items = await this.getMenuItems(restaurantId);
+    return { categories, items };
   }
 }
 

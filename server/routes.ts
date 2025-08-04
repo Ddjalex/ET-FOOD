@@ -9,7 +9,7 @@ import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
-import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate } from "./websocket";
+import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 import multer from "multer";
 
@@ -123,6 +123,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: 'Logout successful' });
     });
+  });
+
+  // Get current admin user
+  app.get('/api/admin/me', requireSession, (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        restaurantId: user.restaurantId
+      });
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
   });
 
   // Create kitchen staff endpoint (superadmin only)
@@ -1252,6 +1274,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get restaurant menu for kitchen staff
+  app.get('/api/restaurants/:restaurantId/menu', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      const categories = await storage.getMenuCategories(restaurantId);
+      const items = await storage.getMenuItems(restaurantId);
+      
+      res.json({
+        categories,
+        items
+      });
+    } catch (error) {
+      console.error('Error fetching restaurant menu:', error);
+      res.status(500).json({ message: 'Failed to fetch menu' });
+    }
+  });
+
   // Update order status (restaurant admin and kitchen staff)
   app.put('/api/restaurants/:restaurantId/orders/:orderId/status', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
@@ -1413,7 +1452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { restaurantId, orderId } = req.params;
       const { unavailableItems } = req.body;
 
-      let status = 'preparing';
+      let status: "pending" | "confirmed" | "preparing" | "in_preparation" | "ready_for_pickup" | "assigned" | "picked_up" | "delivered" | "cancelled" | "awaiting_admin_intervention" = 'preparing';
       
       if (unavailableItems && unavailableItems.length > 0) {
         status = 'awaiting_admin_intervention';

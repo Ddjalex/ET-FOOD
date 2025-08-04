@@ -104,3 +104,10 @@ export const broadcastMenuUpdate = (restaurantId: string, menuData: any) => {
     });
   }
 };
+
+// General broadcast function
+export const broadcast = (event: { type: string, data: any }) => {
+  if (io) {
+    io.emit(event.type, event.data);
+  }
+};
