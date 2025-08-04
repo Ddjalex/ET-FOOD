@@ -1,5 +1,6 @@
 import { PostgresStorage } from "./postgresStorage";
-import { db } from "./db";
+import { MongoStorage } from "./mongoStorage";
+import { isMongoConnected } from "./db";
 import {
   type User,
   type UpsertUser,
@@ -782,7 +783,23 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Storage initialization - use PostgreSQL if available, otherwise fallback to memory storage
-export const storage: IStorage = db ? new PostgresStorage() : new MemoryStorage();
+// Initialize storage - since MongoDB connection happens asynchronously,
+// we'll create a storage factory that checks the connection status
+class StorageFactory {
+  private _storage: IStorage | null = null;
+  
+  get storage(): IStorage {
+    if (!this._storage) {
+      this._storage = isMongoConnected ? new MongoStorage() : new MemoryStorage();
+      console.log(`Initialized ${isMongoConnected ? 'MongoDB' : 'in-memory'} storage`);
+    }
+    return this._storage;
+  }
+}
 
-console.log(`Using ${db ? 'PostgreSQL' : 'in-memory'} storage for data persistence`);
+const storageFactory = new StorageFactory();
+export const storage = new Proxy({} as IStorage, {
+  get(target, prop) {
+    return storageFactory.storage[prop as keyof IStorage];
+  }
+});

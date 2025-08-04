@@ -1,22 +1,23 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+// MongoDB connection using Mongoose (since DATABASE_URL is MongoDB)
+import { connectToMongoDB } from './mongodb';
 
-neonConfig.webSocketConstructor = ws;
-
-// Use in-memory storage for development if no database URL is provided
-export let db: ReturnType<typeof drizzle> | null = null;
-export let pool: Pool | null = null;
+// Initialize MongoDB connection
+export let isMongoConnected = false;
 
 if (process.env.DATABASE_URL) {
-  try {
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool, schema });
-    console.log('PostgreSQL database connected successfully');
-  } catch (error) {
-    console.error('Failed to connect to PostgreSQL database:', error);
-  }
+  connectToMongoDB()
+    .then(() => {
+      isMongoConnected = true;
+      console.log('MongoDB database connected successfully');
+    })
+    .catch((error) => {
+      console.error('Failed to connect to MongoDB database:', error);
+      isMongoConnected = false;
+    });
 } else {
   console.log('No DATABASE_URL provided, using in-memory storage for development');
 }
+
+// Export for backwards compatibility (not used with MongoDB)
+export const db = null;
+export const pool = null;

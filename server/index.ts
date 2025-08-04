@@ -1,7 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-// Removed MongoDB connection - now using PostgreSQL
+// Import MongoDB connection to initialize it
+import "./db";
 
 const app = express();
 app.use(express.json());
