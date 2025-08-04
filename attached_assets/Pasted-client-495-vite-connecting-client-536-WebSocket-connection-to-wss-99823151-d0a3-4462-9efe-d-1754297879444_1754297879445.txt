@@ -1,0 +1,459 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/?token=KSae-mO_o_YQ' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=KSae-mO_o_YQ' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+chunk-WERSD76P.js?v=2083b7eb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+SuperAdminDashboard.tsx:249 Warning: React has detected a change in the order of Hooks called by SuperAdminDashboard. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useContext                 useContext
+2. useContext                 useContext
+3. useContext                 useContext
+4. useEffect                  useEffect
+5. useState                   useState
+6. useCallback                useCallback
+7. useSyncExternalStore       useSyncExternalStore
+8. useEffect                  useEffect
+9. useContext                 useContext
+10. useSyncExternalStore      useSyncExternalStore
+11. useRef                    useRef
+12. useInsertionEffect        useInsertionEffect
+13. useState                  useState
+14. useState                  useState
+15. useState                  useState
+16. useState                  useState
+17. useState                  useState
+18. useState                  useState
+19. useState                  useState
+20. useState                  useState
+21. useState                  useState
+22. useEffect                 useEffect
+23. useContext                useContext
+24. useRef                    useRef
+25. useRef                    useRef
+26. useState                  useState
+27. useLayoutEffect           useLayoutEffect
+28. useEffect                 useEffect
+29. useEffect                 useEffect
+30. useEffect                 useEffect
+31. useEffect                 useEffect
+32. useEffect                 useEffect
+33. useEffect                 useEffect
+34. useRef                    useRef
+35. useRef                    useRef
+36. useState                  useState
+37. useLayoutEffect           useLayoutEffect
+38. useEffect                 useEffect
+39. useEffect                 useEffect
+40. useEffect                 useEffect
+41. useEffect                 useEffect
+42. useEffect                 useEffect
+43. useEffect                 useEffect
+44. useRef                    useRef
+45. useRef                    useRef
+46. useState                  useState
+47. useLayoutEffect           useLayoutEffect
+48. useEffect                 useEffect
+49. useEffect                 useEffect
+50. useEffect                 useEffect
+51. useEffect                 useEffect
+52. useEffect                 useEffect
+53. useEffect                 useEffect
+54. useRef                    useRef
+55. useRef                    useRef
+56. useState                  useState
+57. useLayoutEffect           useLayoutEffect
+58. useEffect                 useEffect
+59. useEffect                 useEffect
+60. useEffect                 useEffect
+61. useEffect                 useEffect
+62. useEffect                 useEffect
+63. useEffect                 useEffect
+64. useContext                useContext
+65. useContext                useContext
+66. useContext                useContext
+67. useEffect                 useEffect
+68. useState                  useState
+69. useCallback               useCallback
+70. useSyncExternalStore      useSyncExternalStore
+71. useEffect                 useEffect
+72. useContext                useContext
+73. useContext                useContext
+74. useContext                useContext
+75. useEffect                 useEffect
+76. useState                  useState
+77. useCallback               useCallback
+78. useSyncExternalStore      useSyncExternalStore
+79. useEffect                 useEffect
+80. useContext                useContext
+81. useContext                useContext
+82. useContext                useContext
+83. useEffect                 useEffect
+84. useState                  useState
+85. useCallback               useCallback
+86. useSyncExternalStore      useSyncExternalStore
+87. useEffect                 useEffect
+88. useContext                useContext
+89. useContext                useContext
+90. useContext                useContext
+91. useEffect                 useEffect
+92. useState                  useState
+93. useCallback               useCallback
+94. useSyncExternalStore      useSyncExternalStore
+95. useEffect                 useEffect
+96. useContext                useContext
+97. useContext                useContext
+98. useContext                useContext
+99. useEffect                 useEffect
+100. useState                 useState
+101. useCallback              useCallback
+102. useSyncExternalStore     useSyncExternalStore
+103. useEffect                useEffect
+104. undefined                useContext
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at SuperAdminDashboard (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/pages/SuperAdminDashboard.tsx:73:48)
+    at Route (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:323:16)
+    at Switch (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:379:17)
+    at Router (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/App.tsx?v=r27U4HJnfCY0wwZKzBeV:44:42)
+    at Provider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O46BVKQA.js?v=2083b7eb:48:15)
+    at TooltipProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2083b7eb:59:5)
+    at QueryClientProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2083b7eb:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=2083b7eb:521
+error @ chunk-WERSD76P.js?v=2083b7eb:505
+warnOnHookMismatchInDev @ chunk-WERSD76P.js?v=2083b7eb:11495
+updateHookTypesDev @ chunk-WERSD76P.js?v=2083b7eb:11465
+useContext @ chunk-WERSD76P.js?v=2083b7eb:12697
+useContext @ chunk-3TFVT2CW.js?v=2083b7eb:1062
+useQueryClient @ @tanstack_react-query.js?v=2083b7eb:2795
+useMutation @ @tanstack_react-query.js?v=2083b7eb:3275
+SuperAdminDashboard @ SuperAdminDashboard.tsx:249
+renderWithHooks @ chunk-WERSD76P.js?v=2083b7eb:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2083b7eb:14582
+beginWork @ chunk-WERSD76P.js?v=2083b7eb:15924
+beginWork$1 @ chunk-WERSD76P.js?v=2083b7eb:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=2083b7eb:19198
+workLoopSync @ chunk-WERSD76P.js?v=2083b7eb:19137
+renderRootSync @ chunk-WERSD76P.js?v=2083b7eb:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+setData @ @tanstack_react-query.js?v=2083b7eb:696
+onSuccess @ @tanstack_react-query.js?v=2083b7eb:897
+resolve @ @tanstack_react-query.js?v=2083b7eb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+chunk-WERSD76P.js?v=2083b7eb:11678 Uncaught Error: Rendered more hooks than during the previous render.
+    at updateWorkInProgressHook (chunk-WERSD76P.js?v=2083b7eb:11678:21)
+    at updateReducer (chunk-WERSD76P.js?v=2083b7eb:11727:22)
+    at updateState (chunk-WERSD76P.js?v=2083b7eb:12021:18)
+    at Object.useState (chunk-WERSD76P.js?v=2083b7eb:12753:24)
+    at Object.useState (chunk-3TFVT2CW.js?v=2083b7eb:1066:29)
+    at useMutation (@tanstack_react-query.js?v=2083b7eb:3276:30)
+    at SuperAdminDashboard (SuperAdminDashboard.tsx:249:36)
+    at renderWithHooks (chunk-WERSD76P.js?v=2083b7eb:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2083b7eb:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2083b7eb:15924:22)
+updateWorkInProgressHook @ chunk-WERSD76P.js?v=2083b7eb:11678
+updateReducer @ chunk-WERSD76P.js?v=2083b7eb:11727
+updateState @ chunk-WERSD76P.js?v=2083b7eb:12021
+useState @ chunk-WERSD76P.js?v=2083b7eb:12753
+useState @ chunk-3TFVT2CW.js?v=2083b7eb:1066
+useMutation @ @tanstack_react-query.js?v=2083b7eb:3276
+SuperAdminDashboard @ SuperAdminDashboard.tsx:249
+renderWithHooks @ chunk-WERSD76P.js?v=2083b7eb:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2083b7eb:14582
+beginWork @ chunk-WERSD76P.js?v=2083b7eb:15924
+callCallback2 @ chunk-WERSD76P.js?v=2083b7eb:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2083b7eb:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2083b7eb:3733
+beginWork$1 @ chunk-WERSD76P.js?v=2083b7eb:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=2083b7eb:19198
+workLoopSync @ chunk-WERSD76P.js?v=2083b7eb:19137
+renderRootSync @ chunk-WERSD76P.js?v=2083b7eb:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+setData @ @tanstack_react-query.js?v=2083b7eb:696
+onSuccess @ @tanstack_react-query.js?v=2083b7eb:897
+resolve @ @tanstack_react-query.js?v=2083b7eb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+chunk-WERSD76P.js?v=2083b7eb:11678 Uncaught Error: Rendered more hooks than during the previous render.
+    at updateWorkInProgressHook (chunk-WERSD76P.js?v=2083b7eb:11678:21)
+    at updateReducer (chunk-WERSD76P.js?v=2083b7eb:11727:22)
+    at updateState (chunk-WERSD76P.js?v=2083b7eb:12021:18)
+    at Object.useState (chunk-WERSD76P.js?v=2083b7eb:12753:24)
+    at Object.useState (chunk-3TFVT2CW.js?v=2083b7eb:1066:29)
+    at useMutation (@tanstack_react-query.js?v=2083b7eb:3276:30)
+    at SuperAdminDashboard (SuperAdminDashboard.tsx:249:36)
+    at renderWithHooks (chunk-WERSD76P.js?v=2083b7eb:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2083b7eb:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2083b7eb:15924:22)
+updateWorkInProgressHook @ chunk-WERSD76P.js?v=2083b7eb:11678
+updateReducer @ chunk-WERSD76P.js?v=2083b7eb:11727
+updateState @ chunk-WERSD76P.js?v=2083b7eb:12021
+useState @ chunk-WERSD76P.js?v=2083b7eb:12753
+useState @ chunk-3TFVT2CW.js?v=2083b7eb:1066
+useMutation @ @tanstack_react-query.js?v=2083b7eb:3276
+SuperAdminDashboard @ SuperAdminDashboard.tsx:249
+renderWithHooks @ chunk-WERSD76P.js?v=2083b7eb:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2083b7eb:14582
+beginWork @ chunk-WERSD76P.js?v=2083b7eb:15924
+callCallback2 @ chunk-WERSD76P.js?v=2083b7eb:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2083b7eb:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2083b7eb:3733
+beginWork$1 @ chunk-WERSD76P.js?v=2083b7eb:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=2083b7eb:19198
+workLoopSync @ chunk-WERSD76P.js?v=2083b7eb:19137
+renderRootSync @ chunk-WERSD76P.js?v=2083b7eb:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=2083b7eb:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+setData @ @tanstack_react-query.js?v=2083b7eb:696
+onSuccess @ @tanstack_react-query.js?v=2083b7eb:897
+resolve @ @tanstack_react-query.js?v=2083b7eb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+chunk-WERSD76P.js?v=2083b7eb:14032 The above error occurred in the <SuperAdminDashboard> component:
+
+    at SuperAdminDashboard (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/pages/SuperAdminDashboard.tsx:73:48)
+    at Route (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:323:16)
+    at Switch (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2083b7eb:379:17)
+    at Router (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/src/App.tsx?v=r27U4HJnfCY0wwZKzBeV:44:42)
+    at Provider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O46BVKQA.js?v=2083b7eb:48:15)
+    at TooltipProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2083b7eb:59:5)
+    at QueryClientProvider (https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2083b7eb:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=2083b7eb:14032
+update.callback @ chunk-WERSD76P.js?v=2083b7eb:14052
+callCallback @ chunk-WERSD76P.js?v=2083b7eb:11248
+commitUpdateQueue @ chunk-WERSD76P.js?v=2083b7eb:11265
+commitLayoutEffectOnFiber @ chunk-WERSD76P.js?v=2083b7eb:17093
+commitLayoutMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:17980
+commitLayoutEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:17969
+commitLayoutEffects @ chunk-WERSD76P.js?v=2083b7eb:17920
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19353
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+setData @ @tanstack_react-query.js?v=2083b7eb:696
+onSuccess @ @tanstack_react-query.js?v=2083b7eb:897
+resolve @ @tanstack_react-query.js?v=2083b7eb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+chunk-WERSD76P.js?v=2083b7eb:11678 Uncaught Error: Rendered more hooks than during the previous render.
+    at updateWorkInProgressHook (chunk-WERSD76P.js?v=2083b7eb:11678:21)
+    at updateReducer (chunk-WERSD76P.js?v=2083b7eb:11727:22)
+    at updateState (chunk-WERSD76P.js?v=2083b7eb:12021:18)
+    at Object.useState (chunk-WERSD76P.js?v=2083b7eb:12753:24)
+    at Object.useState (chunk-3TFVT2CW.js?v=2083b7eb:1066:29)
+    at useMutation (@tanstack_react-query.js?v=2083b7eb:3276:30)
+    at SuperAdminDashboard (SuperAdminDashboard.tsx:249:36)
+    at renderWithHooks (chunk-WERSD76P.js?v=2083b7eb:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2083b7eb:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2083b7eb:15924:22)
+updateWorkInProgressHook @ chunk-WERSD76P.js?v=2083b7eb:11678
+updateReducer @ chunk-WERSD76P.js?v=2083b7eb:11727
+updateState @ chunk-WERSD76P.js?v=2083b7eb:12021
+useState @ chunk-WERSD76P.js?v=2083b7eb:12753
+useState @ chunk-3TFVT2CW.js?v=2083b7eb:1066
+useMutation @ @tanstack_react-query.js?v=2083b7eb:3276
+SuperAdminDashboard @ SuperAdminDashboard.tsx:249
+renderWithHooks @ chunk-WERSD76P.js?v=2083b7eb:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2083b7eb:14582
+beginWork @ chunk-WERSD76P.js?v=2083b7eb:15924
+beginWork$1 @ chunk-WERSD76P.js?v=2083b7eb:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=2083b7eb:19198
+workLoopSync @ chunk-WERSD76P.js?v=2083b7eb:19137
+renderRootSync @ chunk-WERSD76P.js?v=2083b7eb:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=2083b7eb:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:18627
+setTimeout
+scheduleFn @ @tanstack_react-query.js?v=2083b7eb:555
+flush @ @tanstack_react-query.js?v=2083b7eb:569
+batch @ @tanstack_react-query.js?v=2083b7eb:587
+dispatch_fn @ @tanstack_react-query.js?v=2083b7eb:996
+setData @ @tanstack_react-query.js?v=2083b7eb:696
+onSuccess @ @tanstack_react-query.js?v=2083b7eb:897
+resolve @ @tanstack_react-query.js?v=2083b7eb:456
+Promise.then
+run @ @tanstack_react-query.js?v=2083b7eb:498
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
+queryClient.ts:32  GET https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=2083b7eb:840
+run @ @tanstack_react-query.js?v=2083b7eb:494
+start @ @tanstack_react-query.js?v=2083b7eb:536
+fetch @ @tanstack_react-query.js?v=2083b7eb:926
+executeFetch_fn @ @tanstack_react-query.js?v=2083b7eb:2211
+onSubscribe @ @tanstack_react-query.js?v=2083b7eb:1898
+subscribe @ @tanstack_react-query.js?v=2083b7eb:24
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2083b7eb:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2083b7eb:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2083b7eb:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2083b7eb:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2083b7eb:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2083b7eb:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2083b7eb:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2083b7eb:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2083b7eb:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2083b7eb:19432
+commitRoot @ chunk-WERSD76P.js?v=2083b7eb:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2083b7eb:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2083b7eb:18718
+workLoop @ chunk-WERSD76P.js?v=2083b7eb:197
+flushWork @ chunk-WERSD76P.js?v=2083b7eb:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2083b7eb:384
