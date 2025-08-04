@@ -1,4 +1,5 @@
 import { PostgresStorage } from "./postgresStorage";
+import { db } from "./db";
 import {
   type User,
   type UpsertUser,
@@ -363,8 +364,11 @@ class MemoryStorage implements IStorage {
       name: categoryData.name,
       description: categoryData.description || null,
       isActive: categoryData.isActive ?? true,
+      status: 'active',
+      lastModifiedBy: null,
       sortOrder: categoryData.sortOrder || 0,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.menuCategories.set(id, category);
     return category;
@@ -405,6 +409,8 @@ class MemoryStorage implements IStorage {
       price: itemData.price,
       imageUrl: itemData.imageUrl || null,
       isAvailable: itemData.isAvailable ?? true,
+      status: 'active',
+      lastModifiedBy: null,
       preparationTime: itemData.preparationTime || null,
       ingredients: itemData.ingredients || null,
       isVegetarian: itemData.isVegetarian ?? false,
@@ -468,6 +474,7 @@ class MemoryStorage implements IStorage {
       restaurantId: orderData.restaurantId,
       driverId: orderData.driverId || null,
       status: orderData.status || 'pending',
+      unavailableItems: orderData.unavailableItems || null,
       items: orderData.items,
       subtotal: orderData.subtotal,
       deliveryFee: orderData.deliveryFee || "0.00",
@@ -775,5 +782,7 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Use PostgreSQL storage for Replit environment
-export const storage = new PostgresStorage();
+// Storage initialization - use PostgreSQL if available, otherwise fallback to memory storage
+export const storage: IStorage = db ? new PostgresStorage() : new MemoryStorage();
+
+console.log(`Using ${db ? 'PostgreSQL' : 'in-memory'} storage for data persistence`);

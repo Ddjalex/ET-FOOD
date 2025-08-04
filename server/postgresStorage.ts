@@ -1,4 +1,9 @@
 import { db } from "./db";
+
+// PostgreSQL storage is disabled for now since DATABASE_URL is not set
+if (!db) {
+  console.log('PostgreSQL database not available, skipping PostgreSQL storage initialization');
+}
 import { IStorage } from './storage';
 import { eq, and, sql } from 'drizzle-orm';
 import {
@@ -29,6 +34,12 @@ import {
 } from "@shared/schema";
 
 export class PostgresStorage implements IStorage {
+  
+  constructor() {
+    if (!db) {
+      throw new Error('Database connection not available');
+    }
+  }
   
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
