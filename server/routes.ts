@@ -9,6 +9,7 @@ import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
+import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 import multer from "multer";
 
@@ -36,29 +37,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-
-  wss.on('connection', (ws) => {
-    console.log('Client connected to WebSocket');
-
-    ws.on('message', (message) => {
-      console.log('Received:', message.toString());
-    });
-
-    ws.on('close', () => {
-      console.log('Client disconnected from WebSocket');
-    });
-  });
-
-  // Broadcast function for real-time updates
-  const broadcast = (data: any) => {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(data));
-      }
-    });
-  };
+  // Initialize Socket.IO for real-time updates
+  const io = initWebSocket(httpServer);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -1231,7 +1211,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedOrder = await storage.updateOrderStatus(orderId, status);
-      broadcast({ type: 'order_status_updated', data: updatedOrder });
       
       res.json(updatedOrder);
     } catch (error) {
@@ -1259,6 +1238,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching restaurant staff:', error);
       res.status(500).json({ message: 'Failed to fetch staff' });
+    }
+  });
+
+  // Restaurant Admin: Get pending menu approvals
+  app.get('/api/restaurant_admin/:restaurantId/menu/pending-approvals', requireSession, requireRestaurantAdmin, async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      const pendingItems = await storage.getMenuItemsByStatus(restaurantId, 'pending_approval');
+      const pendingCategories = await storage.getMenuCategoriesByStatus(restaurantId, 'pending_approval');
+
+      res.json({
+        items: pendingItems,
+        categories: pendingCategories
+      });
+    } catch (error) {
+      console.error('Error fetching pending approvals:', error);
+      res.status(500).json({ message: 'Failed to fetch pending approvals' });
+    }
+  });
+
+  // Restaurant Admin: Approve menu item
+  app.put('/api/restaurant_admin/:restaurantId/menu/items/:itemId/approve', requireSession, requireRestaurantAdmin, async (req, res) => {
+    try {
+      const { restaurantId, itemId } = req.params;
+
+      const item = await storage.updateMenuItem(itemId, {
+        status: 'active'
+      });
+
+      // Broadcast menu update to all customers
+      const menu = await storage.getRestaurantMenu(restaurantId);
+      broadcastMenuUpdate(restaurantId, menu);
+
+      // Notify kitchen staff about approval
+      notifyKitchenStaff(restaurantId, 'menu_item_approved', {
+        item
+      });
+
+      res.json(item);
+    } catch (error) {
+      console.error('Error approving menu item:', error);
+      res.status(500).json({ message: 'Failed to approve menu item' });
+    }
+  });
+
+  // Restaurant Admin: Reject menu item
+  app.put('/api/restaurant_admin/:restaurantId/menu/items/:itemId/reject', requireSession, requireRestaurantAdmin, async (req, res) => {
+    try {
+      const { restaurantId, itemId } = req.params;
+
+      const item = await storage.updateMenuItem(itemId, {
+        status: 'rejected'
+      });
+
+      // Notify kitchen staff about rejection
+      notifyKitchenStaff(restaurantId, 'menu_item_rejected', {
+        item
+      });
+
+      res.json(item);
+    } catch (error) {
+      console.error('Error rejecting menu item:', error);
+      res.status(500).json({ message: 'Failed to reject menu item' });
+    }
+  });
+
+  // ===============================
+  // KITCHEN STAFF ROUTES
+  // ===============================
+
+  // Kitchen Staff: Create menu item (requires approval)
+  app.post('/api/kitchen/:restaurantId/menu/items', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { restaurantId } = req.params;
+      const { categoryId, name, description, price, isAvailable, preparationTime, ingredients, isVegetarian, isVegan, spicyLevel } = req.body;
+
+      if (!categoryId || !name || !price) {
+        return res.status(400).json({ message: 'Category ID, name, and price are required' });
+      }
+
+      const menuItem = await storage.createMenuItem({
+        restaurantId,
+        categoryId,
+        name,
+        description: description || null,
+        price: price.toString(),
+        imageUrl: null,
+        isAvailable: isAvailable !== false,
+        preparationTime: preparationTime || null,
+        ingredients: ingredients || [],
+        isVegetarian: isVegetarian || false,
+        isVegan: isVegan || false,
+        spicyLevel: spicyLevel || 0
+      });
+
+      res.status(201).json(menuItem);
+    } catch (error) {
+      console.error('Error creating menu item:', error);
+      res.status(500).json({ message: 'Failed to create menu item' });
+    }
+  });
+
+  // Kitchen Staff: Quick availability toggle (no approval needed)
+  app.patch('/api/kitchen/:restaurantId/menu/items/:itemId/availability', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const { isAvailable } = req.body;
+
+      const item = await storage.updateMenuItem(itemId, { isAvailable });
+      res.json(item);
+    } catch (error) {
+      console.error('Error updating item availability:', error);
+      res.status(500).json({ message: 'Failed to update availability' });
+    }
+  });
+
+  // Kitchen Staff: Check order item availability
+  app.put('/api/kitchen/:restaurantId/orders/:orderId/check-availability', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const { restaurantId, orderId } = req.params;
+      const { unavailableItems } = req.body;
+
+      let status = 'preparing';
+      
+      if (unavailableItems && unavailableItems.length > 0) {
+        status = 'awaiting_admin_intervention';
+      }
+
+      const order = await storage.updateOrder(orderId, {
+        status,
+        unavailableItems: unavailableItems || null
+      });
+
+      res.json(order);
+    } catch (error) {
+      console.error('Error checking order availability:', error);
+      res.status(500).json({ message: 'Failed to check availability' });
+    }
+  });
+
+  // Kitchen Staff: Start preparing order
+  app.put('/api/kitchen/:restaurantId/orders/:orderId/start-prepare', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      const order = await storage.updateOrder(orderId, {
+        status: 'in_preparation'
+      });
+
+      res.json(order);
+    } catch (error) {
+      console.error('Error starting order preparation:', error);
+      res.status(500).json({ message: 'Failed to start preparation' });
+    }
+  });
+
+  // Kitchen Staff: Mark order ready for pickup
+  app.put('/api/kitchen/:restaurantId/orders/:orderId/ready-for-pickup', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      const order = await storage.updateOrder(orderId, {
+        status: 'ready_for_pickup'
+      });
+
+      res.json(order);
+    } catch (error) {
+      console.error('Error marking order ready:', error);
+      res.status(500).json({ message: 'Failed to mark order ready' });
     }
   });
 

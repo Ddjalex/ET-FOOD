@@ -757,4 +757,70 @@ export class PostgresStorage implements IStorage {
       throw error;
     }
   }
+
+  // Kitchen Staff specific methods
+  async getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]> {
+    try {
+      return await db.select().from(menuItems)
+        .where(and(eq(menuItems.restaurantId, restaurantId), eq(menuItems.status, status)));
+    } catch (error) {
+      console.error('Error getting menu items by status:', error);
+      return [];
+    }
+  }
+
+  async getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]> {
+    try {
+      return await db.select().from(menuCategories)
+        .where(and(eq(menuCategories.restaurantId, restaurantId), eq(menuCategories.status, status)));
+    } catch (error) {
+      console.error('Error getting menu categories by status:', error);
+      return [];
+    }
+  }
+
+  async getActiveRestaurantMenu(restaurantId: string): Promise<any> {
+    try {
+      const categories = await db.select().from(menuCategories)
+        .where(and(
+          eq(menuCategories.restaurantId, restaurantId),
+          eq(menuCategories.status, 'active'),
+          eq(menuCategories.isActive, true)
+        ));
+
+      const categoriesWithItems = [];
+      
+      for (const category of categories) {
+        const items = await db.select().from(menuItems)
+          .where(and(
+            eq(menuItems.categoryId, category.id),
+            eq(menuItems.status, 'active'),
+            eq(menuItems.isAvailable, true)
+          ));
+        
+        categoriesWithItems.push({
+          ...category,
+          items: items
+        });
+      }
+
+      return categoriesWithItems;
+    } catch (error) {
+      console.error('Error getting active restaurant menu:', error);
+      return [];
+    }
+  }
+
+  async updateOrder(orderId: string, updates: any): Promise<Order> {
+    try {
+      const result = await db.update(orders)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(orders.id, orderId))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error updating order:', error);
+      throw error;
+    }
+  }
 }

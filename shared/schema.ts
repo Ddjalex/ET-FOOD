@@ -78,6 +78,10 @@ export const menuCategories = pgTable("menu_categories", {
   name: varchar("name").notNull(),
   description: text("description"),
   isActive: boolean("is_active").default(true),
+  status: varchar("status", { 
+    enum: ['active', 'pending_approval', 'rejected', 'archived'] 
+  }).default('active'),
+  lastModifiedBy: varchar("last_modified_by"), // User ID who made the last change
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -93,6 +97,10 @@ export const menuItems = pgTable("menu_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: varchar("image_url"),
   isAvailable: boolean("is_available").default(true),
+  status: varchar("status", { 
+    enum: ['active', 'pending_approval', 'rejected', 'archived'] 
+  }).default('active'),
+  lastModifiedBy: varchar("last_modified_by"), // User ID who made the last change
   preparationTime: integer("preparation_time"), // in minutes
   ingredients: text("ingredients").array(),
   isVegetarian: boolean("is_vegetarian").default(false),
@@ -110,8 +118,9 @@ export const orders = pgTable("orders", {
   restaurantId: varchar("restaurant_id").notNull(),
   driverId: varchar("driver_id"),
   status: varchar("status", { 
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'picked_up', 'delivered', 'cancelled'] 
+    enum: ['pending', 'confirmed', 'preparing', 'in_preparation', 'ready_for_pickup', 'assigned', 'picked_up', 'delivered', 'cancelled', 'awaiting_admin_intervention'] 
   }).default('pending'),
+  unavailableItems: jsonb("unavailable_items"), // Items marked as unavailable for this order
   items: jsonb("items").notNull(), // Array of order items
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).default("0.00"),

@@ -8,7 +8,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import SuperadminDashboard from "@/pages/SuperAdminDashboard";
 import RestaurantDashboard from "@/pages/RestaurantDashboard";
-import KitchenDashboard from "@/pages/KitchenDashboard";
+import { KitchenDashboard } from "@/pages/KitchenDashboard";
 import Restaurants from "@/pages/Restaurants";
 import CreateRestaurant from "@/pages/CreateRestaurant";
 import Drivers from "@/pages/Drivers";

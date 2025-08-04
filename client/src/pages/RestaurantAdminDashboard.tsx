@@ -49,6 +49,8 @@ interface MenuCategory {
   name: string;
   description?: string;
   isActive: boolean;
+  status?: 'active' | 'pending_approval' | 'rejected';
+  sortOrder?: number;
   items?: MenuItem[];
 }
 
@@ -58,7 +60,10 @@ interface MenuItem {
   name: string;
   description?: string;
   price: string;
+  imageUrl?: string;
   isAvailable: boolean;
+  status?: 'active' | 'pending_approval' | 'rejected';
+  lastModifiedBy?: string;
   preparationTime?: number;
   ingredients: string[];
   isVegetarian: boolean;
@@ -133,6 +138,12 @@ function RestaurantAdminDashboardContent() {
 
   // Get user's restaurant ID
   const restaurantId = (user as any)?.restaurantId;
+
+  // Get pending approvals
+  const { data: pendingApprovals = { items: [], categories: [] }, isLoading: approvalsLoading } = useQuery({
+    queryKey: ['/api/restaurant_admin', restaurantId, 'menu', 'pending-approvals'],
+    enabled: !!restaurantId && selectedTab === 'approvals',
+  });
 
   // Forms
   const categoryForm = useForm<MenuCategoryFormData>({
@@ -299,6 +310,37 @@ function RestaurantAdminDashboardContent() {
     }
   });
 
+  // Approval mutations
+  const approveItemMutation = useMutation({
+    mutationFn: (itemId: string) =>
+      apiRequest(`/api/restaurant_admin/${restaurantId}/menu/items/${itemId}/approve`, {
+        method: 'PUT'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurant_admin', restaurantId, 'menu', 'pending-approvals'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
+      toast({ title: 'Success', description: 'Menu item approved successfully' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const rejectItemMutation = useMutation({
+    mutationFn: (itemId: string) =>
+      apiRequest(`/api/restaurant_admin/${restaurantId}/menu/items/${itemId}/reject`, {
+        method: 'PUT'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurant_admin', restaurantId, 'menu', 'pending-approvals'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
+      toast({ title: 'Success', description: 'Menu item rejected' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  });
+
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: string }) =>
       fetch(`/api/restaurants/${restaurantId}/orders/${orderId}/status`, {
@@ -437,6 +479,7 @@ function RestaurantAdminDashboardContent() {
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'menu', label: 'Menu Management' },
+          { id: 'approvals', label: 'Pending Approvals', badge: (pendingApprovals.items?.length || 0) + (pendingApprovals.categories?.length || 0) },
           { id: 'orders', label: 'Orders' },
           { id: 'staff', label: 'Staff Management' }
         ].map((tab) => (
@@ -450,6 +493,11 @@ function RestaurantAdminDashboardContent() {
             }`}
           >
             {tab.label}
+            {tab.badge && tab.badge > 0 && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                {tab.badge}
+              </Badge>
+            )}
           </button>
         ))}
       </div>
@@ -917,6 +965,143 @@ function RestaurantAdminDashboardContent() {
               </Card>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Pending Approvals Tab */}
+      {selectedTab === 'approvals' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Pending Approvals</h2>
+            <p className="text-muted-foreground">Review kitchen staff menu changes</p>
+          </div>
+
+          {approvalsLoading ? (
+            <div className="text-center py-8">Loading pending approvals...</div>
+          ) : (
+            <div className="space-y-6">
+              {/* Pending Menu Items */}
+              {pendingApprovals.items && pendingApprovals.items.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pending Menu Items</CardTitle>
+                    <CardDescription>Menu items created or modified by kitchen staff requiring your approval</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pendingApprovals.items.map((item: MenuItem) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">{item.name}</h4>
+                              <Badge variant="secondary">Pending Approval</Badge>
+                              {item.isVegetarian && <Badge variant="outline" className="text-xs">Vegetarian</Badge>}
+                              {item.isVegan && <Badge variant="outline" className="text-xs">Vegan</Badge>}
+                              {item.spicyLevel > 0 && <Badge variant="outline" className="text-xs">🌶️ {item.spicyLevel}</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="font-semibold">{item.price} ETB</span>
+                              {item.preparationTime && (
+                                <span className="text-xs text-muted-foreground flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {item.preparationTime}min
+                                </span>
+                              )}
+                              {item.lastModifiedBy && (
+                                <span className="text-xs text-muted-foreground">
+                                  Modified by Kitchen Staff
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => approveItemMutation.mutate(item.id)}
+                              disabled={approveItemMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => rejectItemMutation.mutate(item.id)}
+                              disabled={rejectItemMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Pending Categories */}
+              {pendingApprovals.categories && pendingApprovals.categories.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pending Categories</CardTitle>
+                    <CardDescription>Menu categories created by kitchen staff requiring your approval</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pendingApprovals.categories.map((category: MenuCategory) => (
+                        <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">{category.name}</h4>
+                              <Badge variant="secondary">Pending Approval</Badge>
+                            </div>
+                            {category.description && (
+                              <p className="text-sm text-muted-foreground">{category.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* No Pending Approvals */}
+              {(!pendingApprovals.items || pendingApprovals.items.length === 0) && 
+               (!pendingApprovals.categories || pendingApprovals.categories.length === 0) && (
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center">
+                      <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-4" />
+                      <h3 className="text-lg font-medium mb-2">All caught up!</h3>
+                      <p className="text-muted-foreground">
+                        No pending approvals from kitchen staff at the moment.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       )}
 

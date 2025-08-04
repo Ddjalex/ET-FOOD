@@ -1,0 +1,160 @@
+ Kitchen Staff Workflow with Restaurant Admin Approval & Real-time Customer Updates
+Objective: Implement the full workflow for Kitchen Staff managing orders and menu items via the /kitchen dashboard, including a critical approval step by the Restaurant Admin for menu changes and real-time updates to the Customer Bot.
+
+Key Requirements & Workflow Breakdown:
+
+Kitchen Staff Dashboard (/kitchen route, kitchen_staff role):
+
+Menu Management (with Pending Changes):
+
+Adding/Editing Items & Categories: Kitchen staff can add new menu items and categories, and edit existing ones (name, description, price, image).
+
+"Pending Approval" Status:
+
+When a kitchen staff member makes a change (adds, edits, or deletes an item/category), it does not go live immediately.
+
+Instead, these changes are marked as status: 'pending_approval' in the database.
+
+The kitchen staff dashboard should clearly show which items/categories have pending changes. They cannot be visible to customers or other staff until approved.
+
+Availability Toggle: Kitchen staff can still quickly toggle the isAvailable status of existing, approved menu items. This specific toggle should update in real-time on the Customer Bot without restaurant_admin approval, as it reflects immediate stock.
+
+Customer Order Queue (Real-time):
+
+New Orders: Display incoming orders in real-time (via WebSockets), showing orderId, customerName, items with quantities, special instructions, and time since ordered.
+
+Availability Check:
+
+For each new order, a prominent "Check Availability" button/action.
+
+When clicked, a modal or expanded view appears, listing each item in the order.
+
+For each item, there's a button/toggle: "Available" / "Not Available".
+
+If "Not Available" is selected for any item:
+
+The system records which specific items are unavailable for that order.
+
+A notification is immediately sent to the Restaurant Admin Dashboard (restaurant_admin).
+
+The order status might temporarily change to awaiting_admin_intervention.
+
+If all items are "Available": The order status automatically transitions to preparing.
+
+"Start Prepare" Button: (For orders with preparing status) Changes the order status to in_preparation. A timer should start.
+
+"Ready for Pickup" Button: (For orders with in_preparation status) Changes the order status to ready_for_pickup. This should trigger the driver assignment process (as per previous prompt).
+
+Restaurant Admin Dashboard (/admin route, restaurant_admin role):
+
+Menu Approval Panel:
+
+A dedicated section/tab clearly listing all menu items/categories with status: 'pending_approval'.
+
+Each entry should show the proposed change (e.g., "New Item: Pizza Margherita," "Edit: Burger price from 100 to 120," "Delete: Soda").
+
+Action Buttons: "Approve Change" and "Reject Change" for each pending modification.
+
+Approval Logic:
+
+Approve: Updates the menu item/category status to active (or removes it if it was a delete request). This change is then immediately pushed to the Customer Bot's Mini Web App.
+
+Reject: Deletes the pending change or reverts to the previous state, notifying the Kitchen Staff via their dashboard.
+
+Order Intervention/Monitoring:
+
+Receive real-time notifications when a Kitchen Staff marks an item as "Not Available" for an order.
+
+The Restaurant Admin can then:
+
+Contact the customer (via a tool/link provided in the dashboard).
+
+Offer alternatives or issue a partial refund (requires further development but the foundation should allow for this).
+
+Update the order status or modify the order items based on customer communication.
+
+Customer Bot (Telegram Mini Web App):
+
+Real-time Menu Updates: The Customer Bot's Mini Web App must dynamically fetch and display the approved menu items.
+
+When a restaurant_admin approves a menu change, a WebSocket event or a mechanism that triggers a re-fetch of the menu data should update the menu in the customer's Mini Web App immediately. This means the customer sees new items, updated prices, or removed items as soon as they are approved.
+
+Order Status Notifications:
+
+Receive real-time updates on order status from the backend (e.g., "Your order is being checked for availability," "Your order is now being prepared," "Your order is ready for pickup!").
+
+Display any notifications regarding unavailable items from their order, along with options to contact the restaurant or modify the order (future feature, but the API should support it).
+
+Backend API & Logic (Node.js/Express.js, MongoDB, Socket.IO):
+
+Updated MenuItem Schema:
+
+Add a status field (e.g., enum: ['active', 'pending_approval', 'rejected', 'archived'], default: active). New items from kitchen staff will initially be pending_approval.
+
+Add a pendingChanges field (e.g., an array of objects) if you want to track multiple pending modifications to an item rather than just the latest. (Start simple with just a status field for pending approval of the current state).
+
+Add lastModifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } to track who made the last change.
+
+New/Modified API Endpoints:
+
+Kitchen Staff Menu Modification:
+
+POST /api/kitchen/:restaurantId/menu/items: (Kitchen staff role) Creates a new menu item with status: 'pending_approval'.
+
+PUT /api/kitchen/:restaurantId/menu/items/:itemId: (Kitchen staff role) Updates an existing menu item, setting its status to pending_approval if it was previously active.
+
+PATCH /api/kitchen/:restaurantId/menu/items/:itemId/availability: (Kitchen staff role) Toggles isAvailable field. This does not require approval and updates instantly.
+
+Restaurant Admin Menu Approval:
+
+GET /api/restaurant_admin/:restaurantId/menu/pending-approvals: (Restaurant admin role) Fetches all menu items/categories for their restaurant that have status: 'pending_approval'.
+
+PUT /api/restaurant_admin/:restaurantId/menu/items/:itemId/approve: (Restaurant admin role) Sets status to active.
+
+PUT /api/restaurant_admin/:restaurantId/menu/items/:itemId/reject: (Restaurant admin role) Sets status to rejected (or reverts to previous active version/deletes pending item).
+
+Order Status Updates (Kitchen Staff):
+
+PUT /api/kitchen/:restaurantId/orders/:orderId/check-availability: Updates order status based on availability check (e.g., to preparing or awaiting_admin_intervention).
+
+PUT /api/kitchen/:restaurantId/orders/:orderId/start-prepare: Updates order status to in_preparation.
+
+PUT /api/kitchen/:restaurantId/orders/:orderId/ready-for-pickup: Updates order status to ready_for_pickup.
+
+Customer Bot Menu Fetch:
+
+GET /api/customer/restaurants/:restaurantId/menu: This endpoint should only return menu items with status: 'active' and isAvailable: true.
+
+Real-time Communication (Socket.IO):
+
+restaurant_admin Notifications:
+
+When a kitchen staff submits a menu change (pending approval), emit a Socket.IO event to the relevant restaurant_admin dashboards.
+
+When kitchen staff marks an item "Not Available" for an order, emit an event to the restaurant_admin dashboard.
+
+customer_bot Menu Updates:
+
+When a restaurant_admin approves a menu item, emit a Socket.IO event (e.g., menu_updated) to all connected Customer Bots for that restaurant. The Customer Mini Web App listens for this event and re-fetches its menu.
+
+customer_bot Order Status Updates:
+
+Emit Socket.IO events for every significant order status change (e.g., order_status_updated).
+
+Final Output:
+
+The Replit AI Agent should provide the full, updated code for the Vite/React frontend, Node.js/Express.js backend, and MongoDB schemas that implement this workflow. It should demonstrate:
+
+Role-based UI rendering for kitchen_staff and restaurant_admin on the /admin dashboard.
+
+The menu management flow for kitchen staff with the pending_approval status.
+
+The menu approval interface for restaurant admins.
+
+Real-time menu updates pushed to the Customer Bot's Mini Web App upon approval.
+
+The order availability check process and notifications to the restaurant admin.
+
+All necessary API endpoints and robust authentication/authorization for each role.
+
+Socket.IO implementation for all real-time notifications mentioned.

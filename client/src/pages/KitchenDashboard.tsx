@@ -1,269 +1,469 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  ChefHat, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  Plus,
+  Edit,
+  Eye,
+  Timer,
+  Play,
+  Package
+} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
-import { Clock, CheckCircle, AlertCircle, LogOut, ChefHat } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
-interface AdminUser {
+// Types
+interface OrderItem {
   id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  restaurantId?: string;
+  name: string;
+  quantity: number;
+  price: number;
+  specialInstructions?: string;
 }
 
-export default function KitchenDashboard() {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [, setLocation] = useLocation();
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  customerName?: string;
+  items: OrderItem[];
+  status: string;
+  total: number;
+  createdAt: string;
+  customerNotes?: string;
+  unavailableItems?: string[];
+}
+
+interface MenuItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  isAvailable: boolean;
+  status: 'active' | 'pending_approval' | 'rejected';
+  preparationTime?: number;
+  isVegetarian: boolean;
+  isVegan: boolean;
+  spicyLevel: number;
+}
+
+interface MenuCategory {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  status: 'active' | 'pending_approval' | 'rejected';
+  items?: MenuItem[];
+}
+
+export function KitchenDashboard() {
+  const { user } = useAdminAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedTab, setSelectedTab] = useState('orders');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [availabilityCheck, setAvailabilityCheck] = useState<{[key: string]: boolean}>({});
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  // Get restaurant orders
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['/api/restaurants', user?.restaurantId, 'orders'],
+    enabled: !!user?.restaurantId,
+  });
 
-  const checkAuth = async () => {
-    try {
-      const response = await apiRequest('/api/admin/me');
-      if (response.ok) {
-        const userData = await response.json();
-        if (userData.role !== 'kitchen_staff') {
-          setLocation('/admin-login');
-          return;
-        }
-        setUser(userData);
-      } else {
-        setLocation('/admin-login');
-      }
-    } catch (error) {
-      setLocation('/admin-login');
+  // Get restaurant menu
+  const { data: menu = [], isLoading: menuLoading } = useQuery({
+    queryKey: ['/api/restaurants', user?.restaurantId, 'menu'],
+    enabled: !!user?.restaurantId && selectedTab === 'menu',
+  });
+
+  // Mutations for order management
+  const checkAvailabilityMutation = useMutation({
+    mutationFn: async ({ orderId, unavailableItems }: { orderId: string; unavailableItems: string[] }) => {
+      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/check-availability`, {
+        method: 'PUT',
+        body: { unavailableItems }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      toast({ title: 'Order availability updated' });
+      setSelectedOrder(null);
+      setAvailabilityCheck({});
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to update availability', description: error.message, variant: 'destructive' });
     }
+  });
+
+  const startPrepareMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/start-prepare`, {
+        method: 'PUT'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      toast({ title: 'Order preparation started' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to start preparation', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const readyForPickupMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/ready-for-pickup`, {
+        method: 'PUT'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      toast({ title: 'Order marked as ready for pickup' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to mark order ready', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // Mutation for availability toggle
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: async ({ itemId, isAvailable }: { itemId: string; isAvailable: boolean }) => {
+      return apiRequest(`/api/kitchen/${user?.restaurantId}/menu/items/${itemId}/availability`, {
+        method: 'PATCH',
+        body: { isAvailable }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'menu'] });
+      toast({ title: 'Item availability updated' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to update availability', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const handleCheckAvailability = (order: Order) => {
+    setSelectedOrder(order);
+    const initialCheck: {[key: string]: boolean} = {};
+    order.items.forEach(item => {
+      initialCheck[item.id] = true; // Default to available
+    });
+    setAvailabilityCheck(initialCheck);
   };
 
-  const handleLogout = async () => {
-    try {
-      await apiRequest('/api/admin/logout', { method: 'POST' });
-      setLocation('/admin-login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleSubmitAvailability = () => {
+    if (!selectedOrder) return;
+    
+    const unavailableItems = Object.entries(availabilityCheck)
+      .filter(([_, isAvailable]) => !isAvailable)
+      .map(([itemId]) => itemId);
+
+    checkAvailabilityMutation.mutate({
+      orderId: selectedOrder.id,
+      unavailableItems
+    });
   };
 
-  if (!user) {
-    return <div>Loading...</div>;
+  const getOrderStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { variant: 'secondary', label: 'Pending', icon: Clock },
+      confirmed: { variant: 'default', label: 'Confirmed', icon: CheckCircle },
+      preparing: { variant: 'default', label: 'Ready to Prepare', icon: ChefHat },
+      in_preparation: { variant: 'default', label: 'In Preparation', icon: Timer },
+      ready_for_pickup: { variant: 'default', label: 'Ready for Pickup', icon: Package },
+      awaiting_admin_intervention: { variant: 'destructive', label: 'Needs Admin', icon: AlertCircle },
+    } as const;
+
+    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'secondary', label: status, icon: Clock };
+    const Icon = config.icon;
+    
+    return (
+      <Badge variant={config.variant as any} className="flex items-center gap-1">
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const renderOrderCard = (order: Order) => (
+    <Card key={order.id} className="mb-4">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{order.orderNumber}</CardTitle>
+            <CardDescription>
+              {new Date(order.createdAt).toLocaleTimeString()} • ${order.total}
+            </CardDescription>
+          </div>
+          {getOrderStatusBadge(order.status)}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div>
+            <h4 className="font-medium mb-2">Items:</h4>
+            <ul className="space-y-1">
+              {order.items.map((item, index) => (
+                <li key={index} className="flex justify-between">
+                  <span>{item.quantity}x {item.name}</span>
+                  <span>${item.price}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          {order.customerNotes && (
+            <div>
+              <h4 className="font-medium mb-1">Customer Notes:</h4>
+              <p className="text-sm text-muted-foreground">{order.customerNotes}</p>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            {order.status === 'confirmed' && (
+              <Button
+                onClick={() => handleCheckAvailability(order)}
+                className="flex items-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                Check Availability
+              </Button>
+            )}
+            
+            {order.status === 'preparing' && (
+              <Button
+                onClick={() => startPrepareMutation.mutate(order.id)}
+                disabled={startPrepareMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Start Prepare
+              </Button>
+            )}
+            
+            {order.status === 'in_preparation' && (
+              <Button
+                onClick={() => readyForPickupMutation.mutate(order.id)}
+                disabled={readyForPickupMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Package className="w-4 h-4" />
+                Ready for Pickup
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (!user || user.role !== 'kitchen_staff') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card>
+          <CardContent className="p-6">
+            <p>Access denied. This page is only accessible to kitchen staff.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  // Mock orders data for demonstration
-  const orders = [
-    {
-      id: '1',
-      orderNumber: 'ORD-001',
-      customerName: 'John Doe',
-      items: [
-        { name: 'Margherita Pizza', quantity: 1 },
-        { name: 'Caesar Salad', quantity: 1 }
-      ],
-      status: 'pending',
-      estimatedTime: '15 min',
-      priority: 'normal'
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-002',
-      customerName: 'Jane Smith',
-      items: [
-        { name: 'Chicken Burger', quantity: 2 },
-        { name: 'French Fries', quantity: 2 }
-      ],
-      status: 'preparing',
-      estimatedTime: '8 min',
-      priority: 'high'
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-003',
-      customerName: 'Mike Johnson',
-      items: [
-        { name: 'Pasta Carbonara', quantity: 1 }
-      ],
-      status: 'ready',
-      estimatedTime: 'Ready',
-      priority: 'normal'
-    }
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'preparing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'ready': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <AlertCircle className="h-4 w-4" />;
-      case 'preparing': return <Clock className="h-4 w-4" />;
-      case 'ready': return <CheckCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    return priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
-           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <ChefHat className="h-6 w-6 text-orange-600 mr-2" />
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                BeU Delivery - Kitchen Dashboard
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Welcome, {user.firstName} {user.lastName}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
+          <p className="text-muted-foreground">Manage orders and menu items</p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-white p-1 rounded-lg border">
+            <button
+              onClick={() => setSelectedTab('orders')}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                selectedTab === 'orders'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Order Queue
+            </button>
+            <button
+              onClick={() => setSelectedTab('menu')}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                selectedTab === 'menu'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Menu Management
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Orders Tab */}
+        {selectedTab === 'orders' && (
+          <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <CardHeader>
+                <CardTitle>Incoming Orders</CardTitle>
+                <CardDescription>Real-time order queue for kitchen preparation</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">
-                  Waiting to start
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Preparing</CardTitle>
-                <Clock className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">
-                  In progress
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ready</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">
-                  Ready for pickup
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Prep Time</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">12m</div>
-                <p className="text-xs text-muted-foreground">
-                  This week
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Orders List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Orders</CardTitle>
-              <CardDescription>
-                Manage and track your kitchen orders
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-medium">{order.orderNumber}</h3>
-                        <Badge className={getStatusColor(order.status)}>
-                          {getStatusIcon(order.status)}
-                          <span className="ml-1 capitalize">{order.status}</span>
-                        </Badge>
-                        {order.priority === 'high' && (
-                          <Badge className={getPriorityColor(order.priority)}>
-                            High Priority
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        Customer: {order.customerName}
-                      </p>
-                      <div className="text-sm">
-                        <strong>Items:</strong>
-                        <ul className="list-disc list-inside mt-1">
-                          {order.items.map((item, index) => (
-                            <li key={index}>
-                              {item.quantity}x {item.name}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className="text-sm font-medium">{order.estimatedTime}</span>
-                      <div className="flex space-x-2">
-                        {order.status === 'pending' && (
-                          <Button size="sm" onClick={() => toast({ title: 'Order started', description: `Started preparing ${order.orderNumber}` })}>
-                            Start
-                          </Button>
-                        )}
-                        {order.status === 'preparing' && (
-                          <Button size="sm" variant="outline" onClick={() => toast({ title: 'Order ready', description: `${order.orderNumber} is ready for pickup` })}>
-                            Mark Ready
-                          </Button>
-                        )}
-                        {order.status === 'ready' && (
-                          <Button size="sm" variant="secondary" disabled>
-                            Awaiting Pickup
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                {ordersLoading ? (
+                  <div className="text-center py-8">Loading orders...</div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No orders in queue
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map(renderOrderCard)}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Menu Tab */}
+        {selectedTab === 'menu' && (
+          <div className="space-y-6">
+            {menuLoading ? (
+              <div className="text-center py-8">Loading menu...</div>
+            ) : (
+              menu.map((category: MenuCategory) => (
+                <Card key={category.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>{category.name}</CardTitle>
+                      {category.status === 'pending_approval' && (
+                        <Badge variant="secondary">Pending Approval</Badge>
+                      )}
+                    </div>
+                    {category.description && (
+                      <CardDescription>{category.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {category.items?.map((item: MenuItem) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">{item.name}</h4>
+                              {item.status === 'pending_approval' && (
+                                <Badge variant="secondary" className="text-xs">Pending</Badge>
+                              )}
+                              {item.isVegetarian && <Badge variant="outline" className="text-xs">Vegetarian</Badge>}
+                              {item.isVegan && <Badge variant="outline" className="text-xs">Vegan</Badge>}
+                              {item.spicyLevel > 0 && <Badge variant="outline" className="text-xs">🌶️ {item.spicyLevel}</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="font-semibold">${item.price}</span>
+                              {item.preparationTime && (
+                                <span className="text-xs text-muted-foreground flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {item.preparationTime}min
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant={item.isAvailable ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => toggleAvailabilityMutation.mutate({ 
+                                itemId: item.id, 
+                                isAvailable: !item.isAvailable 
+                              })}
+                              disabled={toggleAvailabilityMutation.isPending || item.status !== 'active'}
+                            >
+                              {item.isAvailable ? 'Available' : 'Unavailable'}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {(!category.items || category.items.length === 0) && (
+                        <p className="text-muted-foreground text-center py-4">No items in this category</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Availability Check Dialog */}
+        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Check Item Availability</DialogTitle>
+              <DialogDescription>
+                Mark which items are available for order {selectedOrder?.orderNumber}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedOrder?.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium">{item.quantity}x {item.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant={availabilityCheck[item.id] ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAvailabilityCheck(prev => ({ ...prev, [item.id]: true }))}
+                    >
+                      Available
+                    </Button>
+                    <Button
+                      variant={!availabilityCheck[item.id] ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => setAvailabilityCheck(prev => ({ ...prev, [item.id]: false }))}
+                    >
+                      Not Available
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmitAvailability}
+                  disabled={checkAvailabilityMutation.isPending}
+                >
+                  {checkAvailabilityMutation.isPending ? 'Submitting...' : 'Submit'}
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
