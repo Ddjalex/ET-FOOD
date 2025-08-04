@@ -700,15 +700,15 @@ class MemoryStorage implements IStorage {
     return true;
   }
 
-  async updateAdminPassword(adminId: string, newPassword: string): Promise<void> {
+  async updateAdminPassword(adminId: string, newHashedPassword: string): Promise<void> {
     const admin = this.users.get(adminId);
     if (!admin) {
       throw new Error('Admin not found');
     }
     
-    // In a real implementation, this would hash and store the new password
-    // For now, just log the action
-    console.log(`Password updated for admin: ${adminId}`);
+    // Update the password in memory
+    const updatedAdmin = { ...admin, password: newHashedPassword, updatedAt: new Date() };
+    this.users.set(adminId, updatedAdmin);
   }
 
   // Driver management methods

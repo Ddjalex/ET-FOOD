@@ -14,6 +14,8 @@ import CreateRestaurant from "@/pages/CreateRestaurant";
 import Drivers from "@/pages/Drivers";
 import Orders from "@/pages/Orders";
 import AdminLogin from "@/pages/AdminLogin";
+import SuperAdminLogin from "@/pages/SuperAdminLogin";
+import RestaurantAdminLogin from "@/pages/RestaurantAdminLogin";
 import RestaurantAdminDashboard from "@/pages/RestaurantAdminDashboard";
 import Customers from "@/pages/Customers";
 import Payments from "@/pages/Payments";
@@ -28,6 +30,8 @@ function Router() {
     <Switch>
       {/* Admin Login Routes - Always accessible */}
       <Route path="/admin-login" component={AdminLogin} />
+      <Route path="/superadmin-login" component={SuperAdminLogin} />
+      <Route path="/restaurant-admin-login" component={RestaurantAdminLogin} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/admin" component={RestaurantAdminDashboard} />
       <Route path="/kitchen" component={KitchenDashboard} />

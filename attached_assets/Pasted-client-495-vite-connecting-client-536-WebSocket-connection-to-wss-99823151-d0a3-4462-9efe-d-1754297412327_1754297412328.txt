@@ -1,0 +1,42 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/?token=GPZ3fpkzdoZ5' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=GPZ3fpkzdoZ5' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-WERSD76P.js?v=2083b7eb:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+/api/dashboard/stats:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+/api/superadmin/admins:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+/api/superadmin/drivers:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+/api/superadmin/restaurants:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/:1 [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​SuperAdminDashboard.tsx:​1208:​30" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" placeholder=​"Enter current password" name=​"currentPassword" value=​"ad">​flex
+99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/:1 [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​SuperAdminDashboard.tsx:​1240:​30" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" placeholder=​"Enter new password" name=​"newPassword" value>​flex
+99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/:1 [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​SuperAdminDashboard.tsx:​1271:​28" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" placeholder=​"Confirm new password" name=​"confirmPassword" id=​":​rq:​-form-item" aria-describedby=​":​rq:​-form-item-description" aria-invalid=​"false" value>​flex
+SuperAdminDashboard.tsx:338  POST https://99823151-d0a3-4462-9efe-dae747db45b5-00-aikz7yrwf8dv.picard.replit.dev/api/admin/change-password 401 (Unauthorized)
+mutationFn @ SuperAdminDashboard.tsx:338
+fn @ @tanstack_react-query.js?v=2083b7eb:1189
+run @ @tanstack_react-query.js?v=2083b7eb:494
+start @ @tanstack_react-query.js?v=2083b7eb:536
+execute @ @tanstack_react-query.js?v=2083b7eb:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=2083b7eb:2630
+(anonymous) @ @tanstack_react-query.js?v=2083b7eb:3295
+onChangePassword @ SuperAdminDashboard.tsx:465
+(anonymous) @ chunk-CXJMC5RA.js?v=2083b7eb:1465
+await in (anonymous)
+callCallback2 @ chunk-WERSD76P.js?v=2083b7eb:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2083b7eb:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2083b7eb:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=2083b7eb:3736
+executeDispatch @ chunk-WERSD76P.js?v=2083b7eb:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=2083b7eb:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=2083b7eb:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=2083b7eb:7051
+(anonymous) @ chunk-WERSD76P.js?v=2083b7eb:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=2083b7eb:18913
+batchedUpdates @ chunk-WERSD76P.js?v=2083b7eb:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=2083b7eb:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=2083b7eb:5478
+dispatchEvent @ chunk-WERSD76P.js?v=2083b7eb:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=2083b7eb:5449

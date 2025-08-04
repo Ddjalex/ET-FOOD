@@ -15,6 +15,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useLocation } from 'wouter';
 import DriversMap from '@/components/DriversMap';
 
 interface DashboardStats {
@@ -144,6 +146,8 @@ interface SystemSettings {
 }
 
 export default function SuperAdminDashboard() {
+  const { user, isLoading, isAuthenticated } = useAdminAuth();
+  const [, navigate] = useLocation();
   const [selectedTab, setSelectedTab] = useState('overview');
   const [isRestaurantDialogOpen, setIsRestaurantDialogOpen] = useState(false);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
@@ -223,6 +227,23 @@ export default function SuperAdminDashboard() {
   const { data: settings } = useQuery({
     queryKey: ['/api/settings'],
   });
+
+  // Auth check
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || user?.role !== 'superadmin') {
+    navigate('/superadmin-login');
+    return null;
+  }
 
   // Mutations
   const createRestaurantMutation = useMutation({
@@ -483,12 +504,34 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      navigate('/superadmin-login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force navigation anyway
+      navigate('/superadmin-login');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
           <p className="text-muted-foreground">Manage all restaurants, admins, and system operations</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-muted-foreground">
+            Welcome, {user?.firstName || 'Super Admin'}
+          </span>
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
       </div>
 

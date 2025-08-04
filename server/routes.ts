@@ -127,17 +127,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get('/api/admin/me', requireSession, (req, res) => {
-    const user = req.user as any;
-    res.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      restaurantId: user.restaurantId
-    });
+  // Get current admin user  
+  app.get('/api/admin/me', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error('Error getting user:', error);
+      res.status(500).json({ message: 'Failed to get user' });
+    }
   });
+
+  // Change password route  
+  app.post('/api/admin/change-password', requireSession, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const user = req.user as any;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Current password and new password are required' });
+      }
+
+      // Verify current password
+      if (!user.password) {
+        return res.status(400).json({ message: 'User has no password set' });
+      }
+
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Hash new password and update
+      const hashedNewPassword = await hashPassword(newPassword);
+      await storage.updateAdminPassword(user.id, hashedNewPassword);
+
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      res.status(500).json({ message: 'Failed to change password' });
+    }
+  });
+
+
 
   // Dashboard stats endpoint
   app.get('/api/dashboard/stats', requireSession, async (req, res) => {
