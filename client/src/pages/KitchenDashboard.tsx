@@ -211,66 +211,24 @@ export function KitchenDashboard() {
   // Type-safe user with proper typing
   const typedUser = user as any;
 
-  // Redirect to login if not authenticated
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return <KitchenLoginForm />;
-  }
-
-  // Check if user has kitchen staff role
-  if (typedUser.role !== 'kitchen_staff') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              Only kitchen staff can access this dashboard. You are currently logged in as: {typedUser.role}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600">
-              To access the kitchen dashboard, you need to log in with kitchen staff credentials.
-            </p>
-            <Button 
-              onClick={() => window.location.href = '/admin-login'}
-              className="w-full"
-            >
-              Switch to Kitchen Staff Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+  // Always call hooks first - never conditionally
   // Get restaurant orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'],
-    enabled: !!typedUser?.restaurantId,
+    enabled: !!typedUser?.restaurantId && isAuthenticated,
   });
 
   // Get restaurant menu
   const { data: menuData, isLoading: menuLoading } = useQuery({
     queryKey: ['/api/restaurants', typedUser?.restaurantId, 'menu'],
-    enabled: !!typedUser?.restaurantId && selectedTab === 'menu',
+    enabled: !!typedUser?.restaurantId && selectedTab === 'menu' && isAuthenticated,
   });
 
   // Type-safe menu data
   const menu = menuData as { categories: MenuCategory[], items: MenuItem[] } || { categories: [], items: [] };
   const typedOrders = orders as Order[];
 
-  // Mutations for order management
+  // Always call mutations (React hooks must be called in same order)
   const checkAvailabilityMutation = useMutation({
     mutationFn: async ({ orderId, unavailableItems }: { orderId: string; unavailableItems: string[] }) => {
       const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/orders/${orderId}/check-availability`, {
@@ -349,6 +307,49 @@ export function KitchenDashboard() {
       toast({ title: 'Failed to update availability', description: error.message, variant: 'destructive' });
     }
   });
+
+  // Conditional rendering AFTER all hooks are called
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return <KitchenLoginForm />;
+  }
+
+  // Check if user has kitchen staff role
+  if (typedUser.role !== 'kitchen_staff') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              Only kitchen staff can access this dashboard. You are currently logged in as: {typedUser.role}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              To access the kitchen dashboard, you need to log in with kitchen staff credentials.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/admin-login'}
+              className="w-full"
+            >
+              Switch to Kitchen Staff Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleCheckAvailability = (order: Order) => {
     setSelectedOrder(order);
@@ -464,36 +465,6 @@ export function KitchenDashboard() {
       </CardContent>
     </Card>
   );
-
-  // Check authentication - redirect to login if not authenticated
-  if (!user) {
-    window.location.href = '/admin-login';
-    return null;
-  }
-
-  // Allow kitchen staff and restaurant admins to access kitchen dashboard
-  if (!['kitchen_staff', 'restaurant_admin', 'superadmin'].includes(typedUser.role || '')) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <p>Access denied. This page is only accessible to kitchen staff and restaurant admins.</p>
-              <p className="text-sm text-muted-foreground">
-                Please contact your restaurant admin to get proper access credentials.
-              </p>
-              <Button 
-                onClick={() => window.location.href = '/admin-login'}
-                className="mt-4"
-              >
-                Go to Login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
