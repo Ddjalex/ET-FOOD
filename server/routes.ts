@@ -143,13 +143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/dashboard/stats', requireSession, async (req, res) => {
     try {
       const restaurants = await storage.getAllRestaurants();
-      const drivers = await storage.getAllDrivers();
-      const orders = await storage.getAllOrders();
+      const drivers = await storage.getDrivers();
+      const orders = await storage.getOrders();
       
       const activeRestaurants = restaurants.filter(r => r.isActive).length;
-      const activeDrivers = drivers.filter(d => d.status === 'active').length;
-      const pendingDrivers = drivers.filter(d => d.status === 'pending').length;
-      const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+      const activeDrivers = drivers.filter((d: any) => d.status === 'active').length;
+      const pendingDrivers = drivers.filter((d: any) => d.status === 'pending').length;
+      const totalRevenue = orders.reduce((sum: any, order: any) => sum + (order.totalAmount || 0), 0);
 
       res.json({
         totalRestaurants: restaurants.length,
@@ -267,6 +267,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Superadmin Routes
+  
+  // Get all restaurants for superadmin
+  app.get('/api/superadmin/restaurants', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const restaurants = await storage.getAllRestaurants();
+      res.json(restaurants);
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+      res.status(500).json({ message: 'Failed to fetch restaurants' });
+    }
+  });
+
+  // Create new restaurant
+  app.post('/api/superadmin/restaurants', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { name, address, phoneNumber, email, description, imageUrl } = req.body;
+
+      if (!name || !address || !phoneNumber) {
+        return res.status(400).json({ message: 'Name, address, and phone number are required' });
+      }
+
+      const restaurant = await storage.createRestaurant({
+        name,
+        address,
+        phoneNumber,
+        email: email || null,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        isActive: true,
+        isApproved: true
+      });
+
+      res.status(201).json({
+        message: 'Restaurant created successfully',
+        restaurant
+      });
+    } catch (error) {
+      console.error('Error creating restaurant:', error);
+      res.status(500).json({ message: 'Failed to create restaurant' });
+    }
+  });
+
+  // Get all admin users
+  app.get('/api/superadmin/admins', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const admins = await storage.getAllAdminUsers();
+      res.json(admins);
+    } catch (error) {
+      console.error('Error fetching admin users:', error);
+      res.status(500).json({ message: 'Failed to fetch admin users' });
+    }
+  });
+
+  // Create restaurant admin
+  app.post('/api/superadmin/admins', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { email, firstName, lastName, password, restaurantId } = req.body;
+
+      if (!email || !firstName || !lastName || !password || !restaurantId) {
+        return res.status(400).json({ message: 'All fields are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
+      // Create restaurant admin
+      const adminUser = await storage.createAdminUser({
+        email,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: UserRole.RESTAURANT_ADMIN,
+        restaurantId,
+        createdBy: (req.user as any).id,
+        isActive: true
+      });
+
+      res.status(201).json({
+        message: 'Restaurant admin created successfully',
+        user: {
+          id: adminUser.id,
+          email: adminUser.email,
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+          role: adminUser.role,
+          restaurantId: adminUser.restaurantId
+        }
+      });
+    } catch (error) {
+      console.error('Error creating restaurant admin:', error);
+      res.status(500).json({ message: 'Failed to create restaurant admin' });
+    }
+  });
+
   app.post('/api/superadmin/restaurant-admin', requireSession, requireSuperadmin, async (req, res) => {
     try {
       const { email, firstName, lastName, password, restaurantId } = req.body;

@@ -1,13 +1,45 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
-import { Plus, Users, Store, Truck, LogOut } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface DashboardStats {
+  totalRestaurants: number;
+  activeRestaurants: number;
+  totalDrivers: number;
+  activeDrivers: number;
+  pendingDrivers: number;
+  totalOrders: number;
+  revenue: number;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  address: string;
+  phoneNumber: string;
+  email?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  isApproved: boolean;
+  rating: string;
+  totalOrders: number;
+  createdAt: string;
+}
 
 interface AdminUser {
   id: string;
@@ -16,363 +48,608 @@ interface AdminUser {
   lastName: string;
   role: string;
   restaurantId?: string;
+  isActive: boolean;
+  createdAt: string;
+  restaurant?: {
+    name: string;
+  };
 }
 
+// Form schemas
+const restaurantFormSchema = z.object({
+  name: z.string().min(1, 'Restaurant name is required'),
+  address: z.string().min(1, 'Address is required'),
+  phoneNumber: z.string().min(1, 'Phone number is required'),
+  email: z.string().email().optional().or(z.literal('')),
+  description: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal(''))
+});
+
+const adminFormSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  restaurantId: z.string().min(1, 'Restaurant selection is required')
+});
+
+type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
+type AdminFormData = z.infer<typeof adminFormSchema>;
+
 export default function SuperAdminDashboard() {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [stats, setStats] = useState({
-    totalRestaurants: 0,
-    activeRestaurants: 0,
-    totalDrivers: 0,
-    activeDrivers: 0,
-    pendingDrivers: 0,
-    totalOrders: 0,
-    revenue: 0
-  });
-  const [formData, setFormData] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    password: '',
-    restaurantId: ''
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [, setLocation] = useLocation();
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [isRestaurantDialogOpen, setIsRestaurantDialogOpen] = useState(false);
+  const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    checkAuth();
-    loadDashboardStats();
-  }, []);
-
-  const loadDashboardStats = async () => {
-    try {
-      const response = await fetch('/api/dashboard/stats', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
+  // Forms
+  const restaurantForm = useForm<RestaurantFormData>({
+    resolver: zodResolver(restaurantFormSchema),
+    defaultValues: {
+      name: '',
+      address: '',
+      phoneNumber: '',
+      email: '',
+      description: '',
+      imageUrl: ''
     }
-  };
+  });
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/admin/me', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        if (userData.role !== 'superadmin') {
-          setLocation('/admin-login');
-          return;
-        }
-        setUser(userData);
-      } else {
-        setLocation('/admin-login');
-      }
-    } catch (error) {
-      setLocation('/admin-login');
+  const adminForm = useForm<AdminFormData>({
+    resolver: zodResolver(adminFormSchema),
+    defaultValues: {
+      email: '',
+      firstName: '',
+      lastName: '',
+      password: '',
+      restaurantId: ''
     }
-  };
+  });
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/logout', { 
-        method: 'POST',
-        credentials: 'include'
-      });
-      setLocation('/admin-login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // Queries
+  const { data: stats } = useQuery<DashboardStats>({
+    queryKey: ['/api/dashboard/stats'],
+  });
 
-  const handleCreateRestaurantAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const { data: restaurants = [] } = useQuery<Restaurant[]>({
+    queryKey: ['/api/superadmin/restaurants'],
+  });
 
-    try {
-      const response = await fetch('/api/superadmin/restaurant-admin', {
+  const { data: admins = [] } = useQuery<AdminUser[]>({
+    queryKey: ['/api/superadmin/admins'],
+  });
+
+  // Mutations
+  const createRestaurantMutation = useMutation({
+    mutationFn: (data: RestaurantFormData) => 
+      fetch('/api/superadmin/restaurants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to create restaurant');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      setIsRestaurantDialogOpen(false);
+      restaurantForm.reset();
+      toast({
+        title: 'Success',
+        description: 'Restaurant created successfully'
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Restaurant admin created successfully',
-        });
-        setIsCreateDialogOpen(false);
-        setFormData({
-          email: '',
-          firstName: '',
-          lastName: '',
-          password: '',
-          restaurantId: ''
-        });
-        loadDashboardStats(); // Refresh stats after creating admin
-      } else {
-        toast({
-          title: 'Error',
-          description: data.message || 'Failed to create restaurant admin',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
+    },
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
+        description: error.message || 'Failed to create restaurant',
+        variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
+  });
+
+  const createAdminMutation = useMutation({
+    mutationFn: (data: AdminFormData) => 
+      fetch('/api/superadmin/admins', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to create admin');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/admins'] });
+      setIsAdminDialogOpen(false);
+      adminForm.reset();
+      toast({
+        title: 'Success',
+        description: 'Restaurant admin created successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create admin',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const onCreateRestaurant = (data: RestaurantFormData) => {
+    createRestaurantMutation.mutate(data);
   };
 
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  const onCreateAdmin = (data: AdminFormData) => {
+    createAdminMutation.mutate(data);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                BeU Delivery - Super Admin
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                Welcome, {user.firstName} {user.lastName}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage all restaurants, admins, and system operations</p>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      {/* Navigation Tabs */}
+      <div className="flex space-x-1 border-b">
+        {[
+          { id: 'overview', label: 'Overview' },
+          { id: 'restaurants', label: 'Restaurants' },
+          { id: 'admins', label: 'Admins' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSelectedTab(tab.id)}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              selectedTab === tab.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview Tab */}
+      {selectedTab === 'overview' && (
+        <div className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Restaurants</CardTitle>
-                <Store className="h-4 w-4 text-muted-foreground" />
+                <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalRestaurants}</div>
+                <div className="text-2xl font-bold">{restaurants.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats.activeRestaurants} active
+                  {restaurants.filter(r => r.isActive).length} active
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
-                <Truck className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalDrivers}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.activeDrivers} online
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingDrivers}</div>
+                <div className="text-2xl font-bold">{admins.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  Driver applications
+                  {admins.filter(a => a.role === 'restaurant_admin').length} restaurant admins
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Truck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  ${stats.revenue.toFixed(2)} revenue
+                  All time orders
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.revenue || 0} ETB</div>
+                <p className="text-xs text-muted-foreground">
+                  Total revenue
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Manage Restaurants</CardTitle>
-                <CardDescription>View and approve restaurant applications</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => setLocation('/restaurants')}>
-                  <Store className="h-4 w-4 mr-2" />
-                  View Restaurants
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Manage Drivers</CardTitle>
-                <CardDescription>View and approve driver applications</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => setLocation('/drivers')}>
-                  <Truck className="h-4 w-4 mr-2" />
-                  View Drivers
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>View Orders</CardTitle>
-                <CardDescription>Monitor all system orders</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" onClick={() => setLocation('/orders')}>
-                  <Users className="h-4 w-4 mr-2" />
-                  View Orders
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Admin Management */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Restaurant Management</CardTitle>
-                <CardDescription>
-                  Create and manage restaurant administrators
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Restaurant Admin
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Restaurant Admin</DialogTitle>
-                      <DialogDescription>
-                        Add a new restaurant administrator to the system
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateRestaurantAdmin} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName">First Name</Label>
-                          <Input
-                            id="firstName"
-                            value={formData.firstName}
-                            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName">Last Name</Label>
-                          <Input
-                            id="lastName"
-                            value={formData.lastName}
-                            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="restaurantId">Restaurant ID (Optional)</Label>
-                        <Input
-                          id="restaurantId"
-                          value={formData.restaurantId}
-                          onChange={(e) => setFormData({...formData, restaurantId: e.target.value})}
-                          placeholder="Leave empty to assign later"
-                        />
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Creating...' : 'Create Admin'}
-                      </Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>System Overview</CardTitle>
-                <CardDescription>
-                  Monitor system health and performance
-                </CardDescription>
+                <CardTitle>Recent Restaurants</CardTitle>
+                <CardDescription>Latest restaurant registrations</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">System Status</span>
-                    <span className="text-sm text-green-600 dark:text-green-400">Online</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Active Orders</span>
-                    <span className="text-sm">43</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Revenue Today</span>
-                    <span className="text-sm">$1,247</span>
-                  </div>
+                  {restaurants.slice(0, 5).map((restaurant) => (
+                    <div key={restaurant.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{restaurant.name}</p>
+                        <p className="text-sm text-muted-foreground">{restaurant.address}</p>
+                      </div>
+                      <Badge variant={restaurant.isActive ? 'default' : 'secondary'}>
+                        {restaurant.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Admins</CardTitle>
+                <CardDescription>Latest admin user registrations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {admins.slice(0, 5).map((admin) => (
+                    <div key={admin.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{admin.firstName} {admin.lastName}</p>
+                        <p className="text-sm text-muted-foreground">{admin.email}</p>
+                      </div>
+                      <Badge variant="outline">
+                        {admin.role.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      </main>
+      )}
+
+      {/* Restaurants Tab */}
+      {selectedTab === 'restaurants' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Restaurant Management</h2>
+            
+            <Dialog open={isRestaurantDialogOpen} onOpenChange={setIsRestaurantDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Restaurant
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Restaurant</DialogTitle>
+                  <DialogDescription>
+                    Add a new restaurant to the platform.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...restaurantForm}>
+                  <form onSubmit={restaurantForm.handleSubmit(onCreateRestaurant)} className="space-y-4">
+                    <FormField
+                      control={restaurantForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Restaurant Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter restaurant name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Enter full address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter phone number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter email address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="imageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Logo URL (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter logo URL" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsRestaurantDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createRestaurantMutation.isPending}>
+                        {createRestaurantMutation.isPending ? 'Creating...' : 'Create Restaurant'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>All Restaurants</CardTitle>
+              <CardDescription>Manage restaurant listings and status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact Info</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Orders</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {restaurants.map((restaurant) => (
+                    <TableRow key={restaurant.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{restaurant.name}</p>
+                          <p className="text-sm text-muted-foreground">{restaurant.address}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="text-sm">{restaurant.phoneNumber}</p>
+                          {restaurant.email && (
+                            <p className="text-sm text-muted-foreground">{restaurant.email}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={restaurant.isActive ? 'default' : 'secondary'}>
+                          {restaurant.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{restaurant.totalOrders}</TableCell>
+                      <TableCell>⭐ {restaurant.rating}</TableCell>
+                      <TableCell>{new Date(restaurant.createdAt).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Admins Tab */}
+      {selectedTab === 'admins' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Admin Management</h2>
+            
+            <Dialog open={isAdminDialogOpen} onOpenChange={setIsAdminDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Create New Restaurant Admin
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Restaurant Admin</DialogTitle>
+                  <DialogDescription>
+                    Create a new admin user for a restaurant.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...adminForm}>
+                  <form onSubmit={adminForm.handleSubmit(onCreateAdmin)} className="space-y-4">
+                    <FormField
+                      control={adminForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter email address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={adminForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="First name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={adminForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Last name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={adminForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={adminForm.control}
+                      name="restaurantId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Restaurant</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a restaurant" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {restaurants.map((restaurant) => (
+                                <SelectItem key={restaurant.id} value={restaurant.id}>
+                                  {restaurant.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsAdminDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createAdminMutation.isPending}>
+                        {createAdminMutation.isPending ? 'Creating...' : 'Create Admin'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>All Admin Users</CardTitle>
+              <CardDescription>Manage admin users and their restaurant assignments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Restaurant</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {admins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell className="font-medium">
+                        {admin.firstName} {admin.lastName}
+                      </TableCell>
+                      <TableCell>{admin.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {admin.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {admin.restaurantId ? (
+                          restaurants.find(r => r.id === admin.restaurantId)?.name || 'Unknown'
+                        ) : (
+                          <span className="text-muted-foreground">No restaurant assigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={admin.isActive ? 'default' : 'secondary'}>
+                          {admin.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

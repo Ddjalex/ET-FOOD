@@ -40,6 +40,12 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
 - **File storage**: Local file system with organized directory structure for uploads
 - **Session management**: PostgreSQL-backed session storage for authentication persistence
 
+**Recent Changes (August 2025):**
+- Added comprehensive Superadmin dashboard with restaurant and admin management
+- Implemented role-based API endpoints for superadmin operations
+- Enhanced storage interface with restaurant and admin management methods
+- Created complete workflow for restaurant creation and admin assignment
+
 ### Telegram Integration
 The platform integrates deeply with Telegram's ecosystem through multiple touchpoints:
 

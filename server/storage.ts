@@ -28,11 +28,15 @@ export interface IStorage {
 
   // Restaurant operations
   getRestaurants(): Promise<Restaurant[]>;
+  getAllRestaurants(): Promise<Restaurant[]>;
   getRestaurant(id: string): Promise<Restaurant | undefined>;
   createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant>;
   updateRestaurant(id: string, restaurant: Partial<InsertRestaurant>): Promise<Restaurant>;
   deleteRestaurant(id: string): Promise<void>;
   approveRestaurant(id: string): Promise<Restaurant>;
+
+  // Admin user operations
+  getAllAdminUsers(): Promise<User[]>;
 
   // Menu operations
   getMenuCategories(restaurantId: string): Promise<MenuCategory[]>;
@@ -171,8 +175,20 @@ class MemoryStorage implements IStorage {
     return updatedUser;
   }
 
+  async getAllAdminUsers(): Promise<User[]> {
+    return Array.from(this.users.values())
+      .filter(user => user.role && ['superadmin', 'restaurant_admin', 'kitchen_staff'].includes(user.role))
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
   // Restaurant operations
   async getRestaurants(): Promise<Restaurant[]> {
+    return Array.from(this.restaurants.values()).sort((a, b) => 
+      (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
+    );
+  }
+
+  async getAllRestaurants(): Promise<Restaurant[]> {
     return Array.from(this.restaurants.values()).sort((a, b) => 
       (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0)
     );

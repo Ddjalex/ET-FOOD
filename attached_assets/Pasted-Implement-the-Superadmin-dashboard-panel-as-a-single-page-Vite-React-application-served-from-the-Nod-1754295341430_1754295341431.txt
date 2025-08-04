@@ -1,0 +1,69 @@
+Implement the Superadmin dashboard panel as a single-page Vite/React application served from the Node.js backend. This dashboard must allow a Superadmin user to create, view, and manage multiple restaurants and to create corresponding Restaurant Admin users. The dashboard's content and functionality must be role-based, meaning a Superadmin sees different options than a Restaurant Admin.
+
+Key Requirements:
+
+Unified Frontend (/admin dashboard):
+
+Create a single Vite/React application that serves as the administrative interface.
+
+Implement role-based rendering. When a user logs in, the frontend should check their role (from the authentication token or user object).
+
+If the user is a superadmin, display the full suite of management tools, including panels for Restaurants and Admin Users.
+
+If the user is a restaurant_admin, only display the panels relevant to their specific restaurant, such as Menu Management and Order Management. This prompt focuses on the Superadmin view.
+
+Superadmin Dashboard UI (superadmin role):
+
+Main Navigation: The main dashboard should have navigation links for Restaurants, Admins, and other system-wide management sections.
+
+"Restaurants" Panel:
+
+Display a table or list of all restaurants in the system.
+
+Each row should show key details like the restaurant's name, status, and associated Restaurant Admin's name.
+
+Include a prominent "Create New Restaurant" button that opens a modal form.
+
+The modal form should have fields for restaurantName, locationDetails, contactInfo, and logoURL.
+
+"Admins" Panel:
+
+Display a list of all admin users, including both Superadmins and Restaurant Admins.
+
+Each entry should clearly state the user's role and, for Restaurant Admins, the restaurant they manage.
+
+Include a "Create New Restaurant Admin" button that opens a modal form.
+
+The modal form should have fields for the new admin's name, email, and a required dropdown to select a restaurant from the list of existing restaurants.
+
+Backend API Endpoints (Node.js/Express.js):
+
+POST /api/superadmin/restaurants: Create a new restaurant document in MongoDB. The request body will contain the restaurant's details.
+
+GET /api/superadmin/restaurants: Fetch a list of all restaurants. This endpoint should be accessible only to a Superadmin.
+
+POST /api/superadmin/admins: Create a new user with the restaurant_admin role. The request body will include the admin's details and the restaurantId they will be assigned to.
+
+GET /api/superadmin/admins: Fetch all admin users and their roles, with populated restaurant data for Restaurant Admins.
+
+MongoDB Schema Updates:
+
+Ensure the User schema has a role field (e.g., String, enum: ['superadmin', 'restaurant_admin', 'kitchen_staff', ...]) and an optional restaurant field that is a mongoose.Schema.Types.ObjectId referencing the Restaurant model. This is crucial for linking a Restaurant Admin to their specific restaurant.
+
+The Restaurant schema should be created to store all necessary restaurant information.
+
+Interaction Flow:
+
+A Superadmin logs into the /admin dashboard. The frontend authenticates the user and retrieves their superadmin role.
+
+The Superadmin navigates to the "Restaurants" panel and clicks "Create New Restaurant." The modal form appears.
+
+Upon form submission, the frontend sends a POST request to  /api/superadmin/restaurants. The backend creates the restaurant document.
+
+Next, the Superadmin navigates to the "Admins" panel and clicks "Create New Restaurant Admin."
+
+The modal form is populated with a dropdown menu, which fetches the list of available restaurants from  /api/superadmin/restaurants.
+
+The Superadmin selects a restaurant and submits the form. The frontend sends a POST request to  /api/superadmin/admins, passing the new admin's details and the selected restaurantId. The backend creates a new restaurant_admin user linked to that restaurant.
+
+The final output should be the complete, self-contained Vite/React and Node.js code, with MongoDB schemas, that demonstrates this entire workflow for the Superadmin dashboard.
