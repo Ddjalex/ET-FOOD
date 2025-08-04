@@ -3,6 +3,8 @@ import { User } from './models/User';
 import { Restaurant } from './models/Restaurant';  
 import { Driver } from './models/Driver';
 import { SystemSettings } from './models/SystemSettings';
+import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
+import { MenuItem as MenuItemModel } from './models/MenuItem';
 import {
   type User as UserType,
   type UpsertUser,
@@ -337,16 +339,187 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  // Stub implementations for other methods (to be implemented later)
-  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> { return []; }
-  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> { throw new Error('Not implemented'); }
-  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> { throw new Error('Not implemented'); }
-  async deleteMenuCategory(id: string): Promise<void> { throw new Error('Not implemented'); }
-  async getMenuItems(restaurantId: string): Promise<MenuItem[]> { return []; }
-  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> { return []; }
-  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> { throw new Error('Not implemented'); }
-  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> { throw new Error('Not implemented'); }
-  async deleteMenuItem(id: string): Promise<void> { throw new Error('Not implemented'); }
+  // Menu Category operations
+  async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> {
+    try {
+      const categories = await MenuCategoryModel.find({ restaurantId }).sort({ sortOrder: 1 });
+      return categories.map(cat => ({
+        id: cat._id.toString(),
+        restaurantId: cat.restaurantId,
+        name: cat.name,
+        description: cat.description || null,
+        isActive: cat.isActive,
+        sortOrder: cat.sortOrder,
+        createdAt: cat.createdAt
+      }));
+    } catch (error) {
+      console.error('Error getting menu categories:', error);
+      return [];
+    }
+  }
+
+  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> {
+    try {
+      const newCategory = new MenuCategoryModel(category);
+      await newCategory.save();
+      return {
+        id: newCategory._id.toString(),
+        restaurantId: newCategory.restaurantId,
+        name: newCategory.name,
+        description: newCategory.description || null,
+        isActive: newCategory.isActive,
+        sortOrder: newCategory.sortOrder,
+        createdAt: newCategory.createdAt
+      };
+    } catch (error) {
+      console.error('Error creating menu category:', error);
+      throw error;
+    }
+  }
+
+  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> {
+    try {
+      const updated = await MenuCategoryModel.findByIdAndUpdate(id, category, { new: true });
+      if (!updated) throw new Error('Category not found');
+      return {
+        id: updated._id.toString(),
+        restaurantId: updated.restaurantId,
+        name: updated.name,
+        description: updated.description || null,
+        isActive: updated.isActive,
+        sortOrder: updated.sortOrder,
+        createdAt: updated.createdAt
+      };
+    } catch (error) {
+      console.error('Error updating menu category:', error);
+      throw error;
+    }
+  }
+
+  async deleteMenuCategory(id: string): Promise<void> {
+    try {
+      await MenuCategoryModel.findByIdAndDelete(id);
+    } catch (error) {
+      console.error('Error deleting menu category:', error);
+      throw error;
+    }
+  }
+
+  // Menu Item operations
+  async getMenuItems(restaurantId: string): Promise<MenuItem[]> {
+    try {
+      const items = await MenuItemModel.find({ restaurantId });
+      return items.map(item => ({
+        id: item._id.toString(),
+        restaurantId: item.restaurantId,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description || null,
+        price: item.price.toString(),
+        imageUrl: item.imageUrl || null,
+        isAvailable: item.isAvailable,
+        preparationTime: item.preparationTime || null,
+        ingredients: item.ingredients || [],
+        isVegetarian: item.isVegetarian,
+        isVegan: item.isVegan,
+        spicyLevel: item.spicyLevel,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      }));
+    } catch (error) {
+      console.error('Error getting menu items:', error);
+      return [];
+    }
+  }
+
+  async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
+    try {
+      const items = await MenuItemModel.find({ categoryId });
+      return items.map(item => ({
+        id: item._id.toString(),
+        restaurantId: item.restaurantId,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description || null,
+        price: item.price.toString(),
+        imageUrl: item.imageUrl || null,
+        isAvailable: item.isAvailable,
+        preparationTime: item.preparationTime || null,
+        ingredients: item.ingredients || [],
+        isVegetarian: item.isVegetarian,
+        isVegan: item.isVegan,
+        spicyLevel: item.spicyLevel,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      }));
+    } catch (error) {
+      console.error('Error getting menu items by category:', error);
+      return [];
+    }
+  }
+
+  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> {
+    try {
+      const newItem = new MenuItemModel(item);
+      await newItem.save();
+      return {
+        id: newItem._id.toString(),
+        restaurantId: newItem.restaurantId,
+        categoryId: newItem.categoryId,
+        name: newItem.name,
+        description: newItem.description || null,
+        price: newItem.price.toString(),
+        imageUrl: newItem.imageUrl || null,
+        isAvailable: newItem.isAvailable,
+        preparationTime: newItem.preparationTime || null,
+        ingredients: newItem.ingredients || [],
+        isVegetarian: newItem.isVegetarian,
+        isVegan: newItem.isVegan,
+        spicyLevel: newItem.spicyLevel,
+        createdAt: newItem.createdAt,
+        updatedAt: newItem.updatedAt
+      };
+    } catch (error) {
+      console.error('Error creating menu item:', error);
+      throw error;
+    }
+  }
+
+  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
+    try {
+      const updated = await MenuItemModel.findByIdAndUpdate(id, item, { new: true });
+      if (!updated) throw new Error('Menu item not found');
+      return {
+        id: updated._id.toString(),
+        restaurantId: updated.restaurantId,
+        categoryId: updated.categoryId,
+        name: updated.name,
+        description: updated.description || null,
+        price: updated.price.toString(),
+        imageUrl: updated.imageUrl || null,
+        isAvailable: updated.isAvailable,
+        preparationTime: updated.preparationTime || null,
+        ingredients: updated.ingredients || [],
+        isVegetarian: updated.isVegetarian,
+        isVegan: updated.isVegan,
+        spicyLevel: updated.spicyLevel,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt
+      };
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      throw error;
+    }
+  }
+
+  async deleteMenuItem(id: string): Promise<void> {
+    try {
+      await MenuItemModel.findByIdAndDelete(id);
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      throw error;
+    }
+  }
   async getOrders(): Promise<Order[]> { return []; }
   async getOrder(id: string): Promise<Order | undefined> { return undefined; }
   async getOrdersByStatus(status: string): Promise<Order[]> { return []; }

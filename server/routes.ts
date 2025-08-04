@@ -976,10 +976,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/restaurants/:restaurantId/staff', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
       const user = req.user as any;
-      const { firstName, lastName, email } = req.body;
+      const { firstName, lastName, email, password } = req.body;
 
-      if (!firstName || !lastName || !email) {
-        return res.status(400).json({ message: 'First name, last name, and email are required' });
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ message: 'First name, last name, email, and password are required' });
       }
 
       // Check if user already exists
@@ -988,9 +988,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: 'User with this email already exists' });
       }
 
-      // Generate random password
-      const randomPassword = generateRandomPassword();
-      const hashedPassword = await hashPassword(randomPassword);
+      // Hash the provided password
+      const hashedPassword = await hashPassword(password);
 
       // Create kitchen staff
       const staffMember = await storage.createAdminUser({
@@ -1013,8 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: staffMember.lastName,
           role: staffMember.role,
           restaurantId: staffMember.restaurantId
-        },
-        temporaryPassword: randomPassword // Return password to be shared with staff
+        }
       });
     } catch (error) {
       console.error('Error creating kitchen staff:', error);

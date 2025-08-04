@@ -109,7 +109,8 @@ const menuItemSchema = z.object({
 const staffMemberSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Valid email is required')
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters')
 });
 
 type MenuCategoryFormData = z.infer<typeof menuCategorySchema>;
@@ -124,7 +125,6 @@ function RestaurantAdminDashboardContent() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [newStaffPassword, setNewStaffPassword] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -155,7 +155,7 @@ function RestaurantAdminDashboardContent() {
 
   const staffForm = useForm<StaffMemberFormData>({
     resolver: zodResolver(staffMemberSchema),
-    defaultValues: { firstName: '', lastName: '', email: '' }
+    defaultValues: { firstName: '', lastName: '', email: '', password: '' }
   });
 
   // Queries
@@ -253,7 +253,6 @@ function RestaurantAdminDashboardContent() {
       queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/staff`] });
       setIsStaffDialogOpen(false);
       staffForm.reset();
-      setNewStaffPassword(data.temporaryPassword);
       toast({ title: 'Success', description: 'Kitchen staff created successfully' });
     },
     onError: (error: any) => {
@@ -860,7 +859,7 @@ function RestaurantAdminDashboardContent() {
                 <DialogHeader>
                   <DialogTitle>Add Kitchen Staff</DialogTitle>
                   <DialogDescription>
-                    Create a new kitchen staff account. A temporary password will be generated.
+                    Create a new kitchen staff account with email and password.
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...staffForm}>
@@ -901,6 +900,19 @@ function RestaurantAdminDashboardContent() {
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="john.doe@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={staffForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter password for staff member" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1004,39 +1016,7 @@ function RestaurantAdminDashboardContent() {
         </Dialog>
       )}
 
-      {/* New Staff Password Dialog */}
-      {newStaffPassword && (
-        <Dialog open={!!newStaffPassword} onOpenChange={() => setNewStaffPassword('')}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Staff Account Created</DialogTitle>
-              <DialogDescription>
-                The kitchen staff account has been created successfully. Please share this temporary password with the new staff member.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-lg">{newStaffPassword}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(newStaffPassword)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                The staff member should change this password upon first login.
-              </p>
-              <Button onClick={() => setNewStaffPassword('')} className="w-full">
-                Close
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+
     </div>
   );
 }
