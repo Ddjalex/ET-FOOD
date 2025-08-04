@@ -30,6 +30,121 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
+// Kitchen Staff Login Component
+function KitchenLoginForm() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const loginForm = useForm({
+    resolver: zodResolver(z.object({
+      email: z.string().email('Please enter a valid email'),
+      password: z.string().min(1, 'Password is required')
+    })),
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      return apiRequest('/api/admin/login', {
+        method: 'POST',
+        body: data
+      });
+    },
+    onSuccess: (response) => {
+      toast({ title: 'Login successful' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/me'] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Login failed', 
+        description: error.message || 'Invalid credentials',
+        variant: 'destructive' 
+      });
+    }
+  });
+
+  const onSubmit = (data: { email: string; password: string }) => {
+    loginMutation.mutate(data);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
+            <ChefHat className="h-6 w-6 text-orange-600" />
+          </div>
+          <CardTitle className="text-2xl">Kitchen Staff Login</CardTitle>
+          <CardDescription>
+            Sign in to access the kitchen dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email" 
+                        placeholder="Enter your email"
+                        data-testid="input-email"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Enter your password"
+                        data-testid="input-password"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loginMutation.isPending}
+                data-testid="button-login"
+              >
+                {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+          </Form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Need help? Contact your restaurant manager
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // Types
 interface OrderItem {
   id: string;
@@ -95,26 +210,7 @@ export function KitchenDashboard() {
   }
 
   if (!isAuthenticated || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Kitchen Staff Login Required</CardTitle>
-            <CardDescription>
-              Please log in to access the kitchen dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => window.location.href = '/admin-login'}
-              className="w-full"
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <KitchenLoginForm />;
   }
 
   // Check if user has kitchen staff role
