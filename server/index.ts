@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { connectMongoDB } from "./mongodb";
+// Removed MongoDB connection - now using PostgreSQL
 
 const app = express();
 app.use(express.json());
@@ -38,9 +38,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to MongoDB first
-  await connectMongoDB();
-  
+  // PostgreSQL connection is handled by Drizzle ORM in db.ts
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

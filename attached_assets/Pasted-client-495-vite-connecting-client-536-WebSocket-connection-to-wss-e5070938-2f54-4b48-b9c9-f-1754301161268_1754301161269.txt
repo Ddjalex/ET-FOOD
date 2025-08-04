@@ -1,0 +1,124 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/?token=DPymCaW_qgeC' failed: 
+setupWebSocket @ client:536
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=DPymCaW_qgeC' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-WERSD76P.js?v=b5a0b69b:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+api/admin/me:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+chunk-WERSD76P.js?v=b5a0b69b:521 Warning: Cannot update a component (`RestaurantAdminDashboard`) while rendering a different component (`RestaurantAdminDashboard`). To locate the bad setState() call inside `RestaurantAdminDashboard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at RestaurantAdminDashboard (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/src/pages/RestaurantAdminDashboard.tsx:2475:48)
+    at Route (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=feb61f61:323:16)
+    at Switch (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=feb61f61:379:17)
+    at Router (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/src/App.tsx?v=10Wlf9tLBbXyIHFJmUPnD:44:42)
+    at Provider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MAE4WKEQ.js?v=b5a0b69b:38:15)
+    at TooltipProvider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=5403fe5f:59:5)
+    at QueryClientProvider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1940bb6d:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=b5a0b69b:521
+api/auth/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+RestaurantAdminDashboard.tsx:852 Uncaught ReferenceError: Trash is not defined
+    at RestaurantAdminDashboard.tsx:852:26
+    at Array.map (<anonymous>)
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:829:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=b5a0b69b:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=b5a0b69b:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=b5a0b69b:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=b5a0b69b:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=b5a0b69b:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=b5a0b69b:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=b5a0b69b:19765:15)
+(anonymous) @ RestaurantAdminDashboard.tsx:852
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:829
+renderWithHooks @ chunk-WERSD76P.js?v=b5a0b69b:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=b5a0b69b:14582
+beginWork @ chunk-WERSD76P.js?v=b5a0b69b:15924
+callCallback2 @ chunk-WERSD76P.js?v=b5a0b69b:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=b5a0b69b:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=b5a0b69b:3733
+beginWork$1 @ chunk-WERSD76P.js?v=b5a0b69b:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=b5a0b69b:19198
+workLoopSync @ chunk-WERSD76P.js?v=b5a0b69b:19137
+renderRootSync @ chunk-WERSD76P.js?v=b5a0b69b:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=b5a0b69b:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=b5a0b69b:9119
+(anonymous) @ chunk-WERSD76P.js?v=b5a0b69b:18627
+RestaurantAdminDashboard.tsx:852 Uncaught ReferenceError: Trash is not defined
+    at RestaurantAdminDashboard.tsx:852:26
+    at Array.map (<anonymous>)
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:829:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=b5a0b69b:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=b5a0b69b:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=b5a0b69b:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=b5a0b69b:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=b5a0b69b:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=b5a0b69b:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=b5a0b69b:19765:15)
+(anonymous) @ RestaurantAdminDashboard.tsx:852
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:829
+renderWithHooks @ chunk-WERSD76P.js?v=b5a0b69b:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=b5a0b69b:14582
+beginWork @ chunk-WERSD76P.js?v=b5a0b69b:15924
+callCallback2 @ chunk-WERSD76P.js?v=b5a0b69b:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=b5a0b69b:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=b5a0b69b:3733
+beginWork$1 @ chunk-WERSD76P.js?v=b5a0b69b:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=b5a0b69b:19198
+workLoopSync @ chunk-WERSD76P.js?v=b5a0b69b:19137
+renderRootSync @ chunk-WERSD76P.js?v=b5a0b69b:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=b5a0b69b:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=b5a0b69b:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=b5a0b69b:9119
+(anonymous) @ chunk-WERSD76P.js?v=b5a0b69b:18627
+chunk-WERSD76P.js?v=b5a0b69b:14032 The above error occurred in the <RestaurantAdminDashboardContent> component:
+
+    at RestaurantAdminDashboardContent (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/src/pages/RestaurantAdminDashboard.tsx:73:20)
+    at RestaurantAdminDashboard (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/src/pages/RestaurantAdminDashboard.tsx:2475:48)
+    at Route (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=feb61f61:323:16)
+    at Switch (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=feb61f61:379:17)
+    at Router (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/src/App.tsx?v=10Wlf9tLBbXyIHFJmUPnD:44:42)
+    at Provider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MAE4WKEQ.js?v=b5a0b69b:38:15)
+    at TooltipProvider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=5403fe5f:59:5)
+    at QueryClientProvider (https://e5070938-2f54-4b48-b9c9-fd17e33ee32d-00-3stl64ld81gkj.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1940bb6d:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=b5a0b69b:14032
+update.callback @ chunk-WERSD76P.js?v=b5a0b69b:14052
+callCallback @ chunk-WERSD76P.js?v=b5a0b69b:11248
+commitUpdateQueue @ chunk-WERSD76P.js?v=b5a0b69b:11265
+commitLayoutEffectOnFiber @ chunk-WERSD76P.js?v=b5a0b69b:17093
+commitLayoutMountEffects_complete @ chunk-WERSD76P.js?v=b5a0b69b:17980
+commitLayoutEffects_begin @ chunk-WERSD76P.js?v=b5a0b69b:17969
+commitLayoutEffects @ chunk-WERSD76P.js?v=b5a0b69b:17920
+commitRootImpl @ chunk-WERSD76P.js?v=b5a0b69b:19353
+commitRoot @ chunk-WERSD76P.js?v=b5a0b69b:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=b5a0b69b:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=b5a0b69b:9119
+(anonymous) @ chunk-WERSD76P.js?v=b5a0b69b:18627
+chunk-WERSD76P.js?v=b5a0b69b:9129 Uncaught ReferenceError: Trash is not defined
+    at RestaurantAdminDashboard.tsx:852:26
+    at Array.map (<anonymous>)
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:829:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=b5a0b69b:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=b5a0b69b:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=b5a0b69b:15924:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=b5a0b69b:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=b5a0b69b:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=b5a0b69b:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=b5a0b69b:19116:15)
+(anonymous) @ RestaurantAdminDashboard.tsx:852
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:829
+renderWithHooks @ chunk-WERSD76P.js?v=b5a0b69b:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=b5a0b69b:14582
+beginWork @ chunk-WERSD76P.js?v=b5a0b69b:15924
+beginWork$1 @ chunk-WERSD76P.js?v=b5a0b69b:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=b5a0b69b:19198
+workLoopSync @ chunk-WERSD76P.js?v=b5a0b69b:19137
+renderRootSync @ chunk-WERSD76P.js?v=b5a0b69b:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=b5a0b69b:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=b5a0b69b:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=b5a0b69b:9119
+(anonymous) @ chunk-WERSD76P.js?v=b5a0b69b:18627

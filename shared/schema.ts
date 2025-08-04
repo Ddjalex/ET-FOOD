@@ -80,6 +80,7 @@ export const menuCategories = pgTable("menu_categories", {
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Menu items table
@@ -197,6 +198,7 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
 export const insertMenuCategorySchema = createInsertSchema(menuCategories).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertMenuItemSchema = createInsertSchema(menuItems).omit({

@@ -1,3 +1,4 @@
+import { PostgresStorage } from "./postgresStorage";
 import {
   type User,
   type UpsertUser,
@@ -774,8 +775,5 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Use in-memory storage for Replit environment
-import { MongoStorage } from './mongoStorage';
-
-// Use MongoDB storage instead of memory storage
-export const storage = new MongoStorage();
+// Use PostgreSQL storage for Replit environment
+export const storage = new PostgresStorage();
