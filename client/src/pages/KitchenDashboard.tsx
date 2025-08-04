@@ -530,7 +530,7 @@ export function KitchenDashboard() {
           <div className="space-y-6">
             {menuLoading ? (
               <div className="text-center py-8">Loading menu...</div>
-            ) : (
+            ) : menu.categories && menu.categories.length > 0 ? (
               menu.categories.map((category: MenuCategory) => (
                 <Card key={category.id}>
                   <CardHeader>
@@ -591,6 +591,10 @@ export function KitchenDashboard() {
                   </CardContent>
                 </Card>
               ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No menu categories found
+              </div>
             )}
           </div>
         )}
