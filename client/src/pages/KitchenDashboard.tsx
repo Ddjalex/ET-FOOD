@@ -125,9 +125,20 @@ export function KitchenDashboard() {
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              Only kitchen staff can access this dashboard
+              Only kitchen staff can access this dashboard. You are currently logged in as: {user.role}
             </CardDescription>
           </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              To access the kitchen dashboard, you need to log in with kitchen staff credentials.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/admin-login'}
+              className="w-full"
+            >
+              Switch to Kitchen Staff Login
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
