@@ -10,6 +10,22 @@ import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
+import multer from "multer";
+
+// Configure multer for image uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -1096,6 +1112,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating menu item:', error);
       res.status(500).json({ message: 'Failed to create menu item' });
+    }
+  });
+
+  // Update menu category
+  app.put('/api/restaurants/:restaurantId/menu/categories/:categoryId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+      const category = await storage.updateMenuCategory(categoryId, req.body);
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating menu category:', error);
+      res.status(500).json({ message: 'Failed to update menu category' });
+    }
+  });
+
+  // Delete menu category
+  app.delete('/api/restaurants/:restaurantId/menu/categories/:categoryId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+      await storage.deleteMenuCategory(categoryId);
+      res.json({ message: 'Category deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting menu category:', error);
+      res.status(500).json({ message: 'Failed to delete menu category' });
+    }
+  });
+
+  // Update menu item
+  app.put('/api/restaurants/:restaurantId/menu/items/:itemId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const item = await storage.updateMenuItem(itemId, req.body);
+      res.json(item);
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      res.status(500).json({ message: 'Failed to update menu item' });
+    }
+  });
+
+  // Delete menu item
+  app.delete('/api/restaurants/:restaurantId/menu/items/:itemId', requireSession, requireRestaurantAccess, async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      await storage.deleteMenuItem(itemId);
+      res.json({ message: 'Menu item deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      res.status(500).json({ message: 'Failed to delete menu item' });
+    }
+  });
+
+  // Image upload route
+  app.post('/api/upload', upload.single('image'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+      
+      res.json({ 
+        url: `/uploads/${req.file.filename}`,
+        filename: req.file.filename 
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      res.status(500).json({ message: 'Failed to upload image' });
     }
   });
 

@@ -125,6 +125,9 @@ function RestaurantAdminDashboardContent() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -181,24 +184,34 @@ function RestaurantAdminDashboardContent() {
 
   // Mutations
   const createCategoryMutation = useMutation({
-    mutationFn: (data: MenuCategoryFormData) =>
-      fetch(`/api/restaurants/${restaurantId}/menu/categories`, {
-        method: 'POST',
+    mutationFn: (data: MenuCategoryFormData) => {
+      const url = editingCategory 
+        ? `/api/restaurants/${restaurantId}/menu/categories/${editingCategory.id}`
+        : `/api/restaurants/${restaurantId}/menu/categories`;
+      const method = editingCategory ? 'PUT' : 'POST';
+      
+      return fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(data)
       }).then(async (res) => {
         if (!res.ok) {
           const error = await res.json();
-          throw new Error(error.message || 'Failed to create category');
+          throw new Error(error.message || 'Failed to save category');
         }
         return res.json();
-      }),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
       setIsCategoryDialogOpen(false);
       categoryForm.reset();
-      toast({ title: 'Success', description: 'Category created successfully' });
+      setEditingCategory(null);
+      toast({ 
+        title: 'Success', 
+        description: editingCategory ? 'Category updated successfully' : 'Category created successfully' 
+      });
     },
     onError: (error: any) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -206,20 +219,44 @@ function RestaurantAdminDashboardContent() {
   });
 
   const createItemMutation = useMutation({
-    mutationFn: (data: MenuItemFormData) => {
+    mutationFn: async (data: MenuItemFormData) => {
+      // Upload image if selected
+      let imageUrl = data.imageUrl;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (uploadRes.ok) {
+          const uploadResult = await uploadRes.json();
+          imageUrl = uploadResult.url;
+        }
+      }
+
       const submitData = {
         ...data,
+        imageUrl,
         ingredients: data.ingredients ? data.ingredients.split(',').map(s => s.trim()) : []
       };
-      return fetch(`/api/restaurants/${restaurantId}/menu/items`, {
-        method: 'POST',
+
+      const url = editingMenuItem 
+        ? `/api/restaurants/${restaurantId}/menu/items/${editingMenuItem.id}`
+        : `/api/restaurants/${restaurantId}/menu/items`;
+      const method = editingMenuItem ? 'PUT' : 'POST';
+      
+      return fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(submitData)
       }).then(async (res) => {
         if (!res.ok) {
           const error = await res.json();
-          throw new Error(error.message || 'Failed to create item');
+          throw new Error(error.message || 'Failed to save item');
         }
         return res.json();
       });
@@ -228,7 +265,9 @@ function RestaurantAdminDashboardContent() {
       queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
       setIsItemDialogOpen(false);
       itemForm.reset();
-      toast({ title: 'Success', description: 'Menu item created successfully' });
+      setImageFile(null);
+      setEditingMenuItem(null);
+      toast({ title: 'Success', description: editingMenuItem ? 'Menu item updated successfully' : 'Menu item created successfully' });
     },
     onError: (error: any) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -294,6 +333,68 @@ function RestaurantAdminDashboardContent() {
     } catch (error) {
       console.error('Logout error:', error);
       navigate('/restaurant-admin-login');
+    }
+  };
+
+  // Handler functions for edit/delete operations
+  const handleEditCategory = (category: MenuCategory) => {
+    setEditingCategory(category);
+    categoryForm.reset({
+      name: category.name,
+      description: category.description || '',
+      sortOrder: category.sortOrder,
+      isActive: category.isActive
+    });
+    setIsCategoryDialogOpen(true);
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+      const res = await fetch(`/api/restaurants/${restaurantId}/menu/categories/${categoryId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete category');
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
+      toast({ title: 'Success', description: 'Category deleted successfully' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete category', variant: 'destructive' });
+    }
+  };
+
+  const handleEditMenuItem = (item: MenuItem) => {
+    setEditingMenuItem(item);
+    itemForm.reset({
+      categoryId: item.categoryId,
+      name: item.name,
+      description: item.description || '',
+      price: parseFloat(item.price),
+      imageUrl: item.imageUrl || '',
+      isAvailable: item.isAvailable,
+      preparationTime: item.preparationTime || 0,
+      ingredients: Array.isArray(item.ingredients) ? item.ingredients.join(', ') : item.ingredients,
+      isVegetarian: item.isVegetarian,
+      isVegan: item.isVegan,
+      spicyLevel: item.spicyLevel
+    });
+    setIsItemDialogOpen(true);
+  };
+
+  const handleDeleteMenuItem = async (itemId: string) => {
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
+    
+    try {
+      const res = await fetch(`/api/restaurants/${restaurantId}/menu/items/${itemId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete menu item');
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/restaurants/${restaurantId}/menu`] });
+      toast({ title: 'Success', description: 'Menu item deleted successfully' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete menu item', variant: 'destructive' });
     }
   };
 
@@ -442,16 +543,16 @@ function RestaurantAdminDashboardContent() {
             <div className="space-x-2">
               <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={() => setEditingCategory(null)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Category
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create Menu Category</DialogTitle>
+                    <DialogTitle>{editingCategory ? 'Edit Menu Category' : 'Create Menu Category'}</DialogTitle>
                     <DialogDescription>
-                      Add a new category to organize your menu items
+                      {editingCategory ? 'Update this menu category details' : 'Add a new category to organize your menu items'}
                     </DialogDescription>
                   </DialogHeader>
                   <Form {...categoryForm}>
@@ -483,7 +584,10 @@ function RestaurantAdminDashboardContent() {
                         )}
                       />
                       <Button type="submit" disabled={createCategoryMutation.isPending}>
-                        {createCategoryMutation.isPending ? 'Creating...' : 'Create Category'}
+                        {createCategoryMutation.isPending ? 
+                          (editingCategory ? 'Updating...' : 'Creating...') : 
+                          (editingCategory ? 'Update Category' : 'Create Category')
+                        }
                       </Button>
                     </form>
                   </Form>
@@ -499,9 +603,9 @@ function RestaurantAdminDashboardContent() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Add Menu Item</DialogTitle>
+                    <DialogTitle>{editingMenuItem ? 'Edit Menu Item' : 'Add Menu Item'}</DialogTitle>
                     <DialogDescription>
-                      Create a new item for your restaurant menu
+                      {editingMenuItem ? 'Update this menu item details' : 'Create a new item for your restaurant menu'}
                     </DialogDescription>
                   </DialogHeader>
                   <Form {...itemForm}>
@@ -677,8 +781,41 @@ function RestaurantAdminDashboardContent() {
                           )}
                         />
                       </div>
+                      <FormField
+                        control={itemForm.control}
+                        name="imageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Image</FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      setImageFile(file);
+                                      field.onChange(`/uploads/${file.name}`);
+                                    }
+                                  }}
+                                />
+                                {field.value && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Selected: {field.value}
+                                  </p>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <Button type="submit" disabled={createItemMutation.isPending}>
-                        {createItemMutation.isPending ? 'Creating...' : 'Create Menu Item'}
+                        {createItemMutation.isPending ? 
+                          (editingMenuItem ? 'Updating...' : 'Creating...') : 
+                          (editingMenuItem ? 'Update Menu Item' : 'Create Menu Item')
+                        }
                       </Button>
                     </form>
                   </Form>
@@ -693,10 +830,28 @@ function RestaurantAdminDashboardContent() {
               <Card key={category.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    {category.name}
-                    <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                      {category.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {category.name}
+                      <Badge variant={category.isActive ? 'default' : 'secondary'}>
+                        {category.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditCategory(category)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteCategory(category.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardTitle>
                   {category.description && (
                     <CardDescription>{category.description}</CardDescription>
@@ -728,10 +883,18 @@ function RestaurantAdminDashboardContent() {
                           <Badge className={item.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                             {item.isAvailable ? 'Available' : 'Unavailable'}
                           </Badge>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditMenuItem(item)}
+                          >
                             <Edit className="w-3 h-3" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteMenuItem(item.id)}
+                          >
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>

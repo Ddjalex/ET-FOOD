@@ -520,6 +520,42 @@ export class MongoStorage implements IStorage {
       throw error;
     }
   }
+
+  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
+    try {
+      const updated = await MenuItemModel.findByIdAndUpdate(id, item, { new: true });
+      if (!updated) throw new Error('Menu item not found');
+      return {
+        id: updated._id.toString(),
+        restaurantId: updated.restaurantId,
+        categoryId: updated.categoryId,
+        name: updated.name,
+        description: updated.description || null,
+        price: updated.price.toString(),
+        imageUrl: updated.imageUrl || null,
+        isAvailable: updated.isAvailable,
+        preparationTime: updated.preparationTime || null,
+        ingredients: updated.ingredients || [],
+        isVegetarian: updated.isVegetarian,
+        isVegan: updated.isVegan,
+        spicyLevel: updated.spicyLevel,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt
+      };
+    } catch (error) {
+      console.error('Error updating menu item:', error);
+      throw error;
+    }
+  }
+
+  async deleteMenuItem(id: string): Promise<void> {
+    try {
+      await MenuItemModel.findByIdAndDelete(id);
+    } catch (error) {
+      console.error('Error deleting menu item:', error);
+      throw error;
+    }
+  }
   async getOrders(): Promise<Order[]> { return []; }
   async getOrder(id: string): Promise<Order | undefined> { return undefined; }
   async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
