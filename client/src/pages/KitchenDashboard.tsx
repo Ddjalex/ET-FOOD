@@ -48,10 +48,21 @@ function KitchenLoginForm() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      return apiRequest('/api/admin/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
-        body: data
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
+      }
+      
+      return response.json();
     },
     onSuccess: (response) => {
       toast({ title: 'Login successful' });
@@ -197,6 +208,9 @@ export function KitchenDashboard() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [availabilityCheck, setAvailabilityCheck] = useState<{[key: string]: boolean}>({});
 
+  // Type-safe user with proper typing
+  const typedUser = user as any;
+
   // Redirect to login if not authenticated
   if (isLoading) {
     return (
@@ -214,14 +228,14 @@ export function KitchenDashboard() {
   }
 
   // Check if user has kitchen staff role
-  if (user.role !== 'kitchen_staff') {
+  if (typedUser.role !== 'kitchen_staff') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              Only kitchen staff can access this dashboard. You are currently logged in as: {user.role}
+              Only kitchen staff can access this dashboard. You are currently logged in as: {typedUser.role}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -242,26 +256,34 @@ export function KitchenDashboard() {
 
   // Get restaurant orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['/api/restaurants', user?.restaurantId, 'orders'],
-    enabled: !!user?.restaurantId,
+    queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'],
+    enabled: !!typedUser?.restaurantId,
   });
 
   // Get restaurant menu
-  const { data: menu = [], isLoading: menuLoading } = useQuery({
-    queryKey: ['/api/restaurants', user?.restaurantId, 'menu'],
-    enabled: !!user?.restaurantId && selectedTab === 'menu',
+  const { data: menuData, isLoading: menuLoading } = useQuery({
+    queryKey: ['/api/restaurants', typedUser?.restaurantId, 'menu'],
+    enabled: !!typedUser?.restaurantId && selectedTab === 'menu',
   });
+
+  // Type-safe menu data
+  const menu = menuData as { categories: MenuCategory[], items: MenuItem[] } || { categories: [], items: [] };
+  const typedOrders = orders as Order[];
 
   // Mutations for order management
   const checkAvailabilityMutation = useMutation({
     mutationFn: async ({ orderId, unavailableItems }: { orderId: string; unavailableItems: string[] }) => {
-      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/check-availability`, {
+      const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/orders/${orderId}/check-availability`, {
         method: 'PUT',
-        body: { unavailableItems }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unavailableItems }),
+        credentials: 'include'
       });
+      if (!response.ok) throw new Error('Failed to update availability');
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] });
       toast({ title: 'Order availability updated' });
       setSelectedOrder(null);
       setAvailabilityCheck({});
@@ -273,12 +295,15 @@ export function KitchenDashboard() {
 
   const startPrepareMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/start-prepare`, {
-        method: 'PUT'
+      const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/orders/${orderId}/start-prepare`, {
+        method: 'PUT',
+        credentials: 'include'
       });
+      if (!response.ok) throw new Error('Failed to start preparation');
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] });
       toast({ title: 'Order preparation started' });
     },
     onError: (error: any) => {
@@ -288,12 +313,15 @@ export function KitchenDashboard() {
 
   const readyForPickupMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return apiRequest(`/api/kitchen/${user?.restaurantId}/orders/${orderId}/ready-for-pickup`, {
-        method: 'PUT'
+      const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/orders/${orderId}/ready-for-pickup`, {
+        method: 'PUT',
+        credentials: 'include'
       });
+      if (!response.ok) throw new Error('Failed to mark order ready');
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] });
       toast({ title: 'Order marked as ready for pickup' });
     },
     onError: (error: any) => {
@@ -304,13 +332,17 @@ export function KitchenDashboard() {
   // Mutation for availability toggle
   const toggleAvailabilityMutation = useMutation({
     mutationFn: async ({ itemId, isAvailable }: { itemId: string; isAvailable: boolean }) => {
-      return apiRequest(`/api/kitchen/${user?.restaurantId}/menu/items/${itemId}/availability`, {
+      const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/menu/items/${itemId}/availability`, {
         method: 'PATCH',
-        body: { isAvailable }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable }),
+        credentials: 'include'
       });
+      if (!response.ok) throw new Error('Failed to update availability');
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'menu'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'menu'] });
       toast({ title: 'Item availability updated' });
     },
     onError: (error: any) => {
@@ -440,7 +472,7 @@ export function KitchenDashboard() {
   }
 
   // Allow kitchen staff and restaurant admins to access kitchen dashboard
-  if (!['kitchen_staff', 'restaurant_admin', 'superadmin'].includes(user.role || '')) {
+  if (!['kitchen_staff', 'restaurant_admin', 'superadmin'].includes(typedUser.role || '')) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card>
@@ -508,13 +540,13 @@ export function KitchenDashboard() {
               <CardContent>
                 {ordersLoading ? (
                   <div className="text-center py-8">Loading orders...</div>
-                ) : orders.length === 0 ? (
+                ) : typedOrders.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No orders in queue
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map(renderOrderCard)}
+                    {typedOrders.map(renderOrderCard)}
                   </div>
                 )}
               </CardContent>
@@ -528,7 +560,7 @@ export function KitchenDashboard() {
             {menuLoading ? (
               <div className="text-center py-8">Loading menu...</div>
             ) : (
-              menu.map((category: MenuCategory) => (
+              menu.categories.map((category: MenuCategory) => (
                 <Card key={category.id}>
                   <CardHeader>
                     <div className="flex justify-between items-center">

@@ -1,0 +1,57 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://8d4d7d7a-7c47-4d78-aaeb-d90f45b6e841-00-uvwa6djnqdts.picard.replit.dev/?token=VaCwysX5Nk0Y' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=VaCwysX5Nk0Y' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+chunk-WERSD76P.js?v=55fa4d63:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+admin-login:1 [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​AdminLogin.tsx:​105:​14" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" id=​"password" required placeholder=​"Enter your password" value>​flex
+queryClient.ts:32  GET https://8d4d7d7a-7c47-4d78-aaeb-d90f45b6e841-00-uvwa6djnqdts.picard.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=55fa4d63:840
+run @ @tanstack_react-query.js?v=55fa4d63:494
+start @ @tanstack_react-query.js?v=55fa4d63:536
+fetch @ @tanstack_react-query.js?v=55fa4d63:926
+executeFetch_fn @ @tanstack_react-query.js?v=55fa4d63:2211
+onSubscribe @ @tanstack_react-query.js?v=55fa4d63:1898
+subscribe @ @tanstack_react-query.js?v=55fa4d63:24
+(anonymous) @ @tanstack_react-query.js?v=55fa4d63:3022
+subscribeToStore @ chunk-WERSD76P.js?v=55fa4d63:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=55fa4d63:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=55fa4d63:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=55fa4d63:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=55fa4d63:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=55fa4d63:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=55fa4d63:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=55fa4d63:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+commitRootImpl @ chunk-WERSD76P.js?v=55fa4d63:19432
+commitRoot @ chunk-WERSD76P.js?v=55fa4d63:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=55fa4d63:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18718
+workLoop @ chunk-WERSD76P.js?v=55fa4d63:197
+flushWork @ chunk-WERSD76P.js?v=55fa4d63:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=55fa4d63:384
+AdminLogin.tsx:22  POST https://8d4d7d7a-7c47-4d78-aaeb-d90f45b6e841-00-uvwa6djnqdts.picard.replit.dev/api/admin/login 401 (Unauthorized)
+handleSubmit @ AdminLogin.tsx:22
+callCallback2 @ chunk-WERSD76P.js?v=55fa4d63:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=55fa4d63:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=55fa4d63:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=55fa4d63:3736
+executeDispatch @ chunk-WERSD76P.js?v=55fa4d63:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=55fa4d63:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=55fa4d63:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=55fa4d63:7051
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=55fa4d63:18913
+batchedUpdates @ chunk-WERSD76P.js?v=55fa4d63:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=55fa4d63:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=55fa4d63:5478
+dispatchEvent @ chunk-WERSD76P.js?v=55fa4d63:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=55fa4d63:5449
