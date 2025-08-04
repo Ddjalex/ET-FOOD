@@ -28,7 +28,7 @@ function Router() {
 
   return (
     <Switch>
-      {/* Admin Login Routes - Always accessible */}
+      {/* Admin Routes - Use their own authentication system */}
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/superadmin-login" component={SuperAdminLogin} />
       <Route path="/restaurant-admin-login" component={RestaurantAdminLogin} />
@@ -36,8 +36,6 @@ function Router() {
       <Route path="/admin" component={RestaurantAdminDashboard} />
       <Route path="/restaurant-admin" component={RestaurantAdminDashboard} />
       <Route path="/kitchen" component={KitchenDashboard} />
-      
-      {/* Admin Panel Routes - Available to admin users */}
       <Route path="/restaurants" component={Restaurants} />
       <Route path="/restaurants/create" component={CreateRestaurant} />
       <Route path="/drivers" component={Drivers} />
