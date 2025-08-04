@@ -343,7 +343,7 @@ export class MongoStorage implements IStorage {
   async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> {
     try {
       const categories = await MenuCategoryModel.find({ restaurantId }).sort({ sortOrder: 1 });
-      return categories.map(cat => ({
+      return categories.map((cat: any) => ({
         id: cat._id.toString(),
         restaurantId: cat.restaurantId,
         name: cat.name,
@@ -409,7 +409,7 @@ export class MongoStorage implements IStorage {
   async getMenuItems(restaurantId: string): Promise<MenuItem[]> {
     try {
       const items = await MenuItemModel.find({ restaurantId });
-      return items.map(item => ({
+      return items.map((item: any) => ({
         id: item._id.toString(),
         restaurantId: item.restaurantId,
         categoryId: item.categoryId,
@@ -435,7 +435,7 @@ export class MongoStorage implements IStorage {
   async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
     try {
       const items = await MenuItemModel.find({ categoryId });
-      return items.map(item => ({
+      return items.map((item: any) => ({
         id: item._id.toString(),
         restaurantId: item.restaurantId,
         categoryId: item.categoryId,

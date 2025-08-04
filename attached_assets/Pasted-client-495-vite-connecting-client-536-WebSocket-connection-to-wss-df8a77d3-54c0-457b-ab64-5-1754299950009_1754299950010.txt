@@ -1,0 +1,93 @@
+client:495 [vite] connecting...
+client:536 WebSocket connection to 'wss://df8a77d3-54c0-457b-ab64-508e1465c18f-00-2lrrqivyg9emy.janeway.replit.dev/?token=N90jugXN-M0q' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=N90jugXN-M0q' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+chunk-WERSD76P.js?v=e055c734:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://df8a77d3-54c0-457b-ab64-508e1465c18f-00-2lrrqivyg9emy.janeway.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=e055c734:840
+run @ @tanstack_react-query.js?v=e055c734:494
+start @ @tanstack_react-query.js?v=e055c734:536
+fetch @ @tanstack_react-query.js?v=e055c734:926
+executeFetch_fn @ @tanstack_react-query.js?v=e055c734:2211
+onSubscribe @ @tanstack_react-query.js?v=e055c734:1898
+subscribe @ @tanstack_react-query.js?v=e055c734:24
+(anonymous) @ @tanstack_react-query.js?v=e055c734:3022
+subscribeToStore @ chunk-WERSD76P.js?v=e055c734:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=e055c734:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=e055c734:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=e055c734:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=e055c734:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=e055c734:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=e055c734:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=e055c734:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=e055c734:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=e055c734:9119
+commitRootImpl @ chunk-WERSD76P.js?v=e055c734:19432
+commitRoot @ chunk-WERSD76P.js?v=e055c734:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=e055c734:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=e055c734:18718
+workLoop @ chunk-WERSD76P.js?v=e055c734:197
+flushWork @ chunk-WERSD76P.js?v=e055c734:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=e055c734:384
+RestaurantAdminDashboard.tsx:185  POST https://df8a77d3-54c0-457b-ab64-508e1465c18f-00-2lrrqivyg9emy.janeway.replit.dev/api/restaurants/68907a67bc8474fbaa926e58/menu/categories 500 (Internal Server Error)
+mutationFn @ RestaurantAdminDashboard.tsx:185
+fn @ @tanstack_react-query.js?v=e055c734:1189
+run @ @tanstack_react-query.js?v=e055c734:494
+start @ @tanstack_react-query.js?v=e055c734:536
+execute @ @tanstack_react-query.js?v=e055c734:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=e055c734:2630
+(anonymous) @ @tanstack_react-query.js?v=e055c734:3295
+(anonymous) @ RestaurantAdminDashboard.tsx:459
+(anonymous) @ chunk-CXJMC5RA.js?v=e055c734:1465
+await in (anonymous)
+callCallback2 @ chunk-WERSD76P.js?v=e055c734:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=e055c734:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=e055c734:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=e055c734:3736
+executeDispatch @ chunk-WERSD76P.js?v=e055c734:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=e055c734:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=e055c734:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=e055c734:7051
+(anonymous) @ chunk-WERSD76P.js?v=e055c734:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=e055c734:18913
+batchedUpdates @ chunk-WERSD76P.js?v=e055c734:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=e055c734:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=e055c734:5478
+dispatchEvent @ chunk-WERSD76P.js?v=e055c734:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=e055c734:5449
+RestaurantAdminDashboard.tsx:185  POST https://df8a77d3-54c0-457b-ab64-508e1465c18f-00-2lrrqivyg9emy.janeway.replit.dev/api/restaurants/68907a67bc8474fbaa926e58/menu/categories 500 (Internal Server Error)
+mutationFn @ RestaurantAdminDashboard.tsx:185
+fn @ @tanstack_react-query.js?v=e055c734:1189
+run @ @tanstack_react-query.js?v=e055c734:494
+start @ @tanstack_react-query.js?v=e055c734:536
+execute @ @tanstack_react-query.js?v=e055c734:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=e055c734:2630
+(anonymous) @ @tanstack_react-query.js?v=e055c734:3295
+(anonymous) @ RestaurantAdminDashboard.tsx:459
+(anonymous) @ chunk-CXJMC5RA.js?v=e055c734:1465
+await in (anonymous)
+callCallback2 @ chunk-WERSD76P.js?v=e055c734:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=e055c734:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=e055c734:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=e055c734:3736
+executeDispatch @ chunk-WERSD76P.js?v=e055c734:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=e055c734:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=e055c734:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=e055c734:7051
+(anonymous) @ chunk-WERSD76P.js?v=e055c734:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=e055c734:18913
+batchedUpdates @ chunk-WERSD76P.js?v=e055c734:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=e055c734:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=e055c734:5478
+dispatchEvent @ chunk-WERSD76P.js?v=e055c734:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=e055c734:5449
