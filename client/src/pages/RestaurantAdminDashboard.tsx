@@ -56,20 +56,20 @@ interface MenuCategory {
 
 interface MenuItem {
   id: string;
-  categoryId: string;
   name: string;
   description?: string;
-  price: string;
+  price: number;
+  categoryId: string;
   imageUrl?: string;
-  isAvailable: boolean;
-  status?: 'active' | 'pending_approval' | 'rejected';
-  lastModifiedBy?: string;
   preparationTime?: number;
-  ingredients: string[];
+  ingredients?: string;
   isVegetarian: boolean;
   isVegan: boolean;
   spicyLevel: number;
+  isAvailable: boolean;
 }
+
+
 
 interface Order {
   id: string;
@@ -108,7 +108,8 @@ const menuItemSchema = z.object({
   ingredients: z.string().optional(),
   isVegetarian: z.boolean(),
   isVegan: z.boolean(),
-  spicyLevel: z.number().min(0).max(5)
+  spicyLevel: z.number().min(0).max(5),
+  imageUrl: z.string().optional()
 });
 
 const staffMemberSchema = z.object({
@@ -178,10 +179,21 @@ function RestaurantAdminDashboardContent() {
     enabled: !!restaurantId
   });
 
-  const { data: menu = [] } = useQuery<MenuCategory[]>({
+  const { data: menuData } = useQuery({
     queryKey: [`/api/restaurants/${restaurantId}/menu`],
     enabled: !!restaurantId
   });
+
+  // Handle the menu data structure from API
+  const menuResponse = menuData as { categories: MenuCategory[], items: MenuItem[] } || { categories: [], items: [] };
+  const menu = menuResponse.categories || [];
+  const allItems = menuResponse.items || [];
+
+  // Group items by category for display
+  const menuWithItems = menu.map(category => ({
+    ...category,
+    items: allItems.filter(item => item.categoryId === category.id)
+  }));
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: [`/api/restaurants/${restaurantId}/orders`],
@@ -874,7 +886,7 @@ function RestaurantAdminDashboardContent() {
 
           {/* Menu Categories and Items */}
           <div className="space-y-6">
-            {menu.map((category) => (
+            {menuWithItems.map((category) => (
               <Card key={category.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">

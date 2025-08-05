@@ -1,0 +1,131 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-WERSD76P.js?v=55fa4d63:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=55fa4d63:840
+run @ @tanstack_react-query.js?v=55fa4d63:494
+start @ @tanstack_react-query.js?v=55fa4d63:536
+fetch @ @tanstack_react-query.js?v=55fa4d63:926
+executeFetch_fn @ @tanstack_react-query.js?v=55fa4d63:2211
+onSubscribe @ @tanstack_react-query.js?v=55fa4d63:1898
+subscribe @ @tanstack_react-query.js?v=55fa4d63:24
+(anonymous) @ @tanstack_react-query.js?v=55fa4d63:3022
+subscribeToStore @ chunk-WERSD76P.js?v=55fa4d63:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=55fa4d63:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=55fa4d63:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=55fa4d63:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=55fa4d63:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=55fa4d63:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=55fa4d63:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=55fa4d63:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+commitRootImpl @ chunk-WERSD76P.js?v=55fa4d63:19432
+commitRoot @ chunk-WERSD76P.js?v=55fa4d63:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=55fa4d63:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18718
+workLoop @ chunk-WERSD76P.js?v=55fa4d63:197
+flushWork @ chunk-WERSD76P.js?v=55fa4d63:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=55fa4d63:384
+RestaurantAdminDashboard.tsx:877 Uncaught TypeError: menu.map is not a function
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:877:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=55fa4d63:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=55fa4d63:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=55fa4d63:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=55fa4d63:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=55fa4d63:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=55fa4d63:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=55fa4d63:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=55fa4d63:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=55fa4d63:19137:13)
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:877
+renderWithHooks @ chunk-WERSD76P.js?v=55fa4d63:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=55fa4d63:14582
+beginWork @ chunk-WERSD76P.js?v=55fa4d63:15924
+callCallback2 @ chunk-WERSD76P.js?v=55fa4d63:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=55fa4d63:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=55fa4d63:3733
+beginWork$1 @ chunk-WERSD76P.js?v=55fa4d63:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=55fa4d63:19198
+workLoopSync @ chunk-WERSD76P.js?v=55fa4d63:19137
+renderRootSync @ chunk-WERSD76P.js?v=55fa4d63:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:18627
+RestaurantAdminDashboard.tsx:877 Uncaught TypeError: menu.map is not a function
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:877:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=55fa4d63:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=55fa4d63:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=55fa4d63:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=55fa4d63:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=55fa4d63:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=55fa4d63:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=55fa4d63:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=55fa4d63:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=55fa4d63:19137:13)
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:877
+renderWithHooks @ chunk-WERSD76P.js?v=55fa4d63:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=55fa4d63:14582
+beginWork @ chunk-WERSD76P.js?v=55fa4d63:15924
+callCallback2 @ chunk-WERSD76P.js?v=55fa4d63:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=55fa4d63:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=55fa4d63:3733
+beginWork$1 @ chunk-WERSD76P.js?v=55fa4d63:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=55fa4d63:19198
+workLoopSync @ chunk-WERSD76P.js?v=55fa4d63:19137
+renderRootSync @ chunk-WERSD76P.js?v=55fa4d63:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=55fa4d63:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:18627
+chunk-WERSD76P.js?v=55fa4d63:14032 The above error occurred in the <RestaurantAdminDashboardContent> component:
+
+    at RestaurantAdminDashboardContent (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/src/pages/RestaurantAdminDashboard.tsx:75:20)
+    at RestaurantAdminDashboard (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/src/pages/RestaurantAdminDashboard.tsx:2872:48)
+    at Route (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:323:16)
+    at Switch (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:379:17)
+    at Router (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/src/App.tsx?v=MTHqR3ONbLpTkTDuz4ZCt:44:42)
+    at Provider (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MAE4WKEQ.js?v=55fa4d63:38:15)
+    at TooltipProvider (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=55fa4d63:59:5)
+    at QueryClientProvider (https://ef131621-535f-4c62-806b-6402209a7bdb-00-11nf1efy1233a.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=55fa4d63:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=55fa4d63:14032
+update.callback @ chunk-WERSD76P.js?v=55fa4d63:14052
+callCallback @ chunk-WERSD76P.js?v=55fa4d63:11248
+commitUpdateQueue @ chunk-WERSD76P.js?v=55fa4d63:11265
+commitLayoutEffectOnFiber @ chunk-WERSD76P.js?v=55fa4d63:17093
+commitLayoutMountEffects_complete @ chunk-WERSD76P.js?v=55fa4d63:17980
+commitLayoutEffects_begin @ chunk-WERSD76P.js?v=55fa4d63:17969
+commitLayoutEffects @ chunk-WERSD76P.js?v=55fa4d63:17920
+commitRootImpl @ chunk-WERSD76P.js?v=55fa4d63:19353
+commitRoot @ chunk-WERSD76P.js?v=55fa4d63:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:18627
+chunk-WERSD76P.js?v=55fa4d63:9129 Uncaught TypeError: menu.map is not a function
+    at RestaurantAdminDashboardContent (RestaurantAdminDashboard.tsx:877:19)
+    at renderWithHooks (chunk-WERSD76P.js?v=55fa4d63:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=55fa4d63:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=55fa4d63:15924:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=55fa4d63:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=55fa4d63:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=55fa4d63:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=55fa4d63:19116:15)
+    at recoverFromConcurrentError (chunk-WERSD76P.js?v=55fa4d63:18736:28)
+    at performSyncWorkOnRoot (chunk-WERSD76P.js?v=55fa4d63:18879:28)
+RestaurantAdminDashboardContent @ RestaurantAdminDashboard.tsx:877
+renderWithHooks @ chunk-WERSD76P.js?v=55fa4d63:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=55fa4d63:14582
+beginWork @ chunk-WERSD76P.js?v=55fa4d63:15924
+beginWork$1 @ chunk-WERSD76P.js?v=55fa4d63:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=55fa4d63:19198
+workLoopSync @ chunk-WERSD76P.js?v=55fa4d63:19137
+renderRootSync @ chunk-WERSD76P.js?v=55fa4d63:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=55fa4d63:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=55fa4d63:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=55fa4d63:9119
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:18627
