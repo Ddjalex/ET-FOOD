@@ -104,8 +104,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
+      console.log('Attempting password verification...');
+      console.log('Input password:', password);
+      console.log('Stored password hash exists:', !!user.password);
+      console.log('Stored password hash length:', user.password?.length);
+      
       const isValidPassword = await verifyPassword(password, user.password);
+      console.log('Password verification result:', isValidPassword);
+      
       if (!isValidPassword) {
+        console.log('Password verification failed for user:', email);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
