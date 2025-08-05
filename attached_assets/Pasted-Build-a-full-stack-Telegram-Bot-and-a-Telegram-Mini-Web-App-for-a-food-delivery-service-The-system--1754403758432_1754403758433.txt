@@ -1,0 +1,109 @@
+Build a full-stack Telegram Bot and a Telegram Mini Web App for a food delivery service. The system must be highly intuitive, visually appealing (with a UI/UX inspired by the "BeU delivery" app), and incorporate best practices for e-commerce food delivery, with a focus on a secure, user-specific order management.
+
+Core Requirements & Flow:
+
+1. Telegram Bot (Backend):
+
+Start Command: When a user sends the /start command, the bot must respond with a welcome message and an inline keyboard.
+
+The first button on the keyboard must be a "Share Contact" button, using KeyboardButton(text="Share My Contact", request_contact=True).
+
+Contact Sharing: When the user shares their contact, the bot should acknowledge it.
+
+The bot must then immediately present a new inline keyboard with a "Share Location" button, using KeyboardButton(text="Share My Live Location", request_location=True).
+
+Location Sharing: When the user shares their live location, the bot should acknowledge it and store the coordinates.
+
+The bot should then display a final inline keyboard with a single button: "Order Food". This button will open the Telegram Mini Web App. The button should include the web_app URL to launch the frontend.
+
+Data Persistence: The bot must store the user's id, contact, and a session token. It must also receive and temporarily store the user's live location (latitude and longitude) to pass to the Mini Web App.
+
+2. Telegram Mini Web App (Frontend):
+
+Technology Stack: The Mini Web App must be built using HTML, CSS (Tailwind CSS for a clean, modern look), and JavaScript.
+
+Initial Load:
+
+Upon opening, the app must immediately read the user's location data passed from the Telegram bot.
+
+Display a loading state while fetching restaurants based on the user's location.
+
+The UI should be designed with a clean, modern aesthetic, similar to the "BeU delivery" app, featuring rounded corners, prominent imagery, and a responsive layout.
+
+Home Screen:
+
+A prominent header displaying the current delivery address (derived from the shared location). The address should be editable.
+
+A search bar to find restaurants or specific food items.
+
+A horizontal scrollable list of food categories (e.g., Pizza, Burgers, Sushi, Vegan).
+
+A list of restaurants near the user's location. Each restaurant card should display:
+
+Logo/Image.
+
+Name.
+
+Star rating and review count.
+
+Estimated delivery time.
+
+Distance from the user.
+
+Restaurant Details & Menu Screen:
+
+When a user taps a restaurant, navigate to a new screen showing the full menu.
+
+The page should have a sticky header with the restaurant's logo, name, and rating.
+
+Menu items should be categorized, with a sidebar for quick navigation between categories.
+
+Each menu item card should include:
+
+High-quality image.
+
+Name and description.
+
+Price.
+
+An "Add to Cart" button.
+
+Shopping Cart:
+
+A persistent cart icon (e.g., in the bottom right) that displays the number of items.
+
+Clicking the icon opens a modal or a separate page for the cart.
+
+The cart should list all added items, quantities, and sub-totals.
+
+Buttons to adjust item quantities (+/-) and remove items.
+
+A total amount display with subtotals, tax, and delivery fees.
+
+Checkout & Delivery Options:
+
+The checkout page should be the final step before payment.
+
+User Address: The page must pre-fill the delivery address with the location shared via the bot. This address must be editable.
+
+Recipient Information: Include an optional section for "Order for someone else." This section should have fields for the recipient's name, phone number, and a separate delivery address. This is a crucial enhancement based on e-commerce experience.
+
+Order Data Structure: The final order data must be structured to include the user's ID and the specific restaurant's ID. This is a critical multi-tenant requirement.
+
+Payment Method: Provide options for "Cash on Delivery" or simulated card payment (a simple button for now).
+
+Order Summary: A final summary of the order, including items, costs, and the chosen delivery address.
+
+A final "Place Order" button that sends the order details back to the Telegram bot.
+
+3. Enhancements from E-commerce Experience:
+
+Responsive Design: The UI must be fully responsive and optimized for mobile devices.
+
+Location Filtering: The system should only show restaurants that can deliver to the user's location.
+
+Product Personalization: Allow users to add special instructions or customization notes to individual menu items (e.g., "no onions").
+
+User-Friendly Notifications: The bot should send a confirmation message to the user after an order is placed. The bot should also provide a way to check order status (e.g., "preparing," "out for delivery"). This order history and status must be securely tied to the individual customer, allowing them to view only their own orders.
+
+Code Structure: The code should be well-commented, modular, and easy to extend. Use modern JavaScript practices.
