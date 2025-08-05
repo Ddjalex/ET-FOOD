@@ -5,6 +5,9 @@ import { Driver } from './models/Driver';
 import { SystemSettings } from './models/SystemSettings';
 import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
 import { MenuItem as MenuItemModel } from './models/MenuItem';
+import { Order as OrderModel } from './models/Order';
+import { mongoose } from './mongodb';
+import { ObjectId } from 'mongodb';
 import {
   type User as UserType,
   type UpsertUser,
@@ -25,6 +28,9 @@ import {
 } from "@shared/schema";
 
 export class MongoStorage implements IStorage {
+  private get db() {
+    return mongoose.connection.db;
+  }
   
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<UserType | undefined> {
@@ -655,11 +661,10 @@ export class MongoStorage implements IStorage {
   async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
   async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
     try {
-      const ordersCollection = this.db.collection('orders');
-      const orders = await ordersCollection.find({ restaurantId }).sort({ createdAt: -1 }).toArray();
+      const orders = await OrderModel.find({ restaurantId }).sort({ createdAt: -1 }).lean();
       
       return orders.map((order: any) => ({
-        id: order.id,
+        id: order._id.toString(),
         orderNumber: order.orderNumber,
         customerId: order.customerId,
         restaurantId: order.restaurantId,
@@ -681,11 +686,7 @@ export class MongoStorage implements IStorage {
   async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
   async createOrder(orderData: any): Promise<any> {
     try {
-      const ordersCollection = this.db.collection('orders');
-      
-      const order = {
-        _id: new ObjectId(),
-        id: new ObjectId().toString(),
+      const order = new OrderModel({
         customerId: orderData.customerId,
         restaurantId: orderData.restaurantId,
         orderNumber: orderData.orderNumber,
@@ -695,27 +696,25 @@ export class MongoStorage implements IStorage {
         deliveryAddress: orderData.deliveryAddress,
         paymentMethod: orderData.paymentMethod,
         status: orderData.status || 'pending',
-        specialInstructions: orderData.specialInstructions || '',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        specialInstructions: orderData.specialInstructions || ''
+      });
 
-      const result = await ordersCollection.insertOne(order);
+      const savedOrder = await order.save();
       
       return {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        customerId: order.customerId,
-        restaurantId: order.restaurantId,
-        items: order.items,
-        subtotal: order.subtotal,
-        total: order.total,
-        deliveryAddress: order.deliveryAddress,
-        paymentMethod: order.paymentMethod,
-        status: order.status,
-        specialInstructions: order.specialInstructions,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
+        id: savedOrder._id.toString(),
+        orderNumber: savedOrder.orderNumber,
+        customerId: savedOrder.customerId,
+        restaurantId: savedOrder.restaurantId,
+        items: savedOrder.items,
+        subtotal: savedOrder.subtotal,
+        total: savedOrder.total,
+        deliveryAddress: savedOrder.deliveryAddress,
+        paymentMethod: savedOrder.paymentMethod,
+        status: savedOrder.status,
+        specialInstructions: savedOrder.specialInstructions,
+        createdAt: savedOrder.createdAt,
+        updatedAt: savedOrder.updatedAt
       };
     } catch (error) {
       console.error('Error creating order in MongoDB:', error);
