@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function CreateRestaurant() {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -33,8 +33,8 @@ export default function CreateRestaurant() {
 
   const createRestaurantMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/admin/restaurants", {
-        restaurantData,
+      await apiRequest("POST", "/api/superadmin/restaurants", {
+        ...restaurantData,
         adminData
       });
     },
@@ -60,7 +60,7 @@ export default function CreateRestaurant() {
     createRestaurantMutation.mutate();
   };
 
-  if (user?.role !== 'superadmin') {
+  if (!user || user.role !== 'superadmin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>

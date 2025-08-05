@@ -77,6 +77,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Superadmin created with email: superadmin@beu-delivery.com and password: superadmin123');
       }
 
+      // Initialize alm@gmail.com user if it doesn't exist
+      const existingAlmUser = await storage.getUserByEmail('alm@gmail.com');
+      if (!existingAlmUser) {
+        const hashedPassword = await hashPassword('beu123');
+        await storage.createAdminUser({
+          email: 'alm@gmail.com',
+          firstName: 'Alm',
+          lastName: 'User',
+          role: UserRole.SUPERADMIN,
+          password: hashedPassword,
+          isActive: true
+        });
+        console.log('ALM user created with email: alm@gmail.com and password: beu123');
+      }
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
         console.log('User not found for:', email);
@@ -109,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Stored password hash exists:', !!user.password);
       console.log('Stored password hash length:', user.password?.length);
       
-      const isValidPassword = await verifyPassword(password, user.password);
+      const isValidPassword = await verifyPassword(password, user.password || '');
       console.log('Password verification result:', isValidPassword);
       
       if (!isValidPassword) {
@@ -277,14 +292,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Current password is required for verification' });
       }
 
-      // Verify current password
-      const isPasswordValid = await verifyPassword(currentPassword, currentUser.password);
+      // Verify current password  
+      const isPasswordValid = await verifyPassword(currentPassword, currentUser?.password || '');
       if (!isPasswordValid) {
         return res.status(400).json({ message: 'Current password is incorrect' });
       }
 
       // Check if email is already taken by another user
-      if (email !== currentUser.email) {
+      if (email !== currentUser?.email) {
         const existingUser = await storage.getUserByEmail(email);
         if (existingUser && existingUser.id !== id) {
           return res.status(400).json({ message: 'Email is already taken' });
@@ -299,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Update session if updating own profile
-      if (currentUser.id === id) {
+      if (currentUser?.id === id) {
         req.session.user = { ...currentUser, email, firstName, lastName };
       }
 
@@ -443,15 +458,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new restaurant
+  // Create new restaurant with admin
   app.post('/api/superadmin/restaurants', requireSession, requireSuperadmin, async (req, res) => {
     try {
-      const { name, address, phoneNumber, email, description, imageUrl } = req.body;
+      const { name, address, phoneNumber, email, description, imageUrl, adminData } = req.body;
 
       if (!name || !address || !phoneNumber) {
         return res.status(400).json({ message: 'Name, address, and phone number are required' });
       }
 
+      // Create restaurant first
       const restaurant = await storage.createRestaurant({
         name,
         address,
@@ -462,6 +478,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true,
         isApproved: true
       });
+
+      // Create restaurant admin if adminData is provided
+      if (adminData) {
+        const { email: adminEmail, firstName, lastName, phoneNumber: adminPhone } = adminData;
+        
+        if (adminEmail && firstName && lastName) {
+          // Check if admin user already exists
+          const existingAdmin = await storage.getUserByEmail(adminEmail);
+          if (!existingAdmin) {
+            // Generate a default password
+            const defaultPassword = 'beu123';
+            const hashedPassword = await hashPassword(defaultPassword);
+            
+            // Create restaurant admin
+            await storage.createAdminUser({
+              email: adminEmail,
+              firstName,
+              lastName,
+              phoneNumber: adminPhone || null,
+              password: hashedPassword,
+              role: UserRole.RESTAURANT_ADMIN,
+              restaurantId: restaurant.id,
+              isActive: true
+            });
+            console.log(`Restaurant admin created: ${adminEmail} with password: ${defaultPassword}`);
+          }
+        }
+      }
 
       res.status(201).json({
         message: 'Restaurant created successfully',
