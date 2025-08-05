@@ -129,7 +129,24 @@ export class MongoStorage implements IStorage {
       
       const user = new User(cleanUserData);
       const savedUser = await user.save();
-      return { ...savedUser.toObject(), id: savedUser._id.toString() } as UserType;
+      const userObj = savedUser.toObject();
+      return {
+        id: userObj._id.toString(),
+        email: userObj.email || null,
+        firstName: userObj.firstName || null,
+        lastName: userObj.lastName || null,
+        profileImageUrl: userObj.profileImageUrl || null,
+        role: userObj.role || null,
+        phoneNumber: userObj.phoneNumber || null,
+        telegramUserId: userObj.telegramUserId || null,
+        telegramUsername: userObj.telegramUsername || null,
+        password: userObj.password || null,
+        isActive: userObj.isActive ?? true,
+        restaurantId: userObj.restaurantId || null,
+        createdBy: userObj.createdBy || null,
+        createdAt: userObj.createdAt || null,
+        updatedAt: userObj.updatedAt || null,
+      } as UserType;
     } catch (error) {
       console.error('Error creating admin user:', error);
       throw error;
@@ -163,9 +180,29 @@ export class MongoStorage implements IStorage {
 
   async createRestaurant(restaurantData: InsertRestaurant): Promise<RestaurantType> {
     try {
-      const restaurant = new Restaurant(restaurantData);
+      // Remove any id field that might cause conflicts
+      const cleanRestaurantData = { ...restaurantData };
+      delete cleanRestaurantData.id;
+      
+      const restaurant = new Restaurant(cleanRestaurantData);
       const savedRestaurant = await restaurant.save();
-      return { ...savedRestaurant.toObject(), id: savedRestaurant._id.toString() } as RestaurantType;
+      const restaurantObj = savedRestaurant.toObject();
+      return {
+        id: restaurantObj._id.toString(),
+        name: restaurantObj.name,
+        description: restaurantObj.description || null,
+        address: restaurantObj.address,
+        phoneNumber: restaurantObj.phoneNumber,
+        email: restaurantObj.email || null,
+        location: restaurantObj.location || null,
+        imageUrl: restaurantObj.imageUrl || null,
+        isActive: restaurantObj.isActive,
+        isApproved: restaurantObj.isApproved,
+        rating: restaurantObj.rating,
+        totalOrders: restaurantObj.totalOrders,
+        createdAt: restaurantObj.createdAt,
+        updatedAt: restaurantObj.updatedAt
+      } as RestaurantType;
     } catch (error) {
       console.error('Error creating restaurant:', error);
       throw error;

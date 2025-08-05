@@ -1,0 +1,45 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-WERSD76P.js?v=55fa4d63:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+api/auth/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+api/admin/me:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+chunk-WERSD76P.js?v=55fa4d63:521 Warning: Cannot update a component (`SuperAdminDashboard`) while rendering a different component (`SuperAdminDashboard`). To locate the bad setState() call inside `SuperAdminDashboard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at SuperAdminDashboard (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/src/pages/SuperAdminDashboard.tsx:4673:48)
+    at Route (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:323:16)
+    at Switch (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:379:17)
+    at Router (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/src/App.tsx?v=avZKjubrtOHgH50q5Bkw1:45:42)
+    at Provider (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-K7TZL7XT.js?v=55fa4d63:48:15)
+    at TooltipProvider (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=55fa4d63:59:5)
+    at QueryClientProvider (https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=55fa4d63:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=55fa4d63:521
+superadmin:1 [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​SuperAdminDashboard.tsx:​1308:​28" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" placeholder=​"Enter password" name=​"password" id=​":​rp:​-form-item" aria-describedby=​":​rp:​-form-item-description" aria-invalid=​"false" value>​
+api/superadmin/restaurants:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+api/superadmin/restaurants:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+SuperAdminDashboard.tsx:258  POST https://3621c104-ba7e-46a7-a123-da9e01d81251-00-ub5l66gkahtt.janeway.replit.dev/api/superadmin/restaurants 500 (Internal Server Error)
+mutationFn @ SuperAdminDashboard.tsx:258
+fn @ @tanstack_react-query.js?v=55fa4d63:1189
+run @ @tanstack_react-query.js?v=55fa4d63:494
+start @ @tanstack_react-query.js?v=55fa4d63:536
+execute @ @tanstack_react-query.js?v=55fa4d63:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=55fa4d63:2630
+(anonymous) @ @tanstack_react-query.js?v=55fa4d63:3295
+onCreateRestaurant @ SuperAdminDashboard.tsx:325
+(anonymous) @ chunk-CXJMC5RA.js?v=55fa4d63:1465
+await in (anonymous)
+callCallback2 @ chunk-WERSD76P.js?v=55fa4d63:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=55fa4d63:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=55fa4d63:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=55fa4d63:3736
+executeDispatch @ chunk-WERSD76P.js?v=55fa4d63:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=55fa4d63:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=55fa4d63:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=55fa4d63:7051
+(anonymous) @ chunk-WERSD76P.js?v=55fa4d63:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=55fa4d63:18913
+batchedUpdates @ chunk-WERSD76P.js?v=55fa4d63:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=55fa4d63:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=55fa4d63:5478
+dispatchEvent @ chunk-WERSD76P.js?v=55fa4d63:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=55fa4d63:5449

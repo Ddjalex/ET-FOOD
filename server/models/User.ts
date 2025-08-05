@@ -36,23 +36,7 @@ const UserSchema = new Schema<IUser>({
   restaurantId: String,
   createdBy: String,
 }, {
-  timestamps: true,
-  toJSON: { 
-    transform: (doc: any, ret: any) => {
-      ret.id = ret._id.toString();
-      delete ret._id;
-      delete ret.__v;
-      return ret;
-    }
-  },
-  toObject: { 
-    transform: (doc: any, ret: any) => {
-      ret.id = ret._id.toString();
-      delete ret._id;
-      delete ret.__v;
-      return ret;
-    }
-  }
+  timestamps: true
 });
 
 // Ensure no 'id' field index exists that conflicts with _id

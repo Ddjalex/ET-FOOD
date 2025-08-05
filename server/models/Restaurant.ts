@@ -28,15 +28,7 @@ const RestaurantSchema = new Schema<IRestaurant>({
   rating: { type: String, default: '0.00' },
   totalOrders: { type: Number, default: 0 },
 }, {
-  timestamps: true,
-  toJSON: { 
-    transform: (doc, ret) => {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-      return ret;
-    }
-  }
+  timestamps: true
 });
 
 export const Restaurant = mongoose.model<IRestaurant>('Restaurant', RestaurantSchema);
