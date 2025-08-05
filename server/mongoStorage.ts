@@ -30,7 +30,25 @@ export class MongoStorage implements IStorage {
   async getUser(id: string): Promise<UserType | undefined> {
     try {
       const user = await User.findById(id).lean();
-      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+      if (!user) return undefined;
+      
+      return {
+        id: user._id.toString(),
+        email: user.email || null,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        profileImageUrl: user.profileImageUrl || null,
+        role: user.role || null,
+        phoneNumber: user.phoneNumber || null,
+        telegramUserId: user.telegramUserId || null,
+        telegramUsername: user.telegramUsername || null,
+        password: user.password || null,
+        isActive: user.isActive ?? true,
+        restaurantId: user.restaurantId || null,
+        createdBy: user.createdBy || null,
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null,
+      } as UserType;
     } catch (error) {
       console.error('Error getting user:', error);
       return undefined;
@@ -44,7 +62,24 @@ export class MongoStorage implements IStorage {
         userData,
         { upsert: true, new: true, runValidators: true }
       ).lean();
-      return { ...user, id: user._id.toString() } as UserType;
+      
+      return {
+        id: user._id.toString(),
+        email: user.email || null,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        profileImageUrl: user.profileImageUrl || null,
+        role: user.role || null,
+        phoneNumber: user.phoneNumber || null,
+        telegramUserId: user.telegramUserId || null,
+        telegramUsername: user.telegramUsername || null,
+        password: user.password || null,
+        isActive: user.isActive ?? true,
+        restaurantId: user.restaurantId || null,
+        createdBy: user.createdBy || null,
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null,
+      } as UserType;
     } catch (error) {
       console.error('Error upserting user:', error);
       throw error;
@@ -422,6 +457,8 @@ export class MongoStorage implements IStorage {
         price: item.price.toString(),
         imageUrl: item.imageUrl || null,
         isAvailable: item.isAvailable,
+        status: 'active',
+        lastModifiedBy: null,
         preparationTime: item.preparationTime || null,
         ingredients: item.ingredients || [],
         isVegetarian: item.isVegetarian,
@@ -429,7 +466,7 @@ export class MongoStorage implements IStorage {
         spicyLevel: item.spicyLevel,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
-      }));
+      } as MenuItem));
     } catch (error) {
       console.error('Error getting menu items:', error);
       return [];
@@ -448,6 +485,8 @@ export class MongoStorage implements IStorage {
         price: item.price.toString(),
         imageUrl: item.imageUrl || null,
         isAvailable: item.isAvailable,
+        status: 'active',
+        lastModifiedBy: null,
         preparationTime: item.preparationTime || null,
         ingredients: item.ingredients || [],
         isVegetarian: item.isVegetarian,
@@ -455,7 +494,7 @@ export class MongoStorage implements IStorage {
         spicyLevel: item.spicyLevel,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
-      }));
+      } as MenuItem));
     } catch (error) {
       console.error('Error getting menu items by category:', error);
       return [];
@@ -475,6 +514,8 @@ export class MongoStorage implements IStorage {
         price: newItem.price.toString(),
         imageUrl: newItem.imageUrl || null,
         isAvailable: newItem.isAvailable,
+        status: 'active',
+        lastModifiedBy: null,
         preparationTime: newItem.preparationTime || null,
         ingredients: newItem.ingredients || [],
         isVegetarian: newItem.isVegetarian,
@@ -482,7 +523,7 @@ export class MongoStorage implements IStorage {
         spicyLevel: newItem.spicyLevel,
         createdAt: newItem.createdAt,
         updatedAt: newItem.updatedAt
-      };
+      } as MenuItem;
     } catch (error) {
       console.error('Error creating menu item:', error);
       throw error;
@@ -502,6 +543,8 @@ export class MongoStorage implements IStorage {
         price: updated.price.toString(),
         imageUrl: updated.imageUrl || null,
         isAvailable: updated.isAvailable,
+        status: 'active',
+        lastModifiedBy: null,
         preparationTime: updated.preparationTime || null,
         ingredients: updated.ingredients || [],
         isVegetarian: updated.isVegetarian,
@@ -509,43 +552,7 @@ export class MongoStorage implements IStorage {
         spicyLevel: updated.spicyLevel,
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt
-      };
-    } catch (error) {
-      console.error('Error updating menu item:', error);
-      throw error;
-    }
-  }
-
-  async deleteMenuItem(id: string): Promise<void> {
-    try {
-      await MenuItemModel.findByIdAndDelete(id);
-    } catch (error) {
-      console.error('Error deleting menu item:', error);
-      throw error;
-    }
-  }
-
-  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
-    try {
-      const updated = await MenuItemModel.findByIdAndUpdate(id, item, { new: true });
-      if (!updated) throw new Error('Menu item not found');
-      return {
-        id: updated._id.toString(),
-        restaurantId: updated.restaurantId,
-        categoryId: updated.categoryId,
-        name: updated.name,
-        description: updated.description || null,
-        price: updated.price.toString(),
-        imageUrl: updated.imageUrl || null,
-        isAvailable: updated.isAvailable,
-        preparationTime: updated.preparationTime || null,
-        ingredients: updated.ingredients || [],
-        isVegetarian: updated.isVegetarian,
-        isVegan: updated.isVegan,
-        spicyLevel: updated.spicyLevel,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt
-      };
+      } as MenuItem;
     } catch (error) {
       console.error('Error updating menu item:', error);
       throw error;
@@ -584,4 +591,201 @@ export class MongoStorage implements IStorage {
   async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error('Not implemented'); }
   async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
   async getOrderAnalytics(): Promise<any> { return {}; }
+
+  // Missing interface methods
+  async getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]> {
+    try {
+      const items = await MenuItemModel.find({ restaurantId, status });
+      return items.map((item: any) => ({
+        id: item._id.toString(),
+        restaurantId: item.restaurantId,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description || null,
+        price: item.price.toString(),
+        imageUrl: item.imageUrl || null,
+        isAvailable: item.isAvailable,
+        status: item.status || 'active',
+        lastModifiedBy: null,
+        preparationTime: item.preparationTime || null,
+        ingredients: item.ingredients || [],
+        isVegetarian: item.isVegetarian,
+        isVegan: item.isVegan,
+        spicyLevel: item.spicyLevel,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      } as MenuItem));
+    } catch (error) {
+      console.error('Error getting menu items by status:', error);
+      return [];
+    }
+  }
+
+  async getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]> {
+    try {
+      const categories = await MenuCategoryModel.find({ restaurantId, status });
+      return categories.map((category: any) => ({
+        id: category._id.toString(),
+        restaurantId: category.restaurantId,
+        name: category.name,
+        description: category.description || null,
+        isActive: category.isActive,
+        status: category.status || 'active',
+        lastModifiedBy: null,
+        sortOrder: category.sortOrder,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt
+      } as MenuCategory));
+    } catch (error) {
+      console.error('Error getting menu categories by status:', error);
+      return [];
+    }
+  }
+
+  async getRestaurantMenu(restaurantId: string): Promise<{ categories: MenuCategory[], items: MenuItem[] }> {
+    try {
+      const categories = await this.getMenuCategories(restaurantId);
+      const items = await this.getMenuItems(restaurantId);
+      return { categories, items };
+    } catch (error) {
+      console.error('Error getting restaurant menu:', error);
+      return { categories: [], items: [] };
+    }
+  }
+
+  async getAllAdminUsers(): Promise<UserType[]> {
+    try {
+      const users = await User.find({ 
+        role: { $in: ['superadmin', 'restaurant_admin', 'kitchen_staff'] } 
+      }).lean();
+      return users.map(user => ({
+        id: user._id.toString(),
+        email: user.email || null,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        profileImageUrl: user.profileImageUrl || null,
+        role: user.role || null,
+        phoneNumber: user.phoneNumber || null,
+        telegramUserId: user.telegramUserId || null,
+        telegramUsername: user.telegramUsername || null,
+        password: user.password || null,
+        isActive: user.isActive ?? true,
+        restaurantId: user.restaurantId || null,
+        createdBy: user.createdBy || null,
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null,
+      } as UserType));
+    } catch (error) {
+      console.error('Error getting admin users:', error);
+      return [];
+    }
+  }
+
+  async getSystemSettings(): Promise<any> {
+    try {
+      const settings = await SystemSettings.findOne().lean();
+      return settings || {};
+    } catch (error) {
+      console.error('Error getting system settings:', error);
+      return {};
+    }
+  }
+
+  async updateSystemSettings(settingsData: any): Promise<any> {
+    try {
+      const settings = await SystemSettings.findOneAndUpdate(
+        {},
+        settingsData,
+        { upsert: true, new: true, runValidators: true }
+      ).lean();
+      return settings;
+    } catch (error) {
+      console.error('Error updating system settings:', error);
+      throw error;
+    }
+  }
+
+  async updateCompanyLogo(logoUrl: string): Promise<void> {
+    try {
+      await SystemSettings.findOneAndUpdate(
+        {},
+        { companyLogo: logoUrl },
+        { upsert: true }
+      );
+    } catch (error) {
+      console.error('Error updating company logo:', error);
+      throw error;
+    }
+  }
+
+  async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
+    // Implementation would depend on your password hashing strategy
+    return false;
+  }
+
+  async updateAdminPassword(adminId: string, newPassword: string): Promise<void> {
+    try {
+      await User.findByIdAndUpdate(adminId, { password: newPassword });
+    } catch (error) {
+      console.error('Error updating admin password:', error);
+      throw error;
+    }
+  }
+
+  async getAllDrivers(): Promise<DriverType[]> {
+    try {
+      const drivers = await Driver.find({}).lean();
+      return drivers.map(driver => ({
+        id: driver._id.toString(),
+        userId: driver.userId,
+        licenseNumber: driver.licenseNumber,
+        vehicleType: driver.vehicleType,
+        vehiclePlate: driver.vehiclePlate,
+        currentLocation: driver.currentLocation ? [driver.currentLocation.lat, driver.currentLocation.lng] : null,
+        isOnline: driver.isOnline,
+        isAvailable: driver.isAvailable,
+        isApproved: driver.isApproved,
+        rating: driver.rating ? driver.rating.toString() : '0.00',
+        totalDeliveries: driver.totalDeliveries || 0,
+        totalEarnings: driver.totalEarnings ? driver.totalEarnings.toString() : '0.00',
+        zone: driver.zone || null,
+        licenseImageUrl: driver.licenseImageUrl || null,
+        vehicleImageUrl: driver.vehicleImageUrl || null,
+        idCardImageUrl: driver.idCardImageUrl || null,
+        createdAt: driver.createdAt || null,
+        updatedAt: driver.updatedAt || null,
+      } as DriverType));
+    } catch (error) {
+      console.error('Error getting all drivers:', error);
+      return [];
+    }
+  }
+
+  async rejectDriver(driverId: string): Promise<void> {
+    try {
+      await Driver.findByIdAndUpdate(driverId, { isApproved: false });
+    } catch (error) {
+      console.error('Error rejecting driver:', error);
+      throw error;
+    }
+  }
+
+  async getDashboardStats(): Promise<any> {
+    try {
+      const totalRestaurants = await Restaurant.countDocuments();
+      const totalDrivers = await Driver.countDocuments();
+      const totalUsers = await User.countDocuments();
+      
+      return {
+        totalRestaurants,
+        totalDrivers,
+        totalUsers,
+        totalOrders: 0, // Would implement with Order model
+        totalRevenue: 0
+      };
+    } catch (error) {
+      console.error('Error getting dashboard stats:', error);
+      return {};
+    }
+  }
 }
