@@ -31,24 +31,63 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
+// Type definitions to match our database schema
+interface MenuCategory {
+  id: string;
+  restaurantId: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface MenuItem {
+  id: string;
+  restaurantId: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  isAvailable: boolean;
+  preparationTime?: number;
+  isVegetarian: boolean;
+  isVegan: boolean;
+  spicyLevel: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  restaurantId: string;
+  status: string;
+  items: any[];
+  subtotal: number;
+  total: number;
+  createdAt: string;
+}
+
 // Form schemas for menu management
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
   description: z.string().optional(),
-  displayOrder: z.number().min(0).default(0),
+  sortOrder: z.number().min(0).default(0),
 });
 
 const menuItemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   price: z.number().min(0.01, 'Price must be greater than 0'),
   categoryId: z.string().min(1, 'Category is required'),
   preparationTime: z.number().min(1).max(120).optional(),
   isVegetarian: z.boolean().default(false),
   isVegan: z.boolean().default(false),
-  isGlutenFree: z.boolean().default(false),
   spicyLevel: z.number().min(0).max(5).default(0),
-  allergens: z.array(z.string()).default([]),
   isAvailable: z.boolean().default(true),
 });
 
@@ -259,10 +298,7 @@ export function KitchenDashboard() {
   // Category management mutations  
   const addCategoryMutation = useMutation({
     mutationFn: async (data: z.infer<typeof categorySchema>) => {
-      const response = await apiRequest(`/api/kitchen/${typedUser?.restaurantId}/menu/categories`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest('POST', `/api/kitchen/${typedUser?.restaurantId}/menu/categories`, data);
       return response;
     },
     onSuccess: () => {
@@ -277,10 +313,7 @@ export function KitchenDashboard() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: z.infer<typeof categorySchema> }) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/categories/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest('PUT', `/api/restaurants/${typedUser?.restaurantId}/categories/${id}`, data);
       return response;
     },
     onSuccess: () => {
@@ -295,9 +328,7 @@ export function KitchenDashboard() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/categories/${categoryId}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/restaurants/${typedUser?.restaurantId}/categories/${categoryId}`);
       return response;
     },
     onSuccess: () => {
@@ -312,10 +343,7 @@ export function KitchenDashboard() {
   // Menu item management mutations
   const addMenuItemMutation = useMutation({
     mutationFn: async (data: z.infer<typeof menuItemSchema>) => {
-      const response = await apiRequest(`/api/kitchen/${typedUser?.restaurantId}/menu/items`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest('POST', `/api/kitchen/${typedUser?.restaurantId}/menu/items`, data);
       return response;
     },
     onSuccess: () => {
@@ -330,10 +358,7 @@ export function KitchenDashboard() {
 
   const updateMenuItemMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: z.infer<typeof menuItemSchema> }) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/menu-items/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest('PUT', `/api/restaurants/${typedUser?.restaurantId}/menu-items/${id}`, data);
       return response;
     },
     onSuccess: () => {
@@ -348,9 +373,7 @@ export function KitchenDashboard() {
 
   const deleteMenuItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/menu-items/${itemId}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('DELETE', `/api/restaurants/${typedUser?.restaurantId}/menu-items/${itemId}`);
       return response;
     },
     onSuccess: () => {
@@ -915,7 +938,7 @@ function CategoryFormDialog({
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
-      displayOrder: initialData?.displayOrder || 0,
+      sortOrder: initialData?.sortOrder || 0,
     }
   });
 
@@ -965,10 +988,10 @@ function CategoryFormDialog({
 
             <FormField
               control={form.control}
-              name="displayOrder"
+              name="sortOrder"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Display Order</FormLabel>
+                  <FormLabel>Sort Order</FormLabel>
                   <FormControl>
                     <Input 
                       {...field} 
@@ -1031,9 +1054,7 @@ function MenuItemFormDialog({
       preparationTime: initialData?.preparationTime || undefined,
       isVegetarian: initialData?.isVegetarian || false,
       isVegan: initialData?.isVegan || false,
-      isGlutenFree: initialData?.isGlutenFree || false,
       spicyLevel: initialData?.spicyLevel || 0,
-      allergens: initialData?.allergens || [],
       isAvailable: initialData?.isAvailable !== false,
     }
   });
@@ -1203,7 +1224,7 @@ function MenuItemFormDialog({
 
             <div className="space-y-3">
               <div className="text-sm font-medium">Dietary Options</div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="isVegetarian"
@@ -1232,22 +1253,6 @@ function MenuItemFormDialog({
                         />
                       </FormControl>
                       <FormLabel className="text-sm">Vegan</FormLabel>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isGlutenFree"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm">Gluten Free</FormLabel>
                     </FormItem>
                   )}
                 />
