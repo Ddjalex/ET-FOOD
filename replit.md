@@ -51,6 +51,7 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
   - Created seamless ordering flow with checkout process
   - Added session management between Telegram bot and Mini Web App
   - Integrated customer location sharing and order placement workflow
+  - **FIXED HTTPS Issue**: Resolved Telegram Mini Web App URL error by using proper HTTPS domain instead of localhost
 - **Critical Data Isolation Bug Fixed**: 
   - Fixed restaurant staff creation endpoint to use correct restaurant ID from URL parameter
   - Previously all staff were being assigned to superadmin's restaurant due to using user.restaurantId instead of req.params.restaurantId

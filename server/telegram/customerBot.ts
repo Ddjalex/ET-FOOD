@@ -124,7 +124,8 @@ Now, to find the best restaurants near you and provide accurate delivery estimat
 
 Now you're all set to explore delicious restaurants near you. Tap the button below to start ordering:`;
 
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    // Use HTTPS for Telegram Mini Web Apps (required by Telegram)
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://your-app.replit.app';
     const webAppUrl = `${baseUrl}/telegram-app?session=${session.sessionToken}&userId=${session.userId}&lat=${session.location.latitude}&lng=${session.location.longitude}`;
 
     const orderKeyboard = {
@@ -148,7 +149,8 @@ Now you're all set to explore delicious restaurants near you. Tap the button bel
       return ctx.reply('Please share your contact and location first by using /start command.');
     }
 
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+    // Use HTTPS for Telegram Mini Web Apps (required by Telegram)
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://your-app.replit.app';
     const webAppUrl = `${baseUrl}/telegram-app?session=${session.sessionToken}&userId=${session.userId}&lat=${session.location?.latitude}&lng=${session.location?.longitude}`;
 
     const keyboard = {
