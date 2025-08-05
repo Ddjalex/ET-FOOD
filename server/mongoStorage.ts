@@ -471,7 +471,11 @@ export class MongoStorage implements IStorage {
 
   async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> {
     try {
-      const newCategory = new MenuCategoryModel(category);
+      // Remove any id field that might cause conflicts
+      const cleanCategoryData = { ...category };
+      delete cleanCategoryData.id;
+      
+      const newCategory = new MenuCategoryModel(cleanCategoryData);
       await newCategory.save();
       return {
         id: newCategory._id.toString(),
@@ -479,9 +483,12 @@ export class MongoStorage implements IStorage {
         name: newCategory.name,
         description: newCategory.description || null,
         isActive: newCategory.isActive,
+        status: 'active',
+        lastModifiedBy: null,
         sortOrder: newCategory.sortOrder,
-        createdAt: newCategory.createdAt
-      };
+        createdAt: newCategory.createdAt,
+        updatedAt: newCategory.createdAt
+      } as MenuCategory;
     } catch (error) {
       console.error('Error creating menu category:', error);
       throw error;
@@ -575,7 +582,11 @@ export class MongoStorage implements IStorage {
 
   async createMenuItem(item: InsertMenuItem): Promise<MenuItem> {
     try {
-      const newItem = new MenuItemModel(item);
+      // Remove any id field that might cause conflicts
+      const cleanItemData = { ...item };
+      delete cleanItemData.id;
+      
+      const newItem = new MenuItemModel(cleanItemData);
       await newItem.save();
       return {
         id: newItem._id.toString(),
