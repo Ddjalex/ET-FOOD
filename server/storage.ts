@@ -94,6 +94,7 @@ export interface IStorage {
   // Password management methods
   verifyAdminPassword(adminId: string, password: string): Promise<boolean>;
   updateAdminPassword(adminId: string, newPassword: string): Promise<void>;
+  updateAdminProfile(adminId: string, profileData: { email: string; firstName: string; lastName: string }): Promise<User>;
   updateAdminUser(id: string, data: Partial<User>): Promise<User>;
   
   // Driver management methods
@@ -726,6 +727,24 @@ class MemoryStorage implements IStorage {
     // Update the password in memory
     const updatedAdmin = { ...admin, password: newHashedPassword, updatedAt: new Date() };
     this.users.set(adminId, updatedAdmin);
+  }
+
+  async updateAdminProfile(adminId: string, profileData: { email: string; firstName: string; lastName: string }): Promise<User> {
+    const admin = this.users.get(adminId);
+    if (!admin) {
+      throw new Error('Admin not found');
+    }
+    
+    // Update the profile in memory
+    const updatedAdmin = { 
+      ...admin, 
+      email: profileData.email,
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      updatedAt: new Date() 
+    };
+    this.users.set(adminId, updatedAdmin);
+    return updatedAdmin;
   }
 
   // Driver management methods

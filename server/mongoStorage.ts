@@ -346,6 +346,32 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  async updateAdminProfile(adminId: string, profileData: { email: string; firstName: string; lastName: string }): Promise<UserType> {
+    try {
+      const updatedUser = await User.findByIdAndUpdate(
+        adminId,
+        {
+          email: profileData.email,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName
+        },
+        { new: true }
+      ).lean();
+      
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+      
+      return {
+        ...updatedUser,
+        id: updatedUser._id.toString()
+      } as UserType;
+    } catch (error) {
+      console.error('Error updating admin profile:', error);
+      throw error;
+    }
+  }
+
   // Analytics operations
   async getDashboardStats(): Promise<any> {
     try {

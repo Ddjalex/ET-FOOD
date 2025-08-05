@@ -258,7 +258,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update admin profile route  
+  app.put('/api/superadmin/admins/:id', requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { email, firstName, lastName, currentPassword } = req.body;
+      const currentUser = req.session.user;
 
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required for verification' });
+      }
+
+      // Verify current password
+      const isPasswordValid = await verifyPassword(currentPassword, currentUser.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Check if email is already taken by another user
+      if (email !== currentUser.email) {
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== id) {
+          return res.status(400).json({ message: 'Email is already taken' });
+        }
+      }
+
+      // Update profile
+      const updatedUser = await storage.updateAdminProfile(id, {
+        email,
+        firstName,
+        lastName
+      });
+
+      // Update session if updating own profile
+      if (currentUser.id === id) {
+        req.session.user = { ...currentUser, email, firstName, lastName };
+      }
+
+      res.json({ 
+        message: 'Profile updated successfully',
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ message: 'Failed to update profile' });
+    }
+  });
 
   // Dashboard stats endpoint
   app.get('/api/dashboard/stats', requireSession, async (req, res) => {

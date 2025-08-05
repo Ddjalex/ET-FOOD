@@ -127,10 +127,18 @@ const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const profileUpdateSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  currentPassword: z.string().min(1, 'Current password is required for profile changes')
+});
+
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
 type AdminFormData = z.infer<typeof adminFormSchema>;
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
 type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
+type ProfileUpdateData = z.infer<typeof profileUpdateSchema>;
 
 interface SystemSettings {
   companyName: string;
@@ -152,8 +160,10 @@ function SuperAdminDashboardContent() {
   const [isRestaurantDialogOpen, setIsRestaurantDialogOpen] = useState(false);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showProfilePassword, setShowProfilePassword] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
@@ -206,6 +216,16 @@ function SuperAdminDashboardContent() {
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
+    }
+  });
+
+  const profileForm = useForm<ProfileUpdateData>({
+    resolver: zodResolver(profileUpdateSchema),
+    defaultValues: {
+      email: user?.email || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      currentPassword: ''
     }
   });
 
@@ -369,6 +389,40 @@ function SuperAdminDashboardContent() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to change password',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: ProfileUpdateData) => 
+      fetch(`/api/superadmin/admins/${user?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to update profile');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      setIsProfileDialogOpen(false);
+      profileForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/me'] });
+      toast({
+        title: 'Success',
+        description: 'Profile updated successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update profile',
         variant: 'destructive'
       });
     }
@@ -651,6 +705,10 @@ function SuperAdminDashboardContent() {
 
   const onChangePassword = (data: PasswordChangeData) => {
     changePasswordMutation.mutate(data);
+  };
+
+  const onUpdateProfile = (data: ProfileUpdateData) => {
+    updateProfileMutation.mutate(data);
   };
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1656,14 +1714,125 @@ function SuperAdminDashboardContent() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">System Settings</h2>
             
-            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Change Password
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+            <div className="flex gap-2">
+              <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Update Profile</DialogTitle>
+                    <DialogDescription>
+                      Update your superadmin account information.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onUpdateProfile)} className="space-y-4">
+                      <FormField
+                        control={profileForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="email" 
+                                placeholder="Enter your email" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter your first name" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter your last name" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={profileForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Current Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input 
+                                  type={showProfilePassword ? "text" : "password"} 
+                                  placeholder="Enter current password for verification" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowProfilePassword(!showProfilePassword)}
+                                >
+                                  {showProfilePassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <Button type="button" variant="outline" onClick={() => setIsProfileDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={updateProfileMutation.isPending}>
+                          {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Change Password
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Change Admin Password</DialogTitle>
                   <DialogDescription>
@@ -1761,6 +1930,7 @@ function SuperAdminDashboardContent() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
