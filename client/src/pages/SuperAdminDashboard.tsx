@@ -427,6 +427,7 @@ function SuperAdminDashboardContent() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      setEditingRestaurant(null);
       toast({
         title: 'Success',
         description: 'Restaurant updated successfully'
@@ -980,7 +981,17 @@ function SuperAdminDashboardContent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setEditingRestaurant(restaurant)}
+                            onClick={() => {
+                              setEditingRestaurant(restaurant);
+                              restaurantForm.reset({
+                                name: restaurant.name,
+                                address: restaurant.address,
+                                phoneNumber: restaurant.phoneNumber,
+                                email: restaurant.email || '',
+                                description: restaurant.description || '',
+                                imageUrl: restaurant.imageUrl || ''
+                              });
+                            }}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -1011,6 +1022,89 @@ function SuperAdminDashboardContent() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Edit Restaurant Dialog */}
+          {editingRestaurant && (
+            <Dialog open={!!editingRestaurant} onOpenChange={() => setEditingRestaurant(null)}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Restaurant</DialogTitle>
+                  <DialogDescription>
+                    Update restaurant information.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...restaurantForm}>
+                  <form onSubmit={restaurantForm.handleSubmit((data) => {
+                    updateRestaurantMutation.mutate({ 
+                      id: editingRestaurant.id, 
+                      data 
+                    });
+                  })} className="space-y-4">
+                    <FormField
+                      control={restaurantForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Restaurant Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={restaurantForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setEditingRestaurant(null)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={updateRestaurantMutation.isPending}>
+                        {updateRestaurantMutation.isPending ? 'Updating...' : 'Update Restaurant'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       )}
 
@@ -1176,7 +1270,16 @@ function SuperAdminDashboardContent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setEditingAdmin(admin)}
+                            onClick={() => {
+                              setEditingAdmin(admin);
+                              adminForm.reset({
+                                email: admin.email,
+                                firstName: admin.firstName,
+                                lastName: admin.lastName,
+                                password: '', // Don't pre-fill password for security
+                                restaurantId: admin.restaurantId || ''
+                              });
+                            }}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -1207,6 +1310,107 @@ function SuperAdminDashboardContent() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Edit Admin Dialog */}
+          {editingAdmin && (
+            <Dialog open={!!editingAdmin} onOpenChange={() => setEditingAdmin(null)}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Admin User</DialogTitle>
+                  <DialogDescription>
+                    Update admin user information.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...adminForm}>
+                  <form onSubmit={adminForm.handleSubmit((data) => {
+                    updateAdminMutation.mutate({ 
+                      id: editingAdmin.id, 
+                      data: {
+                        email: data.email,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        restaurantId: data.restaurantId
+                      }
+                    });
+                  })} className="space-y-4">
+                    <FormField
+                      control={adminForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={adminForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={adminForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={adminForm.control}
+                      name="restaurantId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Restaurant</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a restaurant" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {restaurants.map((restaurant) => (
+                                <SelectItem key={restaurant.id} value={restaurant.id}>
+                                  {restaurant.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setEditingAdmin(null)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={updateAdminMutation.isPending}>
+                        {updateAdminMutation.isPending ? 'Updating...' : 'Update Admin'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       )}
 
