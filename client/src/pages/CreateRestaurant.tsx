@@ -46,10 +46,11 @@ export default function CreateRestaurant() {
       });
       setLocation("/restaurants");
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Restaurant creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create restaurant",
+        description: error?.message || "Failed to create restaurant",
         variant: "destructive",
       });
     },
