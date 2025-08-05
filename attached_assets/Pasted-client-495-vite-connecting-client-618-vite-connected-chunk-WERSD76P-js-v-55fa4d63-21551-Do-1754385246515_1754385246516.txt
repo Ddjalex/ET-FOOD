@@ -1,0 +1,16 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-WERSD76P.js?v=55fa4d63:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+api/admin/me:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+chunk-WERSD76P.js?v=55fa4d63:521 Warning: Cannot update a component (`SuperAdminDashboard`) while rendering a different component (`SuperAdminDashboard`). To locate the bad setState() call inside `SuperAdminDashboard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at SuperAdminDashboard (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/src/pages/SuperAdminDashboard.tsx:4182:48)
+    at Route (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:323:16)
+    at Switch (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=55fa4d63:379:17)
+    at Router (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/src/App.tsx?v=6lw0KAECDlxcVxhaZS5kK:44:42)
+    at Provider (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-O46BVKQA.js?v=55fa4d63:48:15)
+    at TooltipProvider (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=55fa4d63:59:5)
+    at QueryClientProvider (https://7dd28b04-6ccd-4f09-b0ee-c5a45260b6eb-00-3nj5d7d8lm6f4.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=55fa4d63:2805:3)
+    at App
+printWarning @ chunk-WERSD76P.js?v=55fa4d63:521
+api/auth/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+api/admin/login:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
