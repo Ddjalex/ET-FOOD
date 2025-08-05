@@ -4,7 +4,7 @@ import { connectToMongoDB } from './mongodb';
 // Initialize MongoDB connection
 export let isMongoConnected = false;
 
-if (process.env.DATABASE_URL) {
+if (process.env.MONGODB_URI || process.env.DATABASE_URL) {
   connectToMongoDB()
     .then(() => {
       isMongoConnected = true;
@@ -15,7 +15,7 @@ if (process.env.DATABASE_URL) {
       isMongoConnected = false;
     });
 } else {
-  console.log('No DATABASE_URL provided, using in-memory storage for development');
+  console.log('No MONGODB_URI or DATABASE_URL provided, using in-memory storage for development');
 }
 
 // Export for backwards compatibility (not used with MongoDB)

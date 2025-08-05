@@ -808,15 +808,16 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Initialize storage - since MongoDB connection happens asynchronously,
-// we'll create a storage factory that checks the connection status
+// Initialize storage - check for MongoDB environment variables
+const useMongoStorage = !!(process.env.MONGODB_URI || process.env.DATABASE_URL);
+
 class StorageFactory {
   private _storage: IStorage | null = null;
   
   get storage(): IStorage {
     if (!this._storage) {
-      this._storage = isMongoConnected ? new MongoStorage() : new MemoryStorage();
-      console.log(`Initialized ${isMongoConnected ? 'MongoDB' : 'in-memory'} storage`);
+      this._storage = useMongoStorage ? new MongoStorage() : new MemoryStorage();
+      console.log(`Initialized ${useMongoStorage ? 'MongoDB' : 'in-memory'} storage`);
     }
     return this._storage;
   }
