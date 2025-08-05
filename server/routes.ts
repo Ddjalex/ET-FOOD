@@ -1768,6 +1768,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get restaurants for Telegram Mini Web App
+  app.get('/api/telegram/restaurants', async (req, res) => {
+    try {
+      const { lat, lng } = req.query;
+      
+      // Get all approved restaurants
+      const restaurants = await storage.getRestaurants();
+      const approvedRestaurants = restaurants.filter(r => r.isActive);
+      
+      // Transform restaurant data for Mini Web App
+      const restaurantData = await Promise.all(approvedRestaurants.map(async (restaurant) => {
+        // Get menu items for each restaurant
+        const menuItems = await storage.getMenuItems(restaurant.id);
+        
+        return {
+          id: restaurant.id,
+          name: restaurant.name,
+          description: restaurant.description || 'Delicious food delivered fresh to your door',
+          address: restaurant.address,
+          phone: restaurant.phoneNumber,
+          rating: 4.5, // Default rating - you can implement actual ratings later
+          reviewCount: Math.floor(Math.random() * 200) + 50, // Mock review count
+          deliveryTime: '25-35 min', // Default delivery time
+          distance: lat && lng ? '1.2 km' : 'Unknown', // Calculate actual distance later
+          image: restaurant.imageUrl ? `https://${process.env.REPLIT_DEV_DOMAIN}${restaurant.imageUrl}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=200&fit=crop',
+          category: 'restaurant',
+          deliveryFee: 2.50,
+          minimumOrder: 10.00,
+          isOpen: true,
+          menu: menuItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            price: parseFloat(item.price),
+            image: item.imageUrl ? `https://${process.env.REPLIT_DEV_DOMAIN}${item.imageUrl}` : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=150&fit=crop',
+            category: 'Main Dishes',
+            available: item.isAvailable !== false
+          }))
+        };
+      }));
+
+      res.json(restaurantData);
+    } catch (error) {
+      console.error('Error fetching restaurants for Mini Web App:', error);
+      res.status(500).json({ error: 'Failed to fetch restaurants' });
+    }
+  });
+
+  // Get menu categories for a specific restaurant
+  app.get('/api/telegram/restaurants/:id/menu', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const restaurant = await storage.getRestaurant(id);
+      if (!restaurant) {
+        return res.status(404).json({ error: 'Restaurant not found' });
+      }
+
+      const categories = await storage.getMenuCategories(id);
+      const menuItems = await storage.getMenuItems(id);
+      
+      // Group items by category
+      const menuByCategory: { [key: string]: any[] } = {};
+      menuItems.forEach(item => {
+        const categoryName = 'Main Dishes'; // Default category for now
+        if (!menuByCategory[categoryName]) {
+          menuByCategory[categoryName] = [];
+        }
+        
+        menuByCategory[categoryName].push({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price: parseFloat(item.price),
+          image: item.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=150&fit=crop',
+          available: item.isAvailable !== false
+        });
+      });
+
+      res.json({
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+          description: restaurant.description,
+          address: restaurant.address,
+          phone: restaurant.phoneNumber,
+          image: restaurant.imageUrl
+        },
+        categories: Object.keys(menuByCategory),
+        menu: menuByCategory
+      });
+    } catch (error) {
+      console.error('Error fetching restaurant menu:', error);
+      res.status(500).json({ error: 'Failed to fetch restaurant menu' });
+    }
+  });
+
   // Serve Telegram Mini Web App
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);

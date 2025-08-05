@@ -111,93 +111,13 @@ class BeUDeliveryApp {
 
     async loadRestaurants() {
         try {
-            // Mock restaurant data - in real app, fetch from API based on location
-            this.restaurants = [
-                {
-                    id: '1',
-                    name: 'Pizza Palace',
-                    rating: 4.5,
-                    reviewCount: 120,
-                    deliveryTime: '25-30 min',
-                    distance: '1.2 km',
-                    category: 'pizza',
-                    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=200&fit=crop',
-                    menu: [
-                        {
-                            id: 'p1',
-                            name: 'Margherita Pizza',
-                            description: 'Fresh tomatoes, mozzarella, and basil',
-                            price: 12.99,
-                            image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=200&h=150&fit=crop',
-                            category: 'Pizza'
-                        },
-                        {
-                            id: 'p2',
-                            name: 'Pepperoni Pizza',
-                            description: 'Classic pepperoni with cheese',
-                            price: 15.99,
-                            image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=200&h=150&fit=crop',
-                            category: 'Pizza'
-                        }
-                    ]
-                },
-                {
-                    id: '2',
-                    name: 'Burger House',
-                    rating: 4.2,
-                    reviewCount: 89,
-                    deliveryTime: '20-25 min',
-                    distance: '0.8 km',
-                    category: 'burger',
-                    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop',
-                    menu: [
-                        {
-                            id: 'b1',
-                            name: 'Classic Burger',
-                            description: 'Beef patty with lettuce, tomato, and cheese',
-                            price: 9.99,
-                            image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=150&fit=crop',
-                            category: 'Burgers'
-                        },
-                        {
-                            id: 'b2',
-                            name: 'Chicken Deluxe',
-                            description: 'Grilled chicken with avocado and bacon',
-                            price: 11.99,
-                            image: 'https://images.unsplash.com/photo-1606755962773-d324e2650a69?w=200&h=150&fit=crop',
-                            category: 'Burgers'
-                        }
-                    ]
-                },
-                {
-                    id: '3',
-                    name: 'Sushi Master',
-                    rating: 4.7,
-                    reviewCount: 156,
-                    deliveryTime: '30-35 min',
-                    distance: '1.5 km',
-                    category: 'sushi',
-                    image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=300&h=200&fit=crop',
-                    menu: [
-                        {
-                            id: 's1',
-                            name: 'Salmon Roll',
-                            description: 'Fresh salmon with avocado',
-                            price: 8.99,
-                            image: 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=200&h=150&fit=crop',
-                            category: 'Sushi'
-                        },
-                        {
-                            id: 's2',
-                            name: 'Dragon Roll',
-                            description: 'Eel and cucumber with avocado on top',
-                            price: 12.99,
-                            image: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=200&h=150&fit=crop',
-                            category: 'Sushi'
-                        }
-                    ]
-                }
-            ];
+            // Fetch real restaurant data from API
+            const response = await fetch(`/api/telegram/restaurants?lat=${this.userLocation?.latitude || ''}&lng=${this.userLocation?.longitude || ''}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch restaurants');
+            }
+            
+            this.restaurants = await response.json();
 
             this.renderRestaurants();
         } catch (error) {
@@ -207,22 +127,29 @@ class BeUDeliveryApp {
 
     renderRestaurants() {
         const container = document.getElementById('restaurantsContainer');
+        
+        if (!this.restaurants || this.restaurants.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">No restaurants available at the moment. Please try again later.</p>';
+            return;
+        }
+        
         container.innerHTML = this.restaurants.map(restaurant => `
             <div class="restaurant-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer" data-restaurant-id="${restaurant.id}">
                 <div class="relative">
-                    <img src="${restaurant.image}" alt="${restaurant.name}" class="w-full h-32 object-cover">
+                    <img src="${restaurant.image}" alt="${restaurant.name}" class="w-full h-32 object-cover" onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=200&fit=crop'">
                     <div class="absolute top-2 right-2 bg-white rounded-full px-2 py-1 text-xs font-medium">
-                        ${restaurant.deliveryTime}
+                        ${restaurant.deliveryTime || '25-35 min'}
                     </div>
                 </div>
                 <div class="p-4">
                     <h3 class="font-semibold text-gray-800 mb-1">${restaurant.name}</h3>
+                    <p class="text-xs text-gray-500 mb-2">${restaurant.address || 'Addis Ababa'}</p>
                     <div class="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                        <span>⭐ ${restaurant.rating} (${restaurant.reviewCount})</span>
-                        <span>📍 ${restaurant.distance}</span>
+                        <span>⭐ ${restaurant.rating || 4.5} (${restaurant.reviewCount || 50}+)</span>
+                        <span>📍 ${restaurant.distance || '1-3 km'}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-xs text-gray-500">Free delivery</span>
+                        <span class="text-xs text-gray-500">${restaurant.deliveryFee ? '$' + restaurant.deliveryFee + ' delivery' : 'Free delivery'}</span>
                         <button class="text-primary text-sm font-medium">View Menu</button>
                     </div>
                 </div>
