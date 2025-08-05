@@ -689,6 +689,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/superadmin/restaurants/:id', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteRestaurant(id);
+      res.json({ message: 'Restaurant deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
+      res.status(500).json({ message: 'Failed to delete restaurant' });
+    }
+  });
+
+  app.delete('/api/superadmin/admins/:id', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAdminUser(id);
+      res.json({ message: 'Admin deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      res.status(500).json({ message: 'Failed to delete admin' });
+    }
+  });
+
   // Restaurant Admin Routes
   app.post('/api/admin/kitchen-staff', requireSession, requireRestaurantAdmin, async (req, res) => {
     try {

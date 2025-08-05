@@ -40,6 +40,7 @@ export interface IStorage {
 
   // Admin user operations
   getAllAdminUsers(): Promise<User[]>;
+  deleteAdminUser(id: string): Promise<void>;
 
   // Menu operations
   getMenuCategories(restaurantId: string): Promise<MenuCategory[]>;
@@ -296,6 +297,10 @@ class MemoryStorage implements IStorage {
     return Array.from(this.users.values())
       .filter(user => user.role && ['superadmin', 'restaurant_admin', 'kitchen_staff'].includes(user.role))
       .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
+  async deleteAdminUser(id: string): Promise<void> {
+    this.users.delete(id);
   }
 
   // Restaurant operations

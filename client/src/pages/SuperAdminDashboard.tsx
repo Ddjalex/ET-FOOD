@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -552,6 +552,34 @@ function SuperAdminDashboardContent() {
     }
   });
 
+  const deleteRestaurantMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/restaurants/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to delete restaurant');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      toast({
+        title: 'Success',
+        description: 'Restaurant deleted successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete restaurant',
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Admin management mutations
   const updateAdminMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<AdminUser> }) => 
@@ -637,6 +665,34 @@ function SuperAdminDashboardContent() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to unblock admin',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteAdminMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/admins/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to delete admin');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/admins'] });
+      toast({
+        title: 'Success',
+        description: 'Admin deleted successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete admin',
         variant: 'destructive'
       });
     }
@@ -1072,6 +1128,19 @@ function SuperAdminDashboardContent() {
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete "${restaurant.name}"? This action cannot be undone.`)) {
+                                deleteRestaurantMutation.mutate(restaurant.id);
+                              }
+                            }}
+                            disabled={deleteRestaurantMutation.isPending}
+                            data-testid={`button-delete-restaurant-${restaurant.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1360,6 +1429,19 @@ function SuperAdminDashboardContent() {
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete "${admin.firstName} ${admin.lastName}"? This action cannot be undone.`)) {
+                                deleteAdminMutation.mutate(admin.id);
+                              }
+                            }}
+                            disabled={deleteAdminMutation.isPending}
+                            data-testid={`button-delete-admin-${admin.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

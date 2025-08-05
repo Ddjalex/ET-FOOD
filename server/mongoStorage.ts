@@ -224,6 +224,15 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  async deleteAdminUser(id: string): Promise<void> {
+    try {
+      await User.findByIdAndDelete(id);
+    } catch (error) {
+      console.error('Error deleting admin user:', error);
+      throw error;
+    }
+  }
+
   // System settings methods
   async getSystemSettings(): Promise<any> {
     try {
