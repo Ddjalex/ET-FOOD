@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeU Delivery - Order Food</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF6B35',
+                        primaryDark: '#E55A31',
+                        secondary: '#2ECC71',
+                        accent: '#F7DC6F',
+                        gray: {
+                            50: '#F8F9FA',
+                            100: '#E9ECEF',
+                            200: '#DEE2E6',
+                            300: '#CED4DA',
+                            400: '#ADB5BD',
+                            500: '#6C757D',
+                            600: '#495057',
+                            700: '#343A40',
+                            800: '#212529',
+                            900: '#161A1E'
+                        }
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6B35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .sticky-cart {
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .category-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .restaurant-card {
+            transition: all 0.3s ease;
+        }
+        
+        .restaurant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <h2 class="text-xl font-semibold text-gray-700">Loading BeU Delivery...</h2>
+            <p class="text-gray-500 mt-2">Finding restaurants near you</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="hidden min-h-screen pb-24">
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">BeU</span>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-gray-800">BeU Delivery</h1>
+                            <p id="deliveryAddress" class="text-sm text-gray-500">📍 Getting your location...</p>
+                        </div>
+                    </div>
+                    <button id="changeLocationBtn" class="text-primary text-sm font-medium">
+                        Change
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="bg-white px-4 py-3 shadow-sm">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Search restaurants or dishes..." 
+                    class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Food Categories -->
+        <div class="bg-white px-4 py-4">
+            <h3 class="font-semibold text-gray-800 mb-3">Categories</h3>
+            <div id="categoriesContainer" class="flex space-x-3 category-scroll overflow-x-auto">
+                <!-- Categories will be dynamically loaded -->
+            </div>
+        </div>
+
+        <!-- Restaurants List -->
+        <div class="px-4 py-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-800">Restaurants Near You</h3>
+                <select id="sortFilter" class="text-sm border border-gray-200 rounded-lg px-3 py-1">
+                    <option value="distance">Nearest</option>
+                    <option value="rating">Top Rated</option>
+                    <option value="delivery_time">Fastest</option>
+                </select>
+            </div>
+            <div id="restaurantsContainer" class="space-y-4">
+                <!-- Restaurants will be dynamically loaded -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Restaurant Detail Modal -->
+    <div id="restaurantModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl slide-up max-h-[90vh] overflow-hidden">
+            <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+                <div class="flex items-center justify-between p-4">
+                    <h2 id="modalRestaurantName" class="text-xl font-bold text-gray-800"></h2>
+                    <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="px-4 pb-3">
+                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                        <span id="modalRating">⭐ 4.5</span>
+                        <span id="modalDeliveryTime">25-30 min</span>
+                        <span id="modalDistance">1.2 km</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-y-auto max-h-[calc(90vh-120px)]">
+                <!-- Menu Categories Navigation -->
+                <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+                    <div id="menuCategoriesNav" class="flex space-x-1 px-4 py-2 category-scroll overflow-x-auto">
+                        <!-- Menu categories will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Menu Items -->
+                <div id="menuItemsContainer" class="p-4">
+                    <!-- Menu items will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shopping Cart -->
+    <div id="cartContainer" class="fixed bottom-0 left-0 right-0 bg-white sticky-cart hidden">
+        <div class="px-4 py-3">
+            <button id="viewCartBtn" class="w-full bg-primary text-white py-3 rounded-xl font-semibold flex items-center justify-between">
+                <span id="cartItemCount">0 items</span>
+                <span>View Cart</span>
+                <span id="cartTotal">$0.00</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl slide-up max-h-[90vh] overflow-hidden">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Your Cart</h2>
+                    <button id="closeCartBtn" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-y-auto max-h-[calc(90vh-180px)] p-4">
+                <div id="cartItemsList">
+                    <!-- Cart items will be displayed here -->
+                </div>
+                
+                <!-- Order Summary -->
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span>Subtotal</span>
+                            <span id="cartSubtotal">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Delivery Fee</span>
+                            <span id="deliveryFee">$2.50</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Tax</span>
+                            <span id="taxAmount">$0.00</span>
+                        </div>
+                        <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                            <span>Total</span>
+                            <span id="finalTotal">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                <button id="checkoutBtn" class="w-full bg-primary text-white py-4 rounded-xl font-semibold text-lg">
+                    Proceed to Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl slide-up max-h-[95vh] overflow-hidden">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Checkout</h2>
+                    <button id="closeCheckoutBtn" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="overflow-y-auto max-h-[calc(95vh-180px)] p-4">
+                <!-- Delivery Address -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">Delivery Address</h3>
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <textarea 
+                            id="deliveryAddressInput" 
+                            placeholder="Enter your complete delivery address..."
+                            class="w-full h-20 resize-none border-none outline-none text-sm"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- Order for Someone Else -->
+                <div class="mb-6">
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" id="orderForOthersCheckbox" class="w-4 h-4 text-primary">
+                        <span class="font-medium text-gray-800">Order for someone else</span>
+                    </label>
+                    
+                    <div id="recipientInfo" class="hidden mt-3 space-y-3">
+                        <input 
+                            type="text" 
+                            id="recipientName" 
+                            placeholder="Recipient's name"
+                            class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                        <input 
+                            type="tel" 
+                            id="recipientPhone" 
+                            placeholder="Recipient's phone number"
+                            class="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                        <textarea 
+                            id="recipientAddress" 
+                            placeholder="Different delivery address (optional)"
+                            class="w-full h-16 p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">Payment Method</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="paymentMethod" value="cash" class="w-4 h-4 text-primary" checked>
+                            <div class="flex items-center space-x-2">
+                                <span>💵</span>
+                                <span>Cash on Delivery</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="paymentMethod" value="card" class="w-4 h-4 text-primary">
+                            <div class="flex items-center space-x-2">
+                                <span>💳</span>
+                                <span>Credit/Debit Card</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Special Instructions -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">Special Instructions</h3>
+                    <textarea 
+                        id="specialInstructions" 
+                        placeholder="Any special requests for your order..."
+                        class="w-full h-20 p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                    ></textarea>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">Order Summary</h3>
+                    <div id="checkoutOrderSummary" class="space-y-2 text-sm">
+                        <!-- Order items will be displayed here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                <button id="placeOrderBtn" class="w-full bg-primary text-white py-4 rounded-xl font-semibold text-lg">
+                    Place Order • <span id="checkoutTotal">$0.00</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="telegram-app.js"></script>
+</body>
+</html>

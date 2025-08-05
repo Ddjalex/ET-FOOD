@@ -12,7 +12,10 @@ import { uploadMiddleware } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
 import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
+import { getCustomerSession } from "./telegram/customerBot";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Configure multer for image uploads
 const upload = multer({
@@ -735,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         password: hashedPassword,
-        role: role === 'restaurant_admin' ? UserRole.RESTAURANT_ADMIN : UserRole.KITCHEN_STAFF,
+        role: UserRole.KITCHEN_STAFF,
         restaurantId: req.params.id, // Use the restaurant ID from URL parameter, not user's restaurant
         createdBy: (req.user as any).id,
         isActive: true
@@ -1264,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the provided password
       const hashedPassword = await hashPassword(password);
 
-      // Create staff member - use restaurant ID from URL parameter for proper data isolation
+      // Create staff member - use restaurant ID from URL parameter for proper data isolation  
       const staffMember = await storage.createAdminUser({
         email,
         firstName,
@@ -1736,6 +1739,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve uploaded files statically
   app.use('/uploads', express.static('uploads'));
+
+  // Telegram Mini Web App routes
+  app.get('/api/telegram/session', async (req, res) => {
+    try {
+      const { sessionToken, telegramUserId } = req.query;
+
+      if (!sessionToken || !telegramUserId) {
+        return res.status(400).json({ error: 'Missing session token or Telegram user ID' });
+      }
+
+      const session = getCustomerSession(telegramUserId as string);
+      
+      if (!session || session.sessionToken !== sessionToken) {
+        return res.status(401).json({ error: 'Invalid session' });
+      }
+
+      // Return session data without sensitive information
+      res.json({
+        userId: session.userId,
+        location: session.location,
+        step: session.step,
+        sessionValid: true
+      });
+    } catch (error) {
+      console.error('Error retrieving session:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Serve Telegram Mini Web App
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  
+  app.get('/telegram-app', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/telegram-app.html'));
+  });
+  
+  app.get('/telegram-app.js', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/telegram-app.js'));
+  });
 
   return httpServer;
 }
