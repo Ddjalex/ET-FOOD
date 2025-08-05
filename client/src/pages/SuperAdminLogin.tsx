@@ -39,13 +39,15 @@ export default function SuperAdminLogin() {
         description: 'Login successful'
       });
       
-      // Redirect based on role
+      // Only allow superadmin users
       if (data.user?.role === 'superadmin') {
         navigate('/superadmin');
-      } else if (data.user?.role === 'restaurant_admin') {
-        navigate('/admin');
       } else {
-        navigate('/kitchen');
+        toast({
+          title: 'Access Denied',
+          description: 'This login is only for superadmin users. Restaurant admin and kitchen staff should use the restaurant admin login page.',
+          variant: 'destructive'
+        });
       }
     },
     onError: (error: any) => {
@@ -85,7 +87,7 @@ export default function SuperAdminLogin() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">BeU Delivery</CardTitle>
           <CardDescription>
-            Admin Login
+            Superadmin Login Only
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,13 +127,20 @@ export default function SuperAdminLogin() {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-            <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Default Credentials:</h4>
-            <p className="text-sm text-blue-600 dark:text-blue-300">
-              <strong>Superadmin:</strong><br />
-              Email: superadmin@beu-delivery.com<br />
-              Password: superadmin123
-            </p>
+          <div className="mt-6 space-y-3">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">Superadmin Credentials:</h4>
+              <p className="text-sm text-blue-600 dark:text-blue-300">
+                Email: alm@gmail.com<br />
+                Password: beu123
+              </p>
+            </div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
+              <p className="text-sm text-amber-600 dark:text-amber-300">
+                <strong>Kitchen Staff & Restaurant Admin:</strong><br />
+                Please use the <a href="/restaurant-admin-login" className="underline">Restaurant Admin Login</a> page instead.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
