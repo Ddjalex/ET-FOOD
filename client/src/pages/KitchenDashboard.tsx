@@ -259,7 +259,7 @@ export function KitchenDashboard() {
   // Category management mutations  
   const addCategoryMutation = useMutation({
     mutationFn: async (data: z.infer<typeof categorySchema>) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/categories`, {
+      const response = await apiRequest(`/api/kitchen/${typedUser?.restaurantId}/menu/categories`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -312,7 +312,7 @@ export function KitchenDashboard() {
   // Menu item management mutations
   const addMenuItemMutation = useMutation({
     mutationFn: async (data: z.infer<typeof menuItemSchema>) => {
-      const response = await apiRequest(`/api/restaurants/${typedUser?.restaurantId}/menu-items`, {
+      const response = await apiRequest(`/api/kitchen/${typedUser?.restaurantId}/menu/items`, {
         method: 'POST',
         body: JSON.stringify(data),
       });

@@ -1399,6 +1399,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // KITCHEN STAFF ROUTES
   // ===============================
 
+  // Kitchen Staff: Create menu category
+  app.post('/api/kitchen/:restaurantId/menu/categories', requireSession, requireKitchenAccess, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { restaurantId } = req.params;
+      const { name, description } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ message: 'Category name is required' });
+      }
+
+      const category = await storage.createMenuCategory({
+        restaurantId,
+        name,
+        description: description || null,
+        isActive: true,
+        sortOrder: 0
+      });
+
+      res.status(201).json(category);
+    } catch (error) {
+      console.error('Error creating menu category:', error);
+      res.status(500).json({ message: 'Failed to create menu category' });
+    }
+  });
+
   // Kitchen Staff: Create menu item (requires approval)
   app.post('/api/kitchen/:restaurantId/menu/items', requireSession, requireKitchenAccess, async (req, res) => {
     try {
