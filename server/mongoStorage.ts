@@ -788,4 +788,33 @@ export class MongoStorage implements IStorage {
       return {};
     }
   }
+
+  async updateAdminUser(id: string, data: Partial<User>): Promise<User> {
+    try {
+      const updatedUser = await User.findByIdAndUpdate(id, data, { new: true }).lean();
+      if (!updatedUser) {
+        throw new Error('Admin user not found');
+      }
+      return {
+        id: updatedUser._id.toString(),
+        email: updatedUser.email || null,
+        firstName: updatedUser.firstName || null,
+        lastName: updatedUser.lastName || null,
+        profileImageUrl: updatedUser.profileImageUrl || null,
+        role: updatedUser.role || null,
+        phoneNumber: updatedUser.phoneNumber || null,
+        telegramUserId: updatedUser.telegramUserId || null,
+        telegramUsername: updatedUser.telegramUsername || null,
+        password: updatedUser.password || null,
+        isActive: updatedUser.isActive ?? true,
+        restaurantId: updatedUser.restaurantId || null,
+        createdBy: updatedUser.createdBy || null,
+        createdAt: updatedUser.createdAt || null,
+        updatedAt: updatedUser.updatedAt || null,
+      } as User;
+    } catch (error) {
+      console.error('Error updating admin user:', error);
+      throw error;
+    }
+  }
 }

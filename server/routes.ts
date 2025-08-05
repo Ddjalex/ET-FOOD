@@ -524,6 +524,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Restaurant management endpoints
+  app.put('/api/superadmin/restaurants/:id', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedRestaurant = await storage.updateRestaurant(id, req.body);
+      res.json(updatedRestaurant);
+    } catch (error) {
+      console.error('Error updating restaurant:', error);
+      res.status(500).json({ message: 'Failed to update restaurant' });
+    }
+  });
+
+  app.post('/api/superadmin/restaurants/:id/block', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedRestaurant = await storage.updateRestaurant(id, { isActive: false });
+      res.json({ message: 'Restaurant blocked successfully', restaurant: updatedRestaurant });
+    } catch (error) {
+      console.error('Error blocking restaurant:', error);
+      res.status(500).json({ message: 'Failed to block restaurant' });
+    }
+  });
+
+  app.post('/api/superadmin/restaurants/:id/unblock', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedRestaurant = await storage.updateRestaurant(id, { isActive: true });
+      res.json({ message: 'Restaurant unblocked successfully', restaurant: updatedRestaurant });
+    } catch (error) {
+      console.error('Error unblocking restaurant:', error);
+      res.status(500).json({ message: 'Failed to unblock restaurant' });
+    }
+  });
+
+  // Admin management endpoints
+  app.put('/api/superadmin/admins/:id', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedAdmin = await storage.updateAdminUser(id, req.body);
+      res.json(updatedAdmin);
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      res.status(500).json({ message: 'Failed to update admin' });
+    }
+  });
+
+  app.post('/api/superadmin/admins/:id/block', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedAdmin = await storage.updateAdminUser(id, { isActive: false });
+      res.json({ message: 'Admin blocked successfully', admin: updatedAdmin });
+    } catch (error) {
+      console.error('Error blocking admin:', error);
+      res.status(500).json({ message: 'Failed to block admin' });
+    }
+  });
+
+  app.post('/api/superadmin/admins/:id/unblock', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedAdmin = await storage.updateAdminUser(id, { isActive: true });
+      res.json({ message: 'Admin unblocked successfully', admin: updatedAdmin });
+    } catch (error) {
+      console.error('Error unblocking admin:', error);
+      res.status(500).json({ message: 'Failed to unblock admin' });
+    }
+  });
+
   // Restaurant Admin Routes
   app.post('/api/admin/kitchen-staff', requireSession, requireRestaurantAdmin, async (req, res) => {
     try {

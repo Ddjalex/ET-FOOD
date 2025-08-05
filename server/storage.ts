@@ -94,6 +94,7 @@ export interface IStorage {
   // Password management methods
   verifyAdminPassword(adminId: string, password: string): Promise<boolean>;
   updateAdminPassword(adminId: string, newPassword: string): Promise<void>;
+  updateAdminUser(id: string, data: Partial<User>): Promise<User>;
   
   // Driver management methods
   getAllDrivers(): Promise<Driver[]>;

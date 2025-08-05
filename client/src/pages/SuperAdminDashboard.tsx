@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -156,6 +156,8 @@ function SuperAdminDashboardContent() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -267,7 +269,7 @@ function SuperAdminDashboardContent() {
 
   const createAdminMutation = useMutation({
     mutationFn: (data: AdminFormData) => 
-      fetch('/api/superadmin/admins', {
+      fetch('/api/superadmin/restaurant-admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -401,6 +403,185 @@ function SuperAdminDashboardContent() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to upload logo',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Restaurant management mutations
+  const updateRestaurantMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Restaurant> }) => 
+      fetch(`/api/superadmin/restaurants/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to update restaurant');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      toast({
+        title: 'Success',
+        description: 'Restaurant updated successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update restaurant',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const blockRestaurantMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/restaurants/${id}/block`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to block restaurant');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      toast({
+        title: 'Success',
+        description: 'Restaurant blocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to block restaurant',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const unblockRestaurantMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/restaurants/${id}/unblock`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to unblock restaurant');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/restaurants'] });
+      toast({
+        title: 'Success',
+        description: 'Restaurant unblocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to unblock restaurant',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  // Admin management mutations
+  const updateAdminMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<AdminUser> }) => 
+      fetch(`/api/superadmin/admins/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to update admin');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/admins'] });
+      setEditingAdmin(null);
+      toast({
+        title: 'Success',
+        description: 'Admin updated successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update admin',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const blockAdminMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/admins/${id}/block`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to block admin');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/admins'] });
+      toast({
+        title: 'Success',
+        description: 'Admin blocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to block admin',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const unblockAdminMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/superadmin/admins/${id}/unblock`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to unblock admin');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/admins'] });
+      toast({
+        title: 'Success',
+        description: 'Admin unblocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to unblock admin',
         variant: 'destructive'
       });
     }
@@ -766,6 +947,7 @@ function SuperAdminDashboardContent() {
                     <TableHead>Orders</TableHead>
                     <TableHead>Rating</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -793,6 +975,36 @@ function SuperAdminDashboardContent() {
                       <TableCell>{restaurant.totalOrders}</TableCell>
                       <TableCell>⭐ {restaurant.rating}</TableCell>
                       <TableCell>{new Date(restaurant.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingRestaurant(restaurant)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {restaurant.isActive ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => blockRestaurantMutation.mutate(restaurant.id)}
+                              disabled={blockRestaurantMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => unblockRestaurantMutation.mutate(restaurant.id)}
+                              disabled={unblockRestaurantMutation.isPending}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -931,6 +1143,7 @@ function SuperAdminDashboardContent() {
                     <TableHead>Restaurant</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -958,6 +1171,36 @@ function SuperAdminDashboardContent() {
                         </Badge>
                       </TableCell>
                       <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingAdmin(admin)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {admin.isActive ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => blockAdminMutation.mutate(admin.id)}
+                              disabled={blockAdminMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => unblockAdminMutation.mutate(admin.id)}
+                              disabled={unblockAdminMutation.isPending}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
