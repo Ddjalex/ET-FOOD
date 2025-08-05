@@ -4,7 +4,10 @@ import { connectToMongoDB } from './mongodb';
 // Initialize MongoDB connection
 export let isMongoConnected = false;
 
-if (process.env.MONGODB_URI || process.env.DATABASE_URL) {
+// Force MongoDB connection with the provided URI
+const MONGODB_URI = 'mongodb+srv://almeseged:A1l2m3e4s5@cluster0.t6sz6bo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+if (MONGODB_URI) {
   connectToMongoDB()
     .then(() => {
       isMongoConnected = true;

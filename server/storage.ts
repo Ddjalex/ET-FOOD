@@ -825,10 +825,21 @@ class MemoryStorage implements IStorage {
     const items = await this.getMenuItems(restaurantId);
     return { categories, items };
   }
+
+  async updateAdminUser(id: string, data: Partial<User>): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    const updatedUser = { ...user, ...data, updatedAt: new Date() };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
 }
 
-// Initialize storage - check for MongoDB environment variables
-const useMongoStorage = !!(process.env.MONGODB_URI || process.env.DATABASE_URL);
+// Initialize storage - MongoDB is already connected, prioritize it
+const useMongoStorage = true; // Force MongoDB usage since we connected successfully
 
 class StorageFactory {
   private _storage: IStorage | null = null;
@@ -838,7 +849,7 @@ class StorageFactory {
       this._storage = useMongoStorage ? new MongoStorage() : new MemoryStorage();
       console.log(`Initialized ${useMongoStorage ? 'MongoDB' : 'in-memory'} storage`);
     }
-    return this._storage;
+    return this._storage!;
   }
 }
 

@@ -713,8 +713,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         password: hashedPassword,
-        role: UserRole.KITCHEN_STAFF,
-        restaurantId: (req.user as any).restaurantId,
+        role: role === 'restaurant_admin' ? UserRole.RESTAURANT_ADMIN : UserRole.KITCHEN_STAFF,
+        restaurantId: req.params.id, // Use the restaurant ID from URL parameter, not user's restaurant
         createdBy: (req.user as any).id,
         isActive: true
       });
@@ -1227,7 +1227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/restaurants/:restaurantId/staff', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
       const user = req.user as any;
-      const { firstName, lastName, email, password } = req.body;
+      const { firstName, lastName, email, password, role } = req.body;
 
       if (!firstName || !lastName || !email || !password) {
         return res.status(400).json({ message: 'First name, last name, email, and password are required' });
@@ -1242,14 +1242,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash the provided password
       const hashedPassword = await hashPassword(password);
 
-      // Create kitchen staff
+      // Create staff member - use restaurant ID from URL parameter for proper data isolation
       const staffMember = await storage.createAdminUser({
         email,
         firstName,
         lastName,
         password: hashedPassword,
-        role: UserRole.KITCHEN_STAFF,
-        restaurantId: user.restaurantId, // Always use the restaurant admin's restaurant
+        role: role === 'restaurant_admin' ? UserRole.RESTAURANT_ADMIN : UserRole.KITCHEN_STAFF,
+        restaurantId: req.params.restaurantId, // FIXED: Use URL parameter for correct restaurant assignment
         createdBy: user.id,
         isActive: true
       });
