@@ -1094,18 +1094,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/restaurants/:restaurantId/menu', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
       const user = req.user as any;
-      const targetRestaurantId = user.role === UserRole.RESTAURANT_ADMIN ? user.restaurantId : req.params.restaurantId;
+      const targetRestaurantId = user.role === UserRole.SUPERADMIN ? req.params.restaurantId : user.restaurantId;
 
       const categories = await storage.getMenuCategories(targetRestaurantId);
       const items = await storage.getMenuItems(targetRestaurantId);
 
-      // Group items by category
-      const menuWithCategories = categories.map(category => ({
-        ...category,
-        items: items.filter(item => item.categoryId === category.id)
-      }));
-
-      res.json(menuWithCategories);
+      // Return in the format the frontend expects
+      res.json({
+        categories,
+        items
+      });
     } catch (error) {
       console.error('Error fetching restaurant menu:', error);
       res.status(500).json({ message: 'Failed to fetch menu' });
