@@ -937,6 +937,10 @@ export function KitchenDashboard() {
           isLoading={addMenuItemMutation.isPending}
           title="Add New Menu Item"
           categories={menu.categories || []}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          imagePreview={imagePreview}
+          setImagePreview={setImagePreview}
         />
 
         {/* Edit Menu Item Dialog */}
@@ -948,6 +952,10 @@ export function KitchenDashboard() {
           title="Edit Menu Item"
           categories={menu.categories || []}
           initialData={editingItem}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          imagePreview={imagePreview}
+          setImagePreview={setImagePreview}
         />
       </div>
     </div>
@@ -1071,7 +1079,11 @@ function MenuItemFormDialog({
   isLoading,
   title,
   categories,
-  initialData
+  initialData,
+  selectedImage,
+  setSelectedImage,
+  imagePreview,
+  setImagePreview
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1080,6 +1092,10 @@ function MenuItemFormDialog({
   title: string;
   categories: MenuCategory[];
   initialData?: MenuItem | null;
+  selectedImage: File | null;
+  setSelectedImage: (file: File | null) => void;
+  imagePreview: string | null;
+  setImagePreview: (url: string | null) => void;
 }) {
   const form = useForm({
     resolver: zodResolver(menuItemSchema),
