@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import SuperadminDashboard from "@/pages/SuperAdminDashboard";
 import RestaurantDashboard from "@/pages/RestaurantDashboard";
 import { KitchenDashboard } from "@/pages/KitchenDashboard";
+import KitchenLogin from "@/pages/KitchenLogin";
 import Restaurants from "@/pages/Restaurants";
 import CreateRestaurant from "@/pages/CreateRestaurant";
 import Drivers from "@/pages/Drivers";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/superadmin-login" component={SuperAdminLogin} />
       <Route path="/restaurant-admin-login" component={RestaurantAdminLogin} />
+      <Route path="/kitchen-login" component={KitchenLogin} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/admin" component={RestaurantAdminDashboard} />
       <Route path="/restaurant-admin" component={RestaurantAdminDashboard} />

@@ -505,7 +505,8 @@ export function KitchenDashboard() {
   }
 
   if (!isAuthenticated || !user) {
-    return <KitchenLoginForm />;
+    window.location.href = '/kitchen-login';
+    return null;
   }
 
   // Check if user has access to kitchen dashboard (kitchen staff or restaurant admin)
@@ -524,10 +525,10 @@ export function KitchenDashboard() {
               To access the kitchen dashboard, you need to log in with kitchen staff or restaurant admin credentials.
             </p>
             <Button 
-              onClick={() => window.location.href = '/admin-login'}
+              onClick={() => window.location.href = '/kitchen-login'}
               className="w-full"
             >
-              Switch to Admin Login
+              Kitchen Staff Login
             </Button>
           </CardContent>
         </Card>
