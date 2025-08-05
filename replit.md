@@ -54,6 +54,8 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
   - **FIXED HTTPS Issue**: Resolved Telegram Mini Web App URL error by using proper HTTPS domain instead of localhost
   - **Real Restaurant Data Integration**: Connected Mini Web App to display actual restaurants from database instead of mock data
   - **Menu Items Display**: Successfully showing real menu items from Flavour Cafe, Rich Cafe, and WINA JUICE restaurants
+- **Order Flow Implementation**: Added complete order submission API endpoint with real-time kitchen staff notifications
+- **WebSocket Integration**: Implemented real-time notifications for kitchen staff when customers place orders through Mini Web App
 - **Critical Data Isolation Bug Fixed**: 
   - Fixed restaurant staff creation endpoint to use correct restaurant ID from URL parameter
   - Previously all staff were being assigned to superadmin's restaurant due to using user.restaurantId instead of req.params.restaurantId

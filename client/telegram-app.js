@@ -472,6 +472,11 @@ class BeUDeliveryApp {
         const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
         const specialInstructions = document.getElementById('specialInstructions').value;
         
+        if (!deliveryAddress.trim()) {
+            this.showError('Please enter your delivery address');
+            return;
+        }
+        
         let recipientInfo = null;
         if (document.getElementById('orderForOthersCheckbox').checked) {
             recipientInfo = {
@@ -504,11 +509,46 @@ class BeUDeliveryApp {
         };
 
         try {
-            // Send order data back to Telegram bot
-            this.tg.sendData(JSON.stringify(orderData));
+            // Show loading state
+            const submitBtn = document.getElementById('placeOrderBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Placing Order...';
+            submitBtn.disabled = true;
+
+            // Get URL parameters for session validation
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionToken = urlParams.get('session');
+            const telegramUserId = this.tg.initDataUnsafe?.user?.id;
+
+            // Submit order to backend
+            const response = await fetch('/api/telegram/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sessionToken,
+                    telegramUserId,
+                    orderData
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to place order');
+            }
+
+            const result = await response.json();
             
             // Show success message
-            this.showSuccessMessage('Order placed successfully! You will receive a confirmation message in the chat.');
+            this.showSuccessMessage(`Order #${result.orderNumber} placed successfully! The kitchen staff has been notified.`);
+            
+            // Also send data back to Telegram bot for chat notification
+            this.tg.sendData(JSON.stringify({
+                success: true,
+                orderId: result.orderId,
+                orderNumber: result.orderNumber,
+                ...orderData
+            }));
             
             // Close modal and reset cart
             this.closeCheckoutModal();
@@ -519,6 +559,13 @@ class BeUDeliveryApp {
         } catch (error) {
             console.error('Error placing order:', error);
             this.showError('Failed to place order. Please try again.');
+        } finally {
+            // Reset button state
+            const submitBtn = document.getElementById('placeOrderBtn');
+            if (submitBtn) {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         }
     }
 

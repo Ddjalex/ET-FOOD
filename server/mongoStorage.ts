@@ -653,9 +653,75 @@ export class MongoStorage implements IStorage {
   async getOrders(): Promise<Order[]> { return []; }
   async getOrder(id: string): Promise<Order | undefined> { return undefined; }
   async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
-  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> { return []; }
+  async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
+    try {
+      const ordersCollection = this.db.collection('orders');
+      const orders = await ordersCollection.find({ restaurantId }).sort({ createdAt: -1 }).toArray();
+      
+      return orders.map((order: any) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        restaurantId: order.restaurantId,
+        items: order.items,
+        subtotal: order.subtotal,
+        total: order.total,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        status: order.status,
+        specialInstructions: order.specialInstructions,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt
+      }));
+    } catch (error) {
+      console.error('Error getting orders by restaurant:', error);
+      return [];
+    }
+  }
   async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
-  async createOrder(order: InsertOrder): Promise<Order> { throw new Error('Not implemented'); }
+  async createOrder(orderData: any): Promise<any> {
+    try {
+      const ordersCollection = this.db.collection('orders');
+      
+      const order = {
+        _id: new ObjectId(),
+        id: new ObjectId().toString(),
+        customerId: orderData.customerId,
+        restaurantId: orderData.restaurantId,
+        orderNumber: orderData.orderNumber,
+        items: orderData.items,
+        subtotal: orderData.subtotal,
+        total: orderData.total,
+        deliveryAddress: orderData.deliveryAddress,
+        paymentMethod: orderData.paymentMethod,
+        status: orderData.status || 'pending',
+        specialInstructions: orderData.specialInstructions || '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const result = await ordersCollection.insertOne(order);
+      
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        restaurantId: order.restaurantId,
+        items: order.items,
+        subtotal: order.subtotal,
+        total: order.total,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        status: order.status,
+        specialInstructions: order.specialInstructions,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt
+      };
+    } catch (error) {
+      console.error('Error creating order in MongoDB:', error);
+      throw error;
+    }
+  }
   async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> { throw new Error('Not implemented'); }
   async updateOrderStatus(id: string, status: string): Promise<Order> { throw new Error('Not implemented'); }
   async getDriver(id: string): Promise<DriverType | undefined> { return undefined; }

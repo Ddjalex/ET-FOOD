@@ -225,7 +225,7 @@ Now you're all set to explore delicious restaurants near you. Tap the button bel
       const telegramUserId = ctx.from?.id.toString();
       if (!telegramUserId) return;
 
-      const webAppData = JSON.parse(ctx.webAppData.data);
+      const webAppData = JSON.parse(ctx.message.web_app_data.data);
       
       // Process the order data received from Mini Web App
       const { items, restaurantId, deliveryAddress, recipientInfo, paymentMethod, total, specialInstructions } = webAppData;
@@ -236,11 +236,32 @@ Now you're all set to explore delicious restaurants near you. Tap the button bel
         return ctx.reply('❌ Error: User not found. Please start again with /start');
       }
 
+      // Check if this order was already processed by the API endpoint
+      if (webAppData.success && webAppData.orderId) {
+        const confirmationMessage = `✅ Order Confirmed!
+
+Order #${webAppData.orderNumber}
+Restaurant: ${webAppData.restaurantName || 'Selected Restaurant'}
+Total: $${webAppData.total.toFixed(2)}
+Payment: ${webAppData.paymentMethod}
+
+Your order is being prepared! Kitchen staff has been notified.
+
+📍 Delivery Address: ${webAppData.deliveryAddress.address}
+${webAppData.recipientInfo ? `👤 Recipient: ${webAppData.recipientInfo.name}` : ''}
+
+Estimated delivery time: 25-35 minutes`;
+
+        await ctx.reply(confirmationMessage);
+        return;
+      }
+
+      // Fallback: create order if not processed by API
       const order = await storage.createOrder({
         customerId: user.id,
         restaurantId,
         orderNumber: `ORD-${Date.now()}`,
-        items,
+        items: JSON.stringify(items),
         subtotal: total.toString(),
         total: total.toString(),
         deliveryAddress: deliveryAddress.address,
