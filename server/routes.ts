@@ -78,9 +78,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = await storage.getUserByEmail(email);
-      if (!user || !user.password) {
-        console.log('User lookup failed for:', email, 'User found:', !!user, 'Has password:', !!user?.password);
+      if (!user) {
+        console.log('User not found for:', email);
         return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Fix for users without passwords (like ALEX Wondimu)
+      if (!user.password) {
+        console.log('User found but no password set for:', email, 'Setting default password...');
+        const defaultPassword = 'beu123'; // Default password for users without passwords
+        const hashedPassword = await hashPassword(defaultPassword);
+        await storage.updateAdminPassword(user.id, hashedPassword);
+        console.log('Default password set for user:', email, 'Password: beu123');
+        
+        // Re-fetch user with updated password
+        const updatedUser = await storage.getUserByEmail(email);
+        if (updatedUser) {
+          user.password = updatedUser.password;
+        }
       }
       console.log('User found:', user.email, 'Role:', user.role);
 
