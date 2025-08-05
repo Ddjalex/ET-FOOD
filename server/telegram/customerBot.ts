@@ -311,3 +311,73 @@ Need more help? Contact our support team!`;
 export function getCustomerSession(telegramUserId: string): CustomerSession | undefined {
   return customerSessions.get(telegramUserId);
 }
+
+// Broadcast message to all customers
+export async function broadcastToAllCustomers(broadcastData: {
+  title: string;
+  message: string;
+  imageUrl?: string | null;
+  messageType: string;
+  timestamp: Date;
+}) {
+  try {
+    // Get all customer users from storage
+    const customers = await storage.getUsersByRole('customer');
+    
+    if (customers.length === 0) {
+      console.log('No customers found to broadcast to');
+      return;
+    }
+
+    console.log(`Broadcasting to ${customers.length} customers`);
+
+    // Get the customer bot instance
+    const { getCustomerBot } = await import('./bot');
+    const customerBot = getCustomerBot();
+
+    if (!customerBot) {
+      console.error('Customer bot not available for broadcasting');
+      return;
+    }
+
+    // Prepare the message with emoji based on type
+    const typeEmojis = {
+      welcome: '👋',
+      product: '🆕',
+      announcement: '📢',
+      promotion: '🎉'
+    };
+
+    const emoji = typeEmojis[broadcastData.messageType as keyof typeof typeEmojis] || '📢';
+    const formattedMessage = `${emoji} ${broadcastData.title}\n\n${broadcastData.message}`;
+
+    // Broadcast to all customers
+    for (const customer of customers) {
+      if (customer.telegramUserId) {
+        try {
+          if (broadcastData.imageUrl) {
+            // Send with image
+            await customerBot.telegram.sendPhoto(
+              customer.telegramUserId,
+              { url: `${process.env.REPLIT_DOMAIN || 'http://localhost:5000'}${broadcastData.imageUrl}` },
+              { caption: formattedMessage }
+            );
+          } else {
+            // Send text only
+            await customerBot.telegram.sendMessage(customer.telegramUserId, formattedMessage);
+          }
+
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(`Failed to send message to customer ${customer.telegramUserId}:`, error);
+        }
+      }
+    }
+
+    console.log('Broadcast completed');
+  } catch (error) {
+    console.error('Error broadcasting to customers:', error);
+    throw error;
+  }
+}

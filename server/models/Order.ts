@@ -31,6 +31,12 @@ const OrderSchema = new mongoose.Schema({
   specialInstructions: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
+}, {
+  // Explicitly use only _id and prevent creation of custom id field
+  _id: true,
+  id: false,
+  // Use a different collection name to avoid conflicts
+  collection: 'beu_orders'
 });
 
 // Update the updatedAt field before saving

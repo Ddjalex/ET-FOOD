@@ -28,6 +28,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   updateUserRole(userId: string, role: string): Promise<User>;
   createAdminUser(userData: any): Promise<User>;
+  getUsersByRole(role: string): Promise<User[]>;
 
   // Restaurant operations
   getRestaurants(): Promise<Restaurant[]>;

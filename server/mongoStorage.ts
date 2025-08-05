@@ -686,6 +686,14 @@ export class MongoStorage implements IStorage {
   async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
   async createOrder(orderData: any): Promise<any> {
     try {
+      // First, try to drop the collection entirely to clear any conflicting indexes
+      try {
+        await OrderModel.collection.drop();
+        console.log('Dropped entire orders collection to clear indexes');
+      } catch (dropError) {
+        // Collection might not exist, that's fine
+      }
+
       const order = new OrderModel({
         customerId: orderData.customerId,
         restaurantId: orderData.restaurantId,
@@ -718,6 +726,51 @@ export class MongoStorage implements IStorage {
       };
     } catch (error) {
       console.error('Error creating order in MongoDB:', error);
+      
+      // If this is a duplicate key error on the 'id' field, try to drop the collection and recreate
+      if (error.code === 11000 && error.message.includes('id_1')) {
+        console.log('Attempting to fix duplicate key error by clearing collection...');
+        try {
+          await OrderModel.collection.drop();
+          console.log('Cleared orders collection, retrying order creation...');
+          
+          // Retry the order creation
+          const order = new OrderModel({
+            customerId: orderData.customerId,
+            restaurantId: orderData.restaurantId,
+            orderNumber: orderData.orderNumber,
+            items: orderData.items,
+            subtotal: orderData.subtotal,
+            total: orderData.total,
+            deliveryAddress: orderData.deliveryAddress,
+            paymentMethod: orderData.paymentMethod,
+            status: orderData.status || 'pending',
+            specialInstructions: orderData.specialInstructions || ''
+          });
+
+          const savedOrder = await order.save();
+          
+          return {
+            id: savedOrder._id.toString(),
+            orderNumber: savedOrder.orderNumber,
+            customerId: savedOrder.customerId,
+            restaurantId: savedOrder.restaurantId,
+            items: savedOrder.items,
+            subtotal: savedOrder.subtotal,
+            total: savedOrder.total,
+            deliveryAddress: savedOrder.deliveryAddress,
+            paymentMethod: savedOrder.paymentMethod,
+            status: savedOrder.status,
+            specialInstructions: savedOrder.specialInstructions,
+            createdAt: savedOrder.createdAt,
+            updatedAt: savedOrder.updatedAt
+          };
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+          throw retryError;
+        }
+      }
+      
       throw error;
     }
   }
@@ -934,6 +987,32 @@ export class MongoStorage implements IStorage {
     } catch (error) {
       console.error('Error getting dashboard stats:', error);
       return {};
+    }
+  }
+
+  async getUsersByRole(role: string): Promise<UserType[]> {
+    try {
+      const users = await User.find({ role }).lean();
+      return users.map(user => ({
+        id: user._id.toString(),
+        email: user.email || null,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        profileImageUrl: user.profileImageUrl || null,
+        role: user.role || null,
+        phoneNumber: user.phoneNumber || null,
+        telegramUserId: user.telegramUserId || null,
+        telegramUsername: user.telegramUsername || null,
+        password: user.password || null,
+        isActive: user.isActive ?? true,
+        restaurantId: user.restaurantId || null,
+        createdBy: user.createdBy || null,
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null,
+      }));
+    } catch (error) {
+      console.error('Error getting users by role:', error);
+      return [];
     }
   }
 

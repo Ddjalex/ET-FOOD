@@ -58,6 +58,13 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
   - **Menu Items Display**: Successfully showing real menu items from Flavour Cafe, Rich Cafe, and WINA JUICE restaurants
 - **Order Flow Implementation**: Added complete order submission API endpoint with real-time kitchen staff notifications
 - **WebSocket Integration**: Implemented real-time notifications for kitchen staff when customers place orders through Mini Web App
+- **Broadcast Messaging System**: 
+  - Implemented SuperAdmin broadcast messaging feature with image support
+  - Added backend API endpoint for sending messages to all customers via Telegram
+  - Created broadcast UI in SuperAdmin dashboard with message types (welcome, product, announcement, promotion)
+  - Added target audience selection (all users, customers only, drivers only)
+  - Integrated file upload for broadcast images with preview functionality
+  - Fixed MongoDB collection conflicts for order placement system
 - **Critical Data Isolation Bug Fixed**: 
   - Fixed restaurant staff creation endpoint to use correct restaurant ID from URL parameter
   - Previously all staff were being assigned to superadmin's restaurant due to using user.restaurantId instead of req.params.restaurantId

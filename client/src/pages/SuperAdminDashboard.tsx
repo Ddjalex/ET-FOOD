@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2 } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -134,11 +134,20 @@ const profileUpdateSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required for profile changes')
 });
 
+const broadcastMessageSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  message: z.string().min(1, 'Message is required'),
+  imageUrl: z.string().optional(),
+  messageType: z.enum(['welcome', 'product', 'announcement', 'promotion']),
+  targetAudience: z.enum(['all', 'customers', 'drivers'])
+});
+
 type RestaurantFormData = z.infer<typeof restaurantFormSchema>;
 type AdminFormData = z.infer<typeof adminFormSchema>;
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
 type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
 type ProfileUpdateData = z.infer<typeof profileUpdateSchema>;
+type BroadcastMessageData = z.infer<typeof broadcastMessageSchema>;
 
 interface SystemSettings {
   companyName: string;
@@ -161,6 +170,7 @@ function SuperAdminDashboardContent() {
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showProfilePassword, setShowProfilePassword] = useState(false);
@@ -168,6 +178,8 @@ function SuperAdminDashboardContent() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
+  const [broadcastImageFile, setBroadcastImageFile] = useState<File | null>(null);
+  const [broadcastImagePreview, setBroadcastImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -229,6 +241,17 @@ function SuperAdminDashboardContent() {
     }
   });
 
+  const broadcastForm = useForm<BroadcastMessageData>({
+    resolver: zodResolver(broadcastMessageSchema),
+    defaultValues: {
+      title: '',
+      message: '',
+      imageUrl: '',
+      messageType: 'announcement',
+      targetAudience: 'all'
+    }
+  });
+
   // Queries
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
@@ -285,6 +308,49 @@ function SuperAdminDashboardContent() {
         variant: 'destructive'
       });
     }
+  });
+
+  // Broadcast message mutation
+  const broadcastMutation = useMutation({
+    mutationFn: async (data: BroadcastMessageData & { image?: File }) => {
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('message', data.message);
+      formData.append('messageType', data.messageType);
+      formData.append('targetAudience', data.targetAudience);
+      if (data.image) {
+        formData.append('image', data.image);
+      }
+
+      return fetch('/api/superadmin/broadcast', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to send broadcast');
+        }
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Broadcast sent successfully',
+        description: 'Your message has been sent to the selected audience.',
+      });
+      broadcastForm.reset();
+      setBroadcastImageFile(null);
+      setBroadcastImagePreview(null);
+      setIsBroadcastDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Broadcast failed',
+        description: error.message || 'Failed to send broadcast message.',
+        variant: 'destructive',
+      });
+    },
   });
 
   const createAdminMutation = useMutation({
@@ -823,6 +889,7 @@ function SuperAdminDashboardContent() {
           { id: 'restaurants', label: 'Restaurants' },
           { id: 'admins', label: 'Admins' },
           { id: 'drivers', label: 'Drivers' },
+          { id: 'broadcast', label: 'Broadcast Messages' },
           { id: 'settings', label: 'System Settings' }
         ].map((tab) => (
           <button
