@@ -42,6 +42,8 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
 
 **Recent Changes (August 2025):**
 - **Project Migration Completed**: Successfully migrated from Replit Agent to standard Replit environment
+- **Environment Variables Configured**: Set up secure secret management with SESSION_SECRET, AUTH_SECRET, and Telegram bot tokens
+- **Telegram Bots Activated**: Customer bot (Enbela_bot) and Driver bot (EnbelaDriver_bot) are now running successfully
 - **MongoDB Integration**: Successfully integrated MongoDB database using connection string mongodb+srv://almeseged:A1l2m3e4s5@cluster0.t6sz6bo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 - **Critical Data Isolation Bug Fixed**: 
   - Fixed restaurant staff creation endpoint to use correct restaurant ID from URL parameter
