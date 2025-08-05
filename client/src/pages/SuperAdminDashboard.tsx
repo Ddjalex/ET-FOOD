@@ -2230,6 +2230,17 @@ export default function SuperAdminDashboard() {
   }
 
   if (!isAuthenticated || (user as any)?.role !== 'superadmin') {
+    // Redirect based on user role
+    if (isAuthenticated && user) {
+      const userRole = (user as any)?.role;
+      if (userRole === 'restaurant_admin') {
+        navigate('/admin');
+        return null;
+      } else if (userRole === 'kitchen_staff') {
+        navigate('/kitchen');
+        return null;
+      }
+    }
     navigate('/superadmin-login');
     return null;
   }
