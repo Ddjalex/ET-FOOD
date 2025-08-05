@@ -39,13 +39,15 @@ export default function RestaurantAdminLogin() {
         description: 'Login successful'
       });
       
-      // Redirect to restaurant admin dashboard
+      // Redirect based on role
       if (data.user?.role === 'restaurant_admin') {
         navigate('/admin');
+      } else if (data.user?.role === 'kitchen_staff') {
+        navigate('/kitchen');
       } else {
         toast({
           title: 'Error',
-          description: 'You do not have restaurant admin access',
+          description: 'You do not have restaurant access',
           variant: 'destructive'
         });
       }
@@ -87,7 +89,7 @@ export default function RestaurantAdminLogin() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">BeU Delivery</CardTitle>
           <CardDescription>
-            Restaurant Admin Login
+            Restaurant Admin & Kitchen Staff Login
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,11 +129,20 @@ export default function RestaurantAdminLogin() {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950 rounded-lg">
-            <p className="text-sm text-amber-600 dark:text-amber-300">
-              <strong>Note:</strong> Restaurant admin credentials are created by the superadmin. 
-              Please contact your system administrator if you don't have login credentials.
-            </p>
+          <div className="mt-6 space-y-3">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <p className="text-sm text-blue-600 dark:text-blue-300">
+                <strong>Kitchen Staff Access:</strong><br />
+                Email: ale@gmail.com<br />
+                Password: beu123
+              </p>
+            </div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
+              <p className="text-sm text-amber-600 dark:text-amber-300">
+                <strong>Note:</strong> Restaurant admin and kitchen staff credentials are created by the superadmin. 
+                Please contact your system administrator if you don't have login credentials.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
