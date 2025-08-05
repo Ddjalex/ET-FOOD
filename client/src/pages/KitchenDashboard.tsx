@@ -508,26 +508,26 @@ export function KitchenDashboard() {
     return <KitchenLoginForm />;
   }
 
-  // Check if user has kitchen staff role
-  if (typedUser.role !== 'kitchen_staff') {
+  // Check if user has access to kitchen dashboard (kitchen staff or restaurant admin)
+  if (typedUser.role !== 'kitchen_staff' && typedUser.role !== 'restaurant_admin' && typedUser.role !== 'superadmin') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              Only kitchen staff can access this dashboard. You are currently logged in as: {typedUser.role}
+              Only kitchen staff and restaurant admins can access this dashboard. You are currently logged in as: {typedUser.role}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-600">
-              To access the kitchen dashboard, you need to log in with kitchen staff credentials.
+              To access the kitchen dashboard, you need to log in with kitchen staff or restaurant admin credentials.
             </p>
             <Button 
               onClick={() => window.location.href = '/admin-login'}
               className="w-full"
             >
-              Switch to Kitchen Staff Login
+              Switch to Admin Login
             </Button>
           </CardContent>
         </Card>

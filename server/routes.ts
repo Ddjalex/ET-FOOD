@@ -1489,18 +1489,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get restaurant staff (restaurant admin only)
+  // Get restaurant staff (restaurant admin and superadmin only)
   app.get('/api/restaurants/:restaurantId/staff', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
       const user = req.user as any;
       
-      if (user.role !== UserRole.RESTAURANT_ADMIN) {
-        return res.status(403).json({ message: 'Only restaurant admins can view staff' });
+      // Only restaurant admins and superadmins can view staff
+      if (user.role !== UserRole.RESTAURANT_ADMIN && user.role !== UserRole.SUPERADMIN) {
+        return res.status(403).json({ message: 'Only restaurant admins and superadmins can view staff' });
       }
 
       const admins = await storage.getAllAdminUsers();
+      const targetRestaurantId = user.role === UserRole.SUPERADMIN ? req.params.restaurantId : user.restaurantId;
+      
       const restaurantStaff = admins.filter(admin => 
-        admin.restaurantId === user.restaurantId && 
+        admin.restaurantId === targetRestaurantId && 
         (admin.role === UserRole.KITCHEN_STAFF || admin.role === UserRole.RESTAURANT_ADMIN)
       );
 
