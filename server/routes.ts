@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
-      // Initialize superadmin if it doesn't exist
+      // Only initialize superadmin users on first run, preserve existing data
       const existingSuperAdmin = await storage.getUserByEmail('superadmin@beu-delivery.com');
       if (!existingSuperAdmin) {
         const hashedPassword = await hashPassword('superadmin123');
@@ -74,10 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: hashedPassword,
           isActive: true
         });
-        console.log('Superadmin created with email: superadmin@beu-delivery.com and password: superadmin123');
+        console.log('Initial superadmin created with email: superadmin@beu-delivery.com and password: superadmin123');
       }
 
-      // Initialize alm@gmail.com user if it doesn't exist
+      // Only initialize alm user if it doesn't exist
       const existingAlmUser = await storage.getUserByEmail('alm@gmail.com');
       if (!existingAlmUser) {
         const hashedPassword = await hashPassword('beu123');
@@ -89,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: hashedPassword,
           isActive: true
         });
-        console.log('ALM user created with email: alm@gmail.com and password: beu123');
+        console.log('Initial ALM user created with email: alm@gmail.com and password: beu123');
       }
 
       const user = await storage.getUserByEmail(email);
