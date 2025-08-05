@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
@@ -1424,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Kitchen Staff: Create menu item (requires approval)
-  app.post('/api/kitchen/:restaurantId/menu/items', requireSession, requireKitchenAccess, async (req, res) => {
+  app.post('/api/kitchen/:restaurantId/menu/items', requireSession, requireKitchenAccess, upload.single('image'), async (req, res) => {
     try {
       const user = req.user as any;
       const { restaurantId } = req.params;
@@ -1434,13 +1435,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Category ID, name, and price are required' });
       }
 
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
       const menuItem = await storage.createMenuItem({
         restaurantId,
         categoryId,
         name,
         description: description || null,
         price: price.toString(),
-        imageUrl: null,
+        imageUrl,
         isAvailable: isAvailable !== false,
         preparationTime: preparationTime || null,
         ingredients: ingredients || [],
@@ -1525,6 +1528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to mark order ready' });
     }
   });
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static('uploads'));
 
   return httpServer;
 }

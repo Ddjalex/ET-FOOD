@@ -244,6 +244,7 @@ interface MenuItem {
   name: string;
   description?: string;
   price: number;
+  imageUrl?: string;
   isAvailable: boolean;
   status: 'active' | 'pending_approval' | 'rejected';
   preparationTime?: number;
@@ -272,6 +273,8 @@ export function KitchenDashboard() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Type-safe user with proper typing
   const typedUser = user as any;
@@ -343,13 +346,38 @@ export function KitchenDashboard() {
   // Menu item management mutations
   const addMenuItemMutation = useMutation({
     mutationFn: async (data: z.infer<typeof menuItemSchema>) => {
-      const response = await apiRequest('POST', `/api/kitchen/${typedUser?.restaurantId}/menu/items`, data);
-      return response;
+      const formData = new FormData();
+      
+      // Add all text fields
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value.toString());
+        }
+      });
+      
+      // Add image if selected
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+      
+      const response = await fetch(`/api/kitchen/${typedUser?.restaurantId}/menu/items`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create menu item');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'menu'] });
       toast({ title: 'Menu item added successfully' });
       setShowAddItem(false);
+      setSelectedImage(null);
+      setImagePreview(null);
     },
     onError: (error: any) => {
       toast({ title: 'Failed to add menu item', description: error.message, variant: 'destructive' });
@@ -751,25 +779,34 @@ export function KitchenDashboard() {
                     <div className="space-y-2">
                       {category.items?.map((item: MenuItem) => (
                         <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-medium">{item.name}</h4>
-                              {item.status === 'pending_approval' && (
-                                <Badge variant="secondary" className="text-xs">Pending</Badge>
-                              )}
-                              {item.isVegetarian && <Badge variant="outline" className="text-xs">Vegetarian</Badge>}
-                              {item.isVegan && <Badge variant="outline" className="text-xs">Vegan</Badge>}
-                              {item.spicyLevel > 0 && <Badge variant="outline" className="text-xs">🌶️ {item.spicyLevel}</Badge>}
-                            </div>
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
-                            <div className="flex items-center space-x-4 mt-1">
-                              <span className="font-semibold">${item.price}</span>
-                              {item.preparationTime && (
-                                <span className="text-xs text-muted-foreground flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {item.preparationTime}min
-                                </span>
-                              )}
+                          <div className="flex items-center space-x-3 flex-1">
+                            {item.imageUrl && (
+                              <img 
+                                src={item.imageUrl} 
+                                alt={item.name}
+                                className="w-16 h-16 object-cover rounded-lg border"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h4 className="font-medium">{item.name}</h4>
+                                {item.status === 'pending_approval' && (
+                                  <Badge variant="secondary" className="text-xs">Pending</Badge>
+                                )}
+                                {item.isVegetarian && <Badge variant="outline" className="text-xs">Vegetarian</Badge>}
+                                {item.isVegan && <Badge variant="outline" className="text-xs">Vegan</Badge>}
+                                {item.spicyLevel > 0 && <Badge variant="outline" className="text-xs">🌶️ {item.spicyLevel}</Badge>}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{item.description}</p>
+                              <div className="flex items-center space-x-4 mt-1">
+                                <span className="font-semibold">${item.price}</span>
+                                {item.preparationTime && (
+                                  <span className="text-xs text-muted-foreground flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {item.preparationTime}min
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -1130,6 +1167,45 @@ function MenuItemFormDialog({
               )}
             />
 
+            <div className="space-y-3">
+              <FormLabel>Product Image</FormLabel>
+              <div className="flex items-center space-x-4">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedImage(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  className="max-w-xs"
+                />
+                {imagePreview && (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -1263,7 +1339,12 @@ function MenuItemFormDialog({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  onOpenChange(false);
+                  setSelectedImage(null);
+                  setImagePreview(null);
+                  form.reset();
+                }}
                 disabled={isLoading}
               >
                 Cancel
