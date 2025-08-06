@@ -2027,14 +2027,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DRIVER API ROUTES
   // ==============================================
 
-  // Driver registration route
-  app.post('/api/drivers/register', upload.fields([
-    { name: 'governmentIdFront', maxCount: 1 },
-    { name: 'governmentIdBack', maxCount: 1 }
-  ]), async (req, res) => {
+  // Driver registration route (for JSON data without files)
+  app.post('/api/drivers/register-basic', async (req, res) => {
     try {
       const { telegramId, name, phoneNumber } = req.body;
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
       if (!telegramId || !name || !phoneNumber) {
         return res.status(400).json({ message: 'Telegram ID, name, and phone number are required' });
@@ -2057,7 +2053,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Handle file uploads
+      // Create driver profile without files
+      const driver = await storage.createDriver({
+        userId: user.id,
+        telegramId,
+        phoneNumber,
+        name,
+        governmentIdFrontUrl: null,
+        governmentIdBackUrl: null,
+        status: 'pending_approval',
+        isOnline: false,
+        isAvailable: false,
+        isApproved: false,
+        rating: '0.00',
+        totalDeliveries: 0,
+        totalEarnings: '0.00',
+        todayEarnings: '0.00',
+        weeklyEarnings: '0.00'
+      });
+
+      // Send real-time notification to SuperAdmin
+      broadcast('driverRegistration', {
+        type: 'new_driver_registration',
+        driver: {
+          id: driver.id,
+          name: driver.name,
+          phoneNumber: driver.phoneNumber,
+          telegramId: driver.telegramId,
+          status: driver.status,
+          createdAt: driver.createdAt
+        },
+        message: `New driver registration: ${driver.name}`
+      });
+
+      res.json({ 
+        message: 'Driver registration successful', 
+        driver: {
+          id: driver.id,
+          name: driver.name,
+          phoneNumber: driver.phoneNumber,
+          status: driver.status
+        }
+      });
+    } catch (error) {
+      console.error('Error registering driver:', error);
+      res.status(500).json({ message: 'Failed to register driver' });
+    }
+  });
+
+  // Driver registration route (with file uploads)
+  app.post('/api/drivers/register', upload.fields([
+    { name: 'governmentIdFront', maxCount: 1 },
+    { name: 'governmentIdBack', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const { telegramId, name, phoneNumber } = req.body;
+
+      if (!telegramId || !name || !phoneNumber) {
+        return res.status(400).json({ message: 'Telegram ID, name, and phone number are required' });
+      }
+
+      // Check if driver already registered
+      const existingDriver = await storage.getDriverByTelegramId(telegramId);
+      if (existingDriver) {
+        return res.status(409).json({ message: 'Driver already registered with this Telegram account' });
+      }
+
+      // Create or get user
+      let user = await storage.getUserByTelegramId(telegramId);
+      if (!user) {
+        user = await storage.upsertUser({
+          telegramUserId: telegramId,
+          firstName: name.split(' ')[0],
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          role: 'driver'
+        });
+      }
+
+      // Handle file uploads - files may be undefined for form data without files
+      const files = (req.files as { [fieldname: string]: Express.Multer.File[] }) || {};
       const governmentIdFrontUrl = files.governmentIdFront ? `/uploads/${files.governmentIdFront[0].filename}` : null;
       const governmentIdBackUrl = files.governmentIdBack ? `/uploads/${files.governmentIdBack[0].filename}` : null;
 

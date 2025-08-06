@@ -11,10 +11,17 @@ class DriverApp {
     }
 
     init() {
-        if (this.tg) {
+        // Wait for Telegram Web App to be ready
+        if (window.Telegram && window.Telegram.WebApp) {
+            this.tg = window.Telegram.WebApp;
             this.tg.ready();
             this.tg.expand();
             this.tg.enableClosingConfirmation();
+            
+            console.log('Telegram Web App initialized');
+            console.log('Available Telegram methods:', Object.keys(this.tg));
+        } else {
+            console.warn('Telegram Web App not available');
         }
 
         this.setupEventListeners();
@@ -102,41 +109,90 @@ class DriverApp {
             }
         }
 
-        // Show button to request phone number
+        // Setup enhanced phone number request functionality
         this.setupPhoneNumberRequest();
     }
 
     setupPhoneNumberRequest() {
         const phoneField = document.getElementById('driverPhone');
-        if (phoneField && this.tg) {
+        if (phoneField) {
             phoneField.placeholder = 'Tap to share your contact';
             phoneField.style.cursor = 'pointer';
             phoneField.readOnly = true;
             
             const requestContact = () => {
-                // Use the proper Telegram Web App method
-                if (this.tg && this.tg.requestContact) {
-                    this.tg.requestContact((contact) => {
-                        console.log('Contact received:', contact);
-                        if (contact && contact.phone_number) {
-                            phoneField.value = contact.phone_number;
-                            phoneField.placeholder = 'Phone number from Telegram';
-                            phoneField.style.backgroundColor = '#f0f9f4';
-                            phoneField.readOnly = false; // Allow editing after receiving contact
-                        }
-                    });
+                console.log('Contact request initiated');
+                
+                // Try multiple Telegram contact sharing methods
+                if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.requestContact === 'function') {
+                    console.log('Using Telegram WebApp.requestContact method');
+                    try {
+                        window.Telegram.WebApp.requestContact((contact) => {
+                            console.log('Contact callback received:', contact);
+                            if (contact && contact.phone_number) {
+                                phoneField.value = contact.phone_number;
+                                phoneField.placeholder = 'Phone number from Telegram';
+                                phoneField.style.backgroundColor = '#f0f9f4';
+                                phoneField.readOnly = false;
+                                console.log('Contact successfully populated:', contact.phone_number);
+                            } else {
+                                console.log('No contact data received');
+                                this.fallbackToManualEntry(phoneField);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error requesting contact:', error);
+                        this.fallbackToManualEntry(phoneField);
+                    }
+                } else if (this.tg && typeof this.tg.requestContact === 'function') {
+                    console.log('Using alternative Telegram requestContact method');
+                    try {
+                        this.tg.requestContact((contact) => {
+                            console.log('Alternative contact callback received:', contact);
+                            if (contact && contact.phone_number) {
+                                phoneField.value = contact.phone_number;
+                                phoneField.placeholder = 'Phone number from Telegram';
+                                phoneField.style.backgroundColor = '#f0f9f4';
+                                phoneField.readOnly = false;
+                            } else {
+                                this.fallbackToManualEntry(phoneField);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error with alternative requestContact:', error);
+                        this.fallbackToManualEntry(phoneField);
+                    }
                 } else {
-                    // Fallback: show input for manual entry
-                    phoneField.readOnly = false;
-                    phoneField.placeholder = 'Enter your phone number manually';
-                    phoneField.style.backgroundColor = '#fff3cd';
-                    phoneField.focus();
+                    console.log('No contact request methods available, using fallback');
+                    this.fallbackToManualEntry(phoneField);
                 }
             };
             
             phoneField.addEventListener('click', requestContact);
             phoneField.addEventListener('focus', requestContact);
         }
+    }
+
+    fallbackToManualEntry(phoneField) {
+        console.log('Falling back to manual entry');
+        phoneField.readOnly = false;
+        phoneField.placeholder = 'Enter your phone number manually';
+        phoneField.style.backgroundColor = '#fff3cd';
+        phoneField.style.cursor = 'text';
+        phoneField.focus();
+        
+        // Show a message to the user
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = 'background: #fff3cd; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #856404;';
+        messageDiv.textContent = 'Contact sharing not available. Please enter your phone number manually.';
+        phoneField.parentNode.insertBefore(messageDiv, phoneField.nextSibling);
+        
+        // Remove message after 5 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 5000);
     }
 
     showRegistrationForm() {
@@ -246,17 +302,31 @@ class DriverApp {
             const govIdFront = document.getElementById('govIdFront').files[0];
             const govIdBack = document.getElementById('govIdBack').files[0];
 
-            if (!govIdFront || !govIdBack) {
-                throw new Error('Please upload both sides of your government ID');
+            let response;
+            
+            // If files are provided, use the multipart endpoint
+            if (govIdFront && govIdBack) {
+                formData.append('governmentIdFront', govIdFront);
+                formData.append('governmentIdBack', govIdBack);
+
+                response = await fetch('/api/drivers/register', {
+                    method: 'POST',
+                    body: formData
+                });
+            } else {
+                // Use basic registration endpoint for JSON data
+                response = await fetch('/api/drivers/register-basic', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        telegramId: this.telegramUser.id,
+                        name: driverName,
+                        phoneNumber: driverPhone
+                    })
+                });
             }
-
-            formData.append('governmentIdFront', govIdFront);
-            formData.append('governmentIdBack', govIdBack);
-
-            const response = await fetch('/api/drivers/register', {
-                method: 'POST',
-                body: formData
-            });
 
             const data = await response.json();
 

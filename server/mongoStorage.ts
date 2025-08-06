@@ -337,7 +337,7 @@ export class MongoStorage implements IStorage {
   // Driver operations
   async getDrivers(): Promise<DriverType[]> {
     try {
-      const drivers = await Driver.find({}).lean();
+      const drivers = await DriverModel.find({}).lean();
       return drivers.map(d => ({ ...d, id: d._id.toString() })) as DriverType[];
     } catch (error) {
       console.error('Error getting drivers:', error);
@@ -347,7 +347,7 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<any[]> {
     try {
-      const drivers = await Driver.find({}).populate('userId').lean();
+      const drivers = await DriverModel.find({}).populate('userId').lean();
       return drivers.map(d => ({
         ...d,
         id: d._id.toString(),
@@ -361,7 +361,7 @@ export class MongoStorage implements IStorage {
 
   async approveDriver(driverId: string): Promise<DriverType> {
     try {
-      const driver = await Driver.findByIdAndUpdate(
+      const driver = await DriverModel.findByIdAndUpdate(
         driverId,
         { isApproved: true },
         { new: true }
@@ -376,7 +376,7 @@ export class MongoStorage implements IStorage {
 
   async rejectDriver(driverId: string): Promise<void> {
     try {
-      await Driver.findByIdAndDelete(driverId);
+      await DriverModel.findByIdAndDelete(driverId);
     } catch (error) {
       console.error('Error rejecting driver:', error);
       throw error;
@@ -429,9 +429,9 @@ export class MongoStorage implements IStorage {
     try {
       const totalRestaurants = await Restaurant.countDocuments({});
       const activeRestaurants = await Restaurant.countDocuments({ isActive: true });
-      const totalDrivers = await Driver.countDocuments({});
-      const activeDrivers = await Driver.countDocuments({ isApproved: true, isOnline: true });
-      const pendingDrivers = await Driver.countDocuments({ isApproved: false });
+      const totalDrivers = await DriverModel.countDocuments({});
+      const activeDrivers = await DriverModel.countDocuments({ isApproved: true, isOnline: true });
+      const pendingDrivers = await DriverModel.countDocuments({ isApproved: false });
 
       return {
         totalRestaurants,
@@ -1294,7 +1294,7 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<DriverType[]> {
     try {
-      const drivers = await Driver.find({}).lean();
+      const drivers = await DriverModel.find({}).lean();
       return drivers.map(driver => ({
         id: driver._id.toString(),
         userId: driver.userId,
@@ -1323,7 +1323,7 @@ export class MongoStorage implements IStorage {
 
   async rejectDriver(driverId: string): Promise<void> {
     try {
-      await Driver.findByIdAndUpdate(driverId, { isApproved: false });
+      await DriverModel.findByIdAndUpdate(driverId, { isApproved: false });
     } catch (error) {
       console.error('Error rejecting driver:', error);
       throw error;
@@ -1333,7 +1333,7 @@ export class MongoStorage implements IStorage {
   async getDashboardStats(): Promise<any> {
     try {
       const totalRestaurants = await Restaurant.countDocuments();
-      const totalDrivers = await Driver.countDocuments();
+      const totalDrivers = await DriverModel.countDocuments();
       const totalUsers = await User.countDocuments();
       
       return {

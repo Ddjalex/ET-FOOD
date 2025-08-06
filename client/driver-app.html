@@ -6,6 +6,11 @@
     <title>BeU Driver</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
+    <script>
+        // Initialize Telegram Web App early
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    </script>
     <style>
         * {
             margin: 0;
