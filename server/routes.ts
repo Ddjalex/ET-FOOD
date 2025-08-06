@@ -865,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertRestaurantSchema.parse(req.body);
       const restaurant = await storage.createRestaurant(validatedData);
-      broadcast({ type: 'restaurant_created', data: restaurant });
+      broadcast('restaurant_created', restaurant);
       res.status(201).json(restaurant);
     } catch (error) {
       console.error("Error creating restaurant:", error);
@@ -876,7 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/restaurants/:id', isAuthenticated, async (req, res) => {
     try {
       const restaurant = await storage.updateRestaurant(req.params.id, req.body);
-      broadcast({ type: 'restaurant_updated', data: restaurant });
+      broadcast('restaurant_updated', restaurant);
       res.json(restaurant);
     } catch (error) {
       console.error("Error updating restaurant:", error);
@@ -887,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/restaurants/:id/approve', isAuthenticated, async (req, res) => {
     try {
       const restaurant = await storage.approveRestaurant(req.params.id);
-      broadcast({ type: 'restaurant_approved', data: restaurant });
+      broadcast('restaurant_approved', restaurant);
       res.json(restaurant);
     } catch (error) {
       console.error("Error approving restaurant:", error);
@@ -898,7 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/restaurants/:id', isAuthenticated, async (req, res) => {
     try {
       await storage.deleteRestaurant(req.params.id);
-      broadcast({ type: 'restaurant_deleted', data: { id: req.params.id } });
+      broadcast('restaurant_deleted', { id: req.params.id });
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting restaurant:", error);
@@ -994,7 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertOrderSchema.parse(req.body);
       const order = await orderService.createOrder(validatedData);
-      broadcast({ type: 'order_created', data: order });
+      broadcast('order_created', order);
       res.status(201).json(order);
     } catch (error) {
       console.error("Error creating order:", error);
@@ -1006,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status } = req.body;
       const order = await orderService.updateOrderStatus(req.params.id, status);
-      broadcast({ type: 'order_status_updated', data: order });
+      broadcast('order_status_updated', order);
       res.json(order);
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -1049,7 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         idCardImageUrl: files.idCardImage?.[0]?.path,
       });
       const driver = await storage.createDriver(validatedData);
-      broadcast({ type: 'driver_registered', data: driver });
+      broadcast('driver_registered', driver);
       res.status(201).json(driver);
     } catch (error) {
       console.error("Error creating driver:", error);
@@ -1060,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/drivers/:id/approve', isAuthenticated, async (req, res) => {
     try {
       const driver = await storage.approveDriver(req.params.id);
-      broadcast({ type: 'driver_approved', data: driver });
+      broadcast('driver_approved', driver);
       res.json(driver);
     } catch (error) {
       console.error("Error approving driver:", error);
@@ -1072,7 +1072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { location } = req.body;
       const driver = await storage.updateDriverLocation(req.params.id, location);
-      broadcast({ type: 'driver_location_updated', data: driver });
+      broadcast('driver_location_updated', driver);
       res.json(driver);
     } catch (error) {
       console.error("Error updating driver location:", error);
@@ -1084,7 +1084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { isOnline, isAvailable } = req.body;
       const driver = await storage.updateDriverStatus(req.params.id, isOnline, isAvailable);
-      broadcast({ type: 'driver_status_updated', data: driver });
+      broadcast('driver_status_updated', driver);
       res.json(driver);
     } catch (error) {
       console.error("Error updating driver status:", error);

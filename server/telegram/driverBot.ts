@@ -176,9 +176,9 @@ Choose an option:`, { reply_markup: keyboard });
           await ctx.answerCbQuery();
           await ctx.reply(`💰 Earnings Summary
 
-Total Earnings: ₹${driver.totalEarnings}
+Total Earnings: ${driver.totalEarnings} ETB
 Total Deliveries: ${driver.totalDeliveries}
-Average per Delivery: ₹${(driver.totalDeliveries || 0) > 0 ? (Number(driver.totalEarnings) / (driver.totalDeliveries || 1)).toFixed(2) : '0'}
+Average per Delivery: ${(driver.totalDeliveries || 0) > 0 ? (Number(driver.totalEarnings) / (driver.totalDeliveries || 1)).toFixed(2) : '0'} ETB
 
 Rating: ${driver.rating}⭐`);
           break;
@@ -245,33 +245,6 @@ Ready to apply? Use the registration form!`);
     }
   });
 
-  // Handle location updates from drivers
-  bot.on('location', async (ctx) => {
-    const location = ctx.message.location;
-    const telegramUserId = ctx.from?.id.toString();
-
-    if (!telegramUserId || !location) return;
-
-    try {
-      const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) return;
-
-      const driver = await storage.getDriverByUserId(user.id);
-      if (!driver || !driver.isApproved) return;
-
-      // Update driver location
-      await storage.updateDriverLocation(driver.id, {
-        type: 'Point',
-        coordinates: [location.longitude, location.latitude]
-      });
-
-      await ctx.reply('📍 Location updated successfully!\n\nYour location helps us assign nearby delivery orders to you.');
-    } catch (error) {
-      console.error('Error updating driver location:', error);
-      await ctx.reply('Sorry, unable to update your location. Please try again later.');
-    }
-  });
-
   // Handle location sharing
   bot.on('location', async (ctx) => {
     const telegramUserId = ctx.from?.id.toString();
@@ -281,19 +254,33 @@ Ready to apply? Use the registration form!`);
 
     try {
       const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) return;
+      if (!user) {
+        await ctx.reply('❌ User not found. Please register first.');
+        return;
+      }
 
       const driver = await storage.getDriverByUserId(user.id);
-      if (!driver) return;
+      if (!driver) {
+        await ctx.reply('❌ Driver profile not found. Please register as a driver first.');
+        return;
+      }
+
+      if (!driver.isApproved) {
+        await ctx.reply('⏳ Your driver application is still pending approval. Please wait for admin approval.');
+        return;
+      }
 
       // Save driver's live location
       await storage.updateDriverLocation(driver.id, {
         latitude: location.latitude,
         longitude: location.longitude,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       });
 
-      await ctx.reply('✅ Location updated successfully!\n\nYou will now receive orders from nearby restaurants.', {
+      // Also update driver status to online if they're sharing location
+      await storage.updateDriverStatus(driver.id, true, true);
+
+      await ctx.reply('✅ Location updated successfully!\n\nYou are now online and will receive orders from nearby restaurants.', {
         reply_markup: {
           remove_keyboard: true
         }

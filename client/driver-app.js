@@ -199,9 +199,9 @@ class DriverApp {
         this.updateStatusIndicator();
 
         // Update earnings
-        document.getElementById('todayEarnings').textContent = `$${this.driverData.todayEarnings || '0.00'}`;
-        document.getElementById('weeklyEarnings').textContent = `$${this.driverData.weeklyEarnings || '0.00'}`;
-        document.getElementById('totalEarnings').textContent = `$${this.driverData.totalEarnings || '0.00'}`;
+        document.getElementById('todayEarnings').textContent = `${this.driverData.todayEarnings || '0.00'} ETB`;
+        document.getElementById('weeklyEarnings').textContent = `${this.driverData.weeklyEarnings || '0.00'} ETB`;
+        document.getElementById('totalEarnings').textContent = `${this.driverData.totalEarnings || '0.00'} ETB`;
         document.getElementById('totalDeliveries').textContent = this.driverData.totalDeliveries || '0';
         document.getElementById('driverRating').textContent = this.driverData.rating || '0.0';
     }
@@ -315,12 +315,20 @@ class DriverApp {
         const isChecked = document.getElementById('onlineToggle').checked;
         
         try {
+            // Make sure we have driver data and ID
+            if (!this.driverData || !this.driverData.id) {
+                throw new Error('Driver data not available');
+            }
+
             const response = await fetch(`/api/drivers/${this.driverData.id}/status`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ isOnline: isChecked })
+                body: JSON.stringify({ 
+                    isOnline: isChecked, 
+                    isAvailable: isChecked 
+                })
             });
 
             if (response.ok) {

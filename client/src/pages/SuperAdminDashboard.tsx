@@ -2805,15 +2805,15 @@ function SuperAdminDashboardContent() {
                   <div className="space-y-2">
                     <div>
                       <span className="font-medium">Full Name:</span>
-                      <p>{selectedDriver.user?.firstName} {selectedDriver.user?.lastName}</p>
+                      <p>{selectedDriver.name || `${selectedDriver.user?.firstName} ${selectedDriver.user?.lastName}`}</p>
                     </div>
                     <div>
                       <span className="font-medium">Email:</span>
-                      <p>{selectedDriver.user?.email}</p>
+                      <p>{selectedDriver.user?.email || 'Not provided'}</p>
                     </div>
                     <div>
                       <span className="font-medium">Phone Number:</span>
-                      <p>{selectedDriver.user?.phoneNumber}</p>
+                      <p>{selectedDriver.phoneNumber || selectedDriver.user?.phoneNumber || 'Not provided'}</p>
                     </div>
                     <div>
                       <span className="font-medium">Registration Date:</span>
@@ -2855,7 +2855,7 @@ function SuperAdminDashboardContent() {
                     </div>
                     <div>
                       <span className="font-medium">Total Earnings:</span>
-                      <p>₹{selectedDriver.totalEarnings}</p>
+                      <p>{selectedDriver.totalEarnings} ETB</p>
                     </div>
                   </div>
                 </div>
@@ -2914,12 +2914,12 @@ function SuperAdminDashboardContent() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Government ID Documents</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {selectedDriver.govIdFrontUrl && (
+                  {selectedDriver.governmentIdFrontUrl && (
                     <div className="space-y-2">
                       <h4 className="font-medium">ID Front</h4>
                       <div className="border rounded-lg overflow-hidden">
                         <img 
-                          src={selectedDriver.govIdFrontUrl} 
+                          src={selectedDriver.governmentIdFrontUrl} 
                           alt="Government ID Front"
                           className="w-full h-auto max-h-64 object-contain bg-gray-50"
                           onError={(e) => {
@@ -2930,12 +2930,12 @@ function SuperAdminDashboardContent() {
                     </div>
                   )}
                   
-                  {selectedDriver.govIdBackUrl && (
+                  {selectedDriver.governmentIdBackUrl && (
                     <div className="space-y-2">
                       <h4 className="font-medium">ID Back</h4>
                       <div className="border rounded-lg overflow-hidden">
                         <img 
-                          src={selectedDriver.govIdBackUrl} 
+                          src={selectedDriver.governmentIdBackUrl} 
                           alt="Government ID Back"
                           className="w-full h-auto max-h-64 object-contain bg-gray-50"
                           onError={(e) => {
@@ -2947,7 +2947,7 @@ function SuperAdminDashboardContent() {
                   )}
                 </div>
                 
-                {!selectedDriver.govIdFrontUrl && !selectedDriver.govIdBackUrl && (
+                {!selectedDriver.governmentIdFrontUrl && !selectedDriver.governmentIdBackUrl && (
                   <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg">
                     <p>No government ID documents uploaded</p>
                   </div>
