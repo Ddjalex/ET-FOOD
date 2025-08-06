@@ -75,6 +75,7 @@ interface Driver {
   isOnline: boolean;
   isAvailable: boolean;
   isApproved: boolean;
+  isBlocked: boolean;
   rating: string;
   totalDeliveries: number;
   totalEarnings: string;
@@ -931,7 +932,7 @@ function SuperAdminDashboardContent() {
         console.log('WebSocket connected');
         
         // Authenticate with the server
-        newSocket.emit('authenticate', { userId: user.id });
+        newSocket.emit('authenticate', { userId: (user as any)?.id });
       });
 
       newSocket.on('disconnect', () => {
@@ -1933,7 +1934,6 @@ function SuperAdminDashboardContent() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Driver Info</TableHead>
-                    <TableHead>Vehicle Details</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Performance</TableHead>
                     <TableHead>Location</TableHead>
@@ -1945,19 +1945,21 @@ function SuperAdminDashboardContent() {
                   {drivers.map((driver) => (
                     <TableRow key={driver.id}>
                       <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {driver.user?.firstName} {driver.user?.lastName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {driver.user?.phoneNumber}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium capitalize">{driver.vehicleType}</p>
-                          <p className="text-sm text-muted-foreground">{driver.vehiclePlate}</p>
+                        <div className="space-y-1">
+                          <div>
+                            <p className="font-medium">
+                              {driver.user?.firstName} {driver.user?.lastName}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {driver.user?.email}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              📞 {driver.user?.phoneNumber}
+                            </p>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            License: {driver.licenseNumber}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
