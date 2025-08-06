@@ -471,13 +471,16 @@ class DriverApp {
         });
 
         this.socket.on('driver-approved', (driverData) => {
+            console.log('Driver approved event received:', driverData);
             this.driverData = driverData;
             this.showDashboard();
-            if (this.tg) {
-                this.tg.showAlert('Congratulations! Your driver registration has been approved. Please share your live location to start receiving orders.');
-                // Request live location sharing
-                this.requestLiveLocation();
-            }
+            this.showNotification('🎉 Congratulations! Your driver application has been approved. You can now start accepting orders.', 'success');
+        });
+
+        this.socket.on('driver-rejected', (data) => {
+            console.log('Driver rejected event received:', data);
+            this.showRejectedStatus();
+            this.showNotification('❌ Your driver application has been rejected. Please contact support.', 'error');
         });
     }
 
@@ -827,6 +830,61 @@ class DriverApp {
         `;
         
         return item;
+    }
+
+    showNotification(message, type = 'info') {
+        // Create and show notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-width: 300px;
+            font-size: 14px;
+            line-height: 1.4;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    showRejectedStatus() {
+        document.getElementById('registrationForm').classList.add('hidden');
+        document.getElementById('pendingApproval').classList.add('hidden');
+        document.getElementById('driverDashboard').classList.add('hidden');
+        
+        // Create rejected status screen if it doesn't exist
+        let rejectedScreen = document.getElementById('rejectedStatus');
+        if (!rejectedScreen) {
+            rejectedScreen = document.createElement('div');
+            rejectedScreen.id = 'rejectedStatus';
+            rejectedScreen.innerHTML = `
+                <div class="pending-approval">
+                    <div class="pending-icon">❌</div>
+                    <div class="pending-title">Application Rejected</div>
+                    <div class="pending-message">
+                        Unfortunately, your driver application has been rejected. Please contact our support team for more information or to reapply.
+                    </div>
+                    <button class="btn btn-primary" onclick="window.location.reload()">Try Again</button>
+                </div>
+            `;
+            document.querySelector('.container').appendChild(rejectedScreen);
+        }
+        
+        rejectedScreen.classList.remove('hidden');
     }
 }
 

@@ -1188,15 +1188,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const driver = await storage.approveDriver(req.params.id);
       
-      // Send notification to driver via Telegram to request live location
+      // Broadcast driver approval to connected clients
+      io.emit('driver-approved', {
+        driverId: driver.id,
+        telegramId: driver.telegramId,
+        name: driver.name,
+        status: 'approved'
+      });
+      
+      // Send approval notification to driver via Telegram
       try {
-        const driverData = await storage.getDriverByTelegramId(driver.telegramId);
+        const driverData = await storage.getDriverByTelegramId(driver.telegramId || '');
         if (driverData && driverData.telegramId) {
-          await sendLocationRequestToDriver(driverData.telegramId, driverData.name);
+          await sendApprovalNotificationToDriver(driverData.telegramId, driverData.name || '');
         }
-      } catch (locationError) {
-        console.error('Failed to send location request to driver:', locationError);
-        // Don't fail the approval if location request fails
+      } catch (notificationError) {
+        console.error('Failed to send approval notification to driver:', notificationError);
+        // Don't fail the approval if notification fails
       }
       
       res.json(driver);
@@ -1213,7 +1221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      await storage.rejectDriver(req.params.id);
+      const driver = await storage.rejectDriver(req.params.id);
+      
+      // Broadcast driver rejection to connected clients
+      io.emit('driver-rejected', {
+        driverId: req.params.id,
+        telegramId: driver?.telegramId,
+        status: 'rejected'
+      });
+      
       res.json({ message: 'Driver rejected successfully' });
     } catch (error) {
       console.error('Failed to reject driver:', error);
@@ -2080,33 +2096,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Function to send location request to driver via Telegram
-  async function sendLocationRequestToDriver(telegramId: string, driverName: string) {
+  // Function to send approval notification to driver via Telegram
+  async function sendApprovalNotificationToDriver(telegramId: string, driverName: string) {
     try {
-      // Send message via driver bot
+      // Import driver bot instance
+      const { driverBot } = await import('./telegram/bot');
+      
+      if (!driverBot) {
+        console.warn('Driver bot not available for notification');
+        return;
+      }
+
       const message = `🎉 Congratulations ${driverName}! Your driver application has been approved.
 
-📍 To start receiving delivery orders, please share your live location by clicking the button below. This helps us assign nearby orders to you.
+✅ You can now start accepting delivery orders!
 
-Your location will be used only for order assignment and delivery tracking purposes.`;
+Use the /driver command to access your driver dashboard and start earning with BeU Delivery.`;
 
-      // Send via driver bot with location request
-      if (driverBot) {
-        await driverBot.telegram.sendMessage(telegramId, message, {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: '📍 Share Live Location',
-                  callback_data: 'request_live_location'
-                }
-              ]
+      // Send notification via driver bot
+      await driverBot.telegram.sendMessage(telegramId, message, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '🚗 Open Driver Dashboard',
+                callback_data: 'driver_dashboard'
+              }
             ]
-          }
-        });
-      }
+          ]
+        }
+      });
+
+      console.log(`Approval notification sent to driver ${driverName} (${telegramId})`);
     } catch (error) {
-      console.error('Error sending location request to driver:', error);
+      console.error('Error sending approval notification to driver:', error);
       throw error;
     }
   }
