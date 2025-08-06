@@ -125,126 +125,33 @@ class DriverApp {
             }
         }
 
-        // Setup enhanced phone number request functionality
+        // Setup manual phone number entry
         this.setupPhoneNumberRequest();
     }
 
     setupPhoneNumberRequest() {
         const phoneField = document.getElementById('driverPhone');
         if (phoneField) {
-            // Create a share contact button instead of making the field clickable
-            const shareContactBtn = document.createElement('button');
-            shareContactBtn.type = 'button';
-            shareContactBtn.className = 'btn btn-outline';
-            shareContactBtn.style.cssText = 'margin-top: 8px; width: 100%;';
-            shareContactBtn.innerHTML = '📱 Share Contact from Telegram';
+            console.log('Setting up manual phone number entry');
             
-            // Insert the button after the phone field
-            phoneField.parentNode.insertBefore(shareContactBtn, phoneField.nextSibling);
+            // Set up the phone field for manual entry only
+            phoneField.placeholder = 'Enter your phone number (e.g., +251912345678)';
+            phoneField.readOnly = false;
+            phoneField.style.backgroundColor = '#ffffff';
+            phoneField.style.cursor = 'text';
+            phoneField.required = true;
             
-            // Set up the phone field for manual entry initially
-            phoneField.placeholder = 'Phone number will be filled automatically';
-            phoneField.readOnly = true;
-            phoneField.style.backgroundColor = '#f8f9fa';
-            
-            const requestContact = () => {
-                console.log('Contact sharing button clicked');
-                
-                // Check multiple contact sharing methods in proper order
-                if (window.Telegram && window.Telegram.WebApp) {
-                    console.log('Telegram WebApp detected, requesting contact...');
-                    shareContactBtn.textContent = 'Requesting contact...';
-                    shareContactBtn.disabled = true;
-                    
-                    // Try the latest Telegram Web App API method
-                    if (typeof window.Telegram.WebApp.requestContact === 'function') {
-                        console.log('Using Telegram.WebApp.requestContact method');
-                        try {
-                            window.Telegram.WebApp.requestContact((contact) => {
-                                console.log('Contact received from WebApp:', contact);
-                                if (contact && contact.phone_number) {
-                                    phoneField.value = contact.phone_number;
-                                    phoneField.style.backgroundColor = '#f0f9f4';
-                                    phoneField.readOnly = false;
-                                    shareContactBtn.textContent = '✅ Contact Shared';
-                                    shareContactBtn.style.backgroundColor = '#22c55e';
-                                    shareContactBtn.style.color = 'white';
-                                    shareContactBtn.disabled = true;
-                                    console.log('Contact successfully populated:', contact.phone_number);
-                                    return;
-                                }
-                                this.enableManualEntry(phoneField, shareContactBtn);
-                            });
-                        } catch (error) {
-                            console.error('Error with WebApp.requestContact:', error);
-                            this.tryAlternativeContactMethod(phoneField, shareContactBtn);
-                        }
-                    } else if (this.tg && typeof this.tg.requestContact === 'function') {
-                        console.log('Using alternative this.tg.requestContact method');
-                        try {
-                            this.tg.requestContact((contact) => {
-                                console.log('Contact received from tg:', contact);
-                                if (contact && contact.phone_number) {
-                                    phoneField.value = contact.phone_number;
-                                    phoneField.style.backgroundColor = '#f0f9f4';
-                                    phoneField.readOnly = false;
-                                    shareContactBtn.textContent = '✅ Contact Shared';
-                                    shareContactBtn.style.backgroundColor = '#22c55e';
-                                    shareContactBtn.style.color = 'white';
-                                    shareContactBtn.disabled = true;
-                                    return;
-                                }
-                                this.enableManualEntry(phoneField, shareContactBtn);
-                            });
-                        } catch (error) {
-                            console.error('Error with tg.requestContact:', error);
-                            this.enableManualEntry(phoneField, shareContactBtn);
-                        }
-                    } else {
-                        console.log('requestContact method not available');
-                        this.enableManualEntry(phoneField, shareContactBtn);
-                    }
-                } else {
-                    console.log('Telegram WebApp not available, enabling manual entry');
-                    this.enableManualEntry(phoneField, shareContactBtn);
+            // Remove any existing contact sharing buttons
+            const existingButtons = phoneField.parentNode.querySelectorAll('button');
+            existingButtons.forEach(btn => {
+                if (btn.textContent.includes('Share Contact') || btn.textContent.includes('📱')) {
+                    btn.remove();
                 }
-            };
-            
-            shareContactBtn.addEventListener('click', requestContact);
+            });
         }
     }
 
-    tryAlternativeContactMethod(phoneField, shareContactBtn) {
-        console.log('Trying alternative contact sharing method');
-        // Add a small delay and retry with different approach
-        setTimeout(() => {
-            this.enableManualEntry(phoneField, shareContactBtn);
-        }, 1000);
-    }
 
-    enableManualEntry(phoneField, shareContactBtn) {
-        console.log('Enabling manual phone number entry');
-        phoneField.readOnly = false;
-        phoneField.placeholder = 'Enter your phone number manually';
-        phoneField.style.backgroundColor = '#ffffff';
-        phoneField.style.cursor = 'text';
-        phoneField.focus();
-        
-        // Update button to allow retry or show manual entry state
-        shareContactBtn.textContent = '✏️ Enter Manually';
-        shareContactBtn.style.backgroundColor = '#f59e0b';
-        shareContactBtn.style.color = 'white';
-        shareContactBtn.disabled = true;
-        
-        // Show a helpful message
-        if (!phoneField.parentNode.querySelector('[data-manual-entry-message]')) {
-            const messageDiv = document.createElement('div');
-            messageDiv.style.cssText = 'background: #fff3cd; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #856404; border: 1px solid #fbbf24;';
-            messageDiv.textContent = 'Contact sharing not available. Please enter your phone number manually.';
-            messageDiv.setAttribute('data-manual-entry-message', 'true');
-            shareContactBtn.parentNode.insertBefore(messageDiv, shareContactBtn.nextSibling);
-        }
-    }
 
     showRegistrationForm() {
         document.getElementById('registrationForm').classList.remove('hidden');

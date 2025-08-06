@@ -119,6 +119,12 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
   - Added ENVIRONMENT_SETUP.md with detailed setup instructions for both local and production environments
   - Implemented proper security practices for environment variable management
   - Documented Telegram bot token setup process and troubleshooting guide
+- **Driver Registration Contact Sharing Removed (August 2025)**:
+  - Removed Telegram contact sharing functionality from Driver Registration form
+  - Simplified phone number input to manual entry only with clear placeholder text
+  - Eliminated duplicate "Share Contact from Telegram" buttons for cleaner user interface
+  - Updated form validation to require manual phone number entry
+  - Improved user experience by removing complex contact sharing workflow
 - **Comprehensive Driver System Migration Completed (January 2025)**:
   - Successfully migrated project from Replit Agent to standard Replit environment with full functionality preserved
   - Implemented and deployed comprehensive Telegram Driver Bot with advanced commands (registration, status, earnings, GPS tracking)
