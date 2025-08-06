@@ -425,6 +425,64 @@
             margin-top: 16px;
         }
 
+        .btn-navigation {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .btn-navigation:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+            transform: translateY(-1px);
+        }
+
+        .btn-navigation:active {
+            transform: translateY(0);
+        }
+
+        .order-phase {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .order-phase.phase-pickup {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .order-phase.phase-delivery {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+        }
+
+        .address-info {
+            background: #f8f9ff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .address-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .address-text {
+            color: #1e293b;
+            font-weight: 500;
+        }
+
         .notification-badge {
             position: absolute;
             top: -8px;

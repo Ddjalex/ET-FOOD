@@ -40,8 +40,15 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
           
           // Join role-specific rooms
           socket.join(`role:${user.role}`);
+          socket.join(`user:${user.id}`);
+          
           if (user.restaurantId) {
             socket.join(`restaurant:${user.restaurantId}`);
+          }
+          
+          // For drivers, join driver-specific room
+          if (user.role === 'driver') {
+            socket.join(`driver:${user.id}`);
           }
           
           socket.emit('authenticated', { success: true, user: socket.user });
@@ -53,6 +60,12 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
         console.error('Socket authentication error:', error);
         socket.emit('authentication_error', { message: 'Authentication failed' });
       }
+    });
+
+    // Driver-specific events
+    socket.on('driver-online', async (driverId: string) => {
+      console.log(`Driver ${driverId} came online`);
+      socket.join(`driver:${driverId}`);
     });
 
     socket.on('disconnect', () => {
@@ -117,5 +130,38 @@ export const notifySuperAdmin = (event: string, data: any) => {
   if (io) {
     io.to('role:superadmin').emit(event, data);
     console.log(`SuperAdmin notification - ${event}:`, data);
+  }
+};
+
+// Driver-specific notifications
+export const notifyDriver = (driverId: string, event: string, data: any) => {
+  if (io) {
+    io.to(`driver:${driverId}`).emit(event, data);
+    console.log(`Driver ${driverId} notification - ${event}:`, data);
+  }
+};
+
+export const notifyAllDrivers = (event: string, data: any) => {
+  if (io) {
+    io.to('role:driver').emit(event, data);
+    console.log(`All drivers notification - ${event}:`, data);
+  }
+};
+
+// Enhanced broadcast function for targeted notifications
+export const targetedBroadcast = (targets: string[], event: string, data: any) => {
+  if (io) {
+    targets.forEach(target => {
+      if (target.startsWith('driver:')) {
+        io.to(target).emit(event, data);
+      } else if (target.startsWith('restaurant:')) {
+        io.to(target).emit(event, data);
+      } else if (target.startsWith('user:')) {
+        io.to(target).emit(event, data);
+      } else if (target.startsWith('role:')) {
+        io.to(target).emit(event, data);
+      }
+    });
+    console.log(`Targeted broadcast ${event} to [${targets.join(', ')}]:`, data);
   }
 };

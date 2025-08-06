@@ -1,0 +1,25 @@
+The system needs to implement an automated, real-time driver assignment workflow triggered directly by the kitchen staff's actions.
+
+When a Superadmin approves a driver's registration, that driver immediately becomes online and available within a global pool of drivers. This means the system can consider them for any new orders.
+
+Workflow Triggered by Kitchen Staff
+When a Kitchen Staff member clicks the "Start Preparing" button for an order on their /kitchen dashboard:
+
+Real-time Driver Notification (Proximity-Based): The system must automatically identify the nearest available driver(s) to the restaurant's location. A real-time notification will then be sent to this driver (or a small group of nearby drivers) via their Driver Bot Mini Web App.
+
+This notification will prompt the driver to accept or reject the order.
+
+Upon acceptance, the order is automatically assigned to that driver. If rejected, the system should attempt to notify the next closest available driver.
+
+Real-time Customer Notification: The Customer Bot (Mini Web App) must receive an immediate notification that their order has begun preparation.
+
+Real-time Tracking for Admins: Both the Restaurant Admin (for orders specific to their restaurant) and the Superadmin (for all orders across the platform) dashboards will update in real-time to reflect the order's "preparing" status and, subsequently, the assigned driver's details and delivery progress.
+
+Driver Visibility and Assignment Logic
+Global Driver Pool (System-Managed): All drivers, once approved by a Superadmin and set to "online" status, are part of a central pool from which the system automatically selects the closest available driver for new orders.
+
+Restaurant Admin View: Restaurant Admins will not see a list of all available drivers. Their dashboard will focus on their restaurant's orders and, once a driver is assigned to one of their orders, they will see only the details of that specific assigned driver for tracking purposes. This keeps their interface focused and secure.
+
+Superadmin View: The Superadmin dashboard will maintain its comprehensive overview, displaying all drivers (their status, location if online, and assigned orders) and all orders across the entire platform, providing full operational oversight.
+
+This design ensures that driver assignments are efficient and automatic, while maintaining appropriate data visibility for each user role.

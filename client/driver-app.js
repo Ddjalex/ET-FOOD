@@ -626,6 +626,41 @@ class DriverApp {
             }
         });
 
+        this.socket.on('new_order_notification', (data) => {
+            console.log('New order notification received:', data);
+            if (data.driverId === this.driverData?.id) {
+                this.handleNewOrderNotification(data.order);
+            }
+        });
+
+        this.socket.on('order_ready_for_pickup', (data) => {
+            console.log('Order ready for pickup:', data);
+            if (data.driverId === this.driverData?.id) {
+                this.handleOrderReadyForPickup(data);
+            }
+        });
+
+        this.socket.on('order_pickup_confirmed', (data) => {
+            console.log('Order pickup confirmed:', data);
+            if (data.driverId === this.driverData?.id) {
+                this.showAlert(`Order #${data.orderNumber} pickup confirmed!`);
+            }
+        });
+
+        this.socket.on('delivery_completed', (data) => {
+            console.log('Delivery completed:', data);
+            if (data.driverId === this.driverData?.id) {
+                this.handleDeliveryCompleted(data);
+            }
+        });
+
+        this.socket.on('order_driver_assigned', (data) => {
+            console.log('Order driver assigned:', data);
+            if (data.driverId === this.driverData?.id) {
+                this.handleOrderAssigned(data);
+            }
+        });
+
         this.socket.on('new-order-available', (order) => {
             this.handleNewOrder(order);
         });
@@ -862,23 +897,156 @@ class DriverApp {
         }
     }
 
-    navigateToRestaurant(orderId) {
-        if (this.currentOrder && this.currentOrder.restaurantLocation) {
-            const { lat, lng } = this.currentOrder.restaurantLocation;
-            this.openMaps(lat, lng, `Restaurant: ${this.currentOrder.restaurantName}`);
+    async navigateToRestaurant(orderId) {
+        try {
+            // Get current order or fetch order details
+            let order = this.currentOrder;
+            if (!order || order.id !== orderId) {
+                const response = await fetch(`/api/orders/${orderId}`);
+                if (response.ok) {
+                    order = await response.json();
+                } else {
+                    throw new Error('Order not found');
+                }
+            }
+
+            // Get driver's current location
+            const driverLocation = await this.getCurrentLocation();
+            if (!driverLocation) {
+                throw new Error('Cannot get current location');
+            }
+
+            // Get restaurant coordinates
+            const restaurantLat = order.restaurant?.location?.lat || order.restaurantLat;
+            const restaurantLng = order.restaurant?.location?.lng || order.restaurantLng;
+            
+            if (!restaurantLat || !restaurantLng) {
+                throw new Error('Restaurant location not available');
+            }
+
+            // Launch OpenStreetMap navigation
+            this.openOpenStreetMapNavigation(
+                driverLocation.lat, 
+                driverLocation.lng,
+                restaurantLat, 
+                restaurantLng,
+                `Restaurant: ${order.restaurantName || 'Pickup Location'}`
+            );
+
+        } catch (error) {
+            console.error('Navigation error:', error);
+            if (this.tg) {
+                this.tg.showAlert('Unable to start navigation: ' + error.message);
+            } else {
+                alert('Unable to start navigation: ' + error.message);
+            }
         }
     }
 
-    navigateToCustomer(orderId) {
-        if (this.currentOrder && this.currentOrder.deliveryLocation) {
-            const { lat, lng } = this.currentOrder.deliveryLocation;
-            this.openMaps(lat, lng, `Customer: ${this.currentOrder.customerName}`);
+    async navigateToCustomer(orderId) {
+        try {
+            // Get current order or fetch order details
+            let order = this.currentOrder;
+            if (!order || order.id !== orderId) {
+                const response = await fetch(`/api/orders/${orderId}`);
+                if (response.ok) {
+                    order = await response.json();
+                } else {
+                    throw new Error('Order not found');
+                }
+            }
+
+            // Get restaurant location (current driver position after pickup)
+            const restaurantLat = order.restaurant?.location?.lat || order.restaurantLat;
+            const restaurantLng = order.restaurant?.location?.lng || order.restaurantLng;
+            
+            if (!restaurantLat || !restaurantLng) {
+                throw new Error('Restaurant location not available');
+            }
+
+            // Get customer coordinates
+            const customerLat = order.deliveryLocation?.lat || order.customerLat;
+            const customerLng = order.deliveryLocation?.lng || order.customerLng;
+            
+            if (!customerLat || !customerLng) {
+                throw new Error('Customer location not available');
+            }
+
+            // Launch OpenStreetMap navigation from restaurant to customer
+            this.openOpenStreetMapNavigation(
+                restaurantLat, 
+                restaurantLng,
+                customerLat, 
+                customerLng,
+                `Customer: ${order.customerName || 'Delivery Address'}`
+            );
+
+        } catch (error) {
+            console.error('Navigation error:', error);
+            if (this.tg) {
+                this.tg.showAlert('Unable to start navigation: ' + error.message);
+            } else {
+                alert('Unable to start navigation: ' + error.message);
+            }
         }
     }
 
-    openMaps(lat, lng, label) {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(label)}`;
-        window.open(url, '_blank');
+    async getCurrentLocation() {
+        return new Promise((resolve, reject) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 30000
+                    }
+                );
+            } else {
+                reject(new Error('Geolocation not supported'));
+            }
+        });
+    }
+
+    openOpenStreetMapNavigation(fromLat, fromLng, toLat, toLng, destination) {
+        // Create OpenStreetMap navigation URL
+        // Using OpenRouteService or similar routing service with OpenStreetMap data
+        const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${fromLat}%2C${fromLng}%3B${toLat}%2C${toLng}`;
+        
+        // Alternative: Use Maps.me mobile app if available (better for mobile navigation)
+        const mapsmeUrl = `maps://route?saddr=${fromLat},${fromLng}&daddr=${toLat},${toLng}&dirflg=d`;
+        
+        // Try mobile app first, fallback to web version
+        if (this.tg && this.tg.platform === 'android' || this.tg.platform === 'ios') {
+            // Try to open in mobile map app
+            const tempLink = document.createElement('a');
+            tempLink.href = mapsmeUrl;
+            tempLink.target = '_blank';
+            tempLink.click();
+            
+            // Fallback to OSM web version after a delay
+            setTimeout(() => {
+                window.open(osmUrl, '_blank');
+            }, 1000);
+        } else {
+            // Open in web browser
+            window.open(osmUrl, '_blank');
+        }
+
+        // Show confirmation message
+        if (this.tg) {
+            this.tg.showAlert(`Navigation started to ${destination}`);
+        } else {
+            alert(`Navigation started to ${destination}`);
+        }
     }
 
     calculateEarnings(order) {
@@ -1028,6 +1196,74 @@ class DriverApp {
                 notification.parentNode.removeChild(notification);
             }
         }, 5000);
+    }
+
+    handleNewOrderNotification(order) {
+        // Add order to available orders list
+        this.addAvailableOrder(order);
+        
+        // Show notification
+        this.showAlert(`New order available! #${order.orderNumber} - ${order.estimatedEarnings} ETB`);
+        
+        // Play notification sound if available
+        this.playNotificationSound();
+    }
+
+    handleOrderReadyForPickup(data) {
+        this.showAlert(`Order #${data.orderNumber} is ready for pickup at ${data.restaurantName}!`);
+        this.refreshDriverData();
+    }
+
+    handleOrderAssigned(data) {
+        this.showAlert(`You've been assigned to Order #${data.orderNumber}!`);
+        this.refreshDriverData();
+    }
+
+    handleDeliveryCompleted(data) {
+        this.showAlert(`Delivery completed! You earned ${data.earnings} ETB`);
+        this.refreshDriverData();
+        this.updateDashboardData();
+    }
+
+    addAvailableOrder(order) {
+        const ordersContainer = document.getElementById('availableOrders');
+        
+        // Remove "no orders" message if it exists
+        const noOrdersMsg = ordersContainer.querySelector('p');
+        if (noOrdersMsg) {
+            ordersContainer.innerHTML = '';
+        }
+        
+        // Create and add order card
+        const orderCard = this.createOrderCard(order, true);
+        ordersContainer.appendChild(orderCard);
+        
+        // Update badge
+        this.updateOrderBadge();
+    }
+
+    playNotificationSound() {
+        // Try to play notification sound if available
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRvIGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+H31XMyBiZ+0PLbhzoIGGK36eGjTgwOUarm8bRpHwU2jdX0yXksBS6Fzu/bfC8FLIHo7qFFEw1Qp+ruu2QeByp/0fHYdywFLYDW7+CSUAcXXrTp66hVFG1gdrq8bCIFNYnL8L2AKAaLpOL0yn0iBS2A0en7zy0EjqXe65w=');
+            audio.volume = 0.2;
+            audio.play().catch(() => {
+                // Silent fail for audio
+                console.log('Could not play notification sound');
+            });
+        } catch (error) {
+            // Silent fail for audio
+            console.log('Could not play notification sound');
+        }
+    }
+
+    showAlert(message) {
+        if (this.tg) {
+            this.tg.showAlert(message);
+        } else {
+            // Show custom notification
+            this.showNotification(message, 'info');
+        }
     }
 
     showRejectedStatus() {

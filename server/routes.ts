@@ -1108,6 +1108,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status } = req.body;
       const order = await orderService.updateOrderStatus(req.params.id, status);
+      
+      // Trigger automated driver assignment when order is marked as ready
+      if (status === 'ready') {
+        setTimeout(async () => {
+          try {
+            await orderService.triggerAutomatedDriverAssignment(req.params.id);
+          } catch (error) {
+            console.error('Error in automated driver assignment:', error);
+          }
+        }, 1000);
+      }
+      
       broadcast('order_status_updated', order);
       res.json(order);
     } catch (error) {
