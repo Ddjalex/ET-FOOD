@@ -1944,7 +1944,7 @@ function SuperAdminDashboardContent() {
               <CardDescription>Real-time tracking of active drivers across Addis Ababa</CardDescription>
             </CardHeader>
             <CardContent>
-              <DriverLocationMap drivers={drivers} height="500px" />
+              <DriverLocationMap drivers={drivers} height="300px" />
             </CardContent>
           </Card>
 
@@ -2068,18 +2068,19 @@ function SuperAdminDashboardContent() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Driver Profile</TableHead>
-                    <TableHead>Contact & Vehicle</TableHead>
-                    <TableHead>Status & Availability</TableHead>
-                    <TableHead>Performance Metrics</TableHead>
-                    <TableHead>Location & Earnings</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <div className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow>
+                      <TableHead>Driver Profile</TableHead>
+                      <TableHead>Contact & Vehicle</TableHead>
+                      <TableHead>Status & Availability</TableHead>
+                      <TableHead>Performance Metrics</TableHead>
+                      <TableHead>Location & Earnings</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                   {drivers.map((driver) => (
                     <TableRow key={driver.id} className="hover:bg-gray-50">
                       <TableCell>
@@ -2232,12 +2233,26 @@ function SuperAdminDashboardContent() {
                               {blockDriverMutation.isPending ? 'Blocking...' : 'Block'}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to permanently delete this driver? This action cannot be undone.')) {
+                                deleteDriverMutation.mutate(driver.id);
+                              }
+                            }}
+                            disabled={deleteDriverMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            {deleteDriverMutation.isPending ? 'Deleting...' : 'Delete'}
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 
