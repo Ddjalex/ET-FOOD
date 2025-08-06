@@ -118,7 +118,7 @@ export const orders = pgTable("orders", {
   restaurantId: varchar("restaurant_id").notNull(),
   driverId: varchar("driver_id"),
   status: varchar("status", { 
-    enum: ['pending', 'confirmed', 'preparing', 'in_preparation', 'ready_for_pickup', 'assigned', 'picked_up', 'delivered', 'cancelled', 'awaiting_admin_intervention'] 
+    enum: ['pending', 'confirmed', 'preparing', 'in_preparation', 'ready_for_pickup', 'driver_assigned', 'picked_up', 'delivered', 'cancelled', 'awaiting_admin_intervention'] 
   }).default('pending'),
   unavailableItems: jsonb("unavailable_items"), // Items marked as unavailable for this order
   items: jsonb("items").notNull(), // Array of order items

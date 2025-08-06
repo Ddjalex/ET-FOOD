@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeU Driver</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+            background: #ffffff;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eef2f7;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #8b9dc3;
+            font-size: 16px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 2px solid transparent;
+        }
+
+        .status-indicator.online {
+            background: #f0f9f4;
+            border-color: #22c55e;
+        }
+
+        .status-indicator.offline {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+
+        .status-dot.online {
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .form-section {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input:read-only {
+            background: #f8f9fa;
+            color: #6b7280;
+        }
+
+        .file-upload {
+            position: relative;
+            display: block;
+            width: 100%;
+            padding: 20px;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload.has-file {
+            border-color: #22c55e;
+            background: #f0f9f4;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-text {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .order-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .order-id {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 18px;
+        }
+
+        .order-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .order-status.new {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .order-details {
+            margin-bottom: 16px;
+        }
+
+        .order-detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .order-detail-value {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-sm {
+            padding: 10px 16px;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .earnings-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .earnings-amount {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .earnings-label {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .pending-approval {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .pending-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .pending-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .pending-message {
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .toggle-button {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            margin: 0 15px;
+        }
+
+        .toggle-button input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #22c55e;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .order-actions {
+                flex-direction: column;
+            }
+            
+            .btn-sm {
+                flex: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🚚 BeU Driver</div>
+            <div class="subtitle">Your delivery partner</div>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="registrationForm" class="hidden">
+            <div class="form-section">
+                <div class="section-title">
+                    <div class="section-icon">👤</div>
+                    Driver Registration
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="driverName" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" id="driverPhone" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Government ID (Front)</label>
+                    <div class="file-upload" onclick="document.getElementById('govIdFront').click()">
+                        <input type="file" id="govIdFront" accept="image/*">
+                        <div>📄 Upload Front of Government ID</div>
+                        <div class="file-upload-text">Tap to select image</div>
+                        <img class="file-preview" id="govIdFrontPreview" alt="Preview">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Government ID (Back)</label>
+                    <div class="file-upload" onclick="document.getElementById('govIdBack').click()">
+                        <input type="file" id="govIdBack" accept="image/*">
+                        <div>📄 Upload Back of Government ID</div>
+                        <div class="file-upload-text">Tap to select image</div>
+                        <img class="file-preview" id="govIdBackPreview" alt="Preview">
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="submitRegistration()" id="submitBtn">
+                    Submit Registration
+                </button>
+            </div>
+        </div>
+
+        <!-- Pending Approval Screen -->
+        <div id="pendingApproval" class="hidden">
+            <div class="pending-approval">
+                <div class="pending-icon">⏳</div>
+                <div class="pending-title">Registration Under Review</div>
+                <div class="pending-message">
+                    Thank you for submitting your registration! Our team is reviewing your documents. You'll be notified once approved.
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Driver Dashboard -->
+        <div id="driverDashboard" class="hidden">
+            <!-- Status Indicator -->
+            <div class="status-indicator" id="statusIndicator">
+                <div class="status-dot" id="statusDot"></div>
+                <div>
+                    <strong id="statusText">Offline</strong>
+                    <label class="toggle-button">
+                        <input type="checkbox" id="onlineToggle" onchange="toggleOnlineStatus()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Location Sharing -->
+            <div id="locationPrompt" class="form-section hidden">
+                <div class="section-title">
+                    <div class="section-icon">📍</div>
+                    Share Your Location
+                </div>
+                <p style="margin-bottom: 20px; color: #6b7280;">
+                    To receive delivery orders, please share your live location with us.
+                </p>
+                <button class="btn btn-primary" onclick="requestLocation()">
+                    📍 Share Live Location
+                </button>
+            </div>
+
+            <!-- Earnings Card -->
+            <div class="earnings-card">
+                <div class="earnings-amount" id="todayEarnings">$0.00</div>
+                <div class="earnings-label">Today's Earnings</div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalDeliveries">0</div>
+                    <div class="stat-label">Total Deliveries</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="weeklyEarnings">$0.00</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="driverRating">0.0</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalEarnings">$0.00</div>
+                    <div class="stat-label">All Time</div>
+                </div>
+            </div>
+
+            <!-- Active Order Section -->
+            <div id="activeOrderSection" class="hidden">
+                <div class="form-section">
+                    <div class="section-title">
+                        <div class="section-icon">🚚</div>
+                        Active Order
+                    </div>
+                    <div id="activeOrderCard"></div>
+                </div>
+            </div>
+
+            <!-- Available Orders -->
+            <div class="form-section">
+                <div class="section-title">
+                    <div class="section-icon">📦</div>
+                    Available Orders
+                    <div class="notification-badge hidden" id="orderBadge">0</div>
+                </div>
+                <div id="availableOrders">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">
+                        No orders available at the moment
+                    </p>
+                </div>
+            </div>
+
+            <!-- Delivery History -->
+            <div class="form-section">
+                <div class="section-title">
+                    <div class="section-icon">📋</div>
+                    Recent Deliveries
+                </div>
+                <div id="deliveryHistory">
+                    <p style="color: #6b7280; text-align: center; padding: 20px;">
+                        No delivery history yet
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="driver-app.js"></script>
+</body>
+</html>

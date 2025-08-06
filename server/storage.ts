@@ -68,11 +68,21 @@ export interface IStorage {
   // Driver operations
   getDrivers(): Promise<Driver[]>;
   getDriver(id: string): Promise<Driver | undefined>;
+  getDriverById(id: string): Promise<Driver | undefined>;
   getDriverByUserId(userId: string): Promise<Driver | undefined>;
+  getDriverByTelegramId(telegramId: string): Promise<Driver | undefined>;
   createDriver(driver: InsertDriver): Promise<Driver>;
   updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver>;
+  updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver>;
+  updateDriverLocation(id: string, location: { lat: number; lng: number }): Promise<Driver>;
+  updateDriverEarnings(id: string, earnings: number): Promise<Driver>;
   approveDriver(id: string): Promise<Driver>;
+  rejectDriver(id: string, reason?: string): Promise<void>;
   getAvailableDrivers(): Promise<Driver[]>;
+  getPendingDrivers(): Promise<Driver[]>;
+  getAvailableOrdersForDriver(driverId: string): Promise<Order[]>;
+  assignOrderToDriver(orderId: string, driverId: string): Promise<Order>;
+  getDriverDeliveryHistory(driverId: string): Promise<any[]>;
   updateDriverLocation(id: string, location: any): Promise<Driver>;
   updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver>;
 

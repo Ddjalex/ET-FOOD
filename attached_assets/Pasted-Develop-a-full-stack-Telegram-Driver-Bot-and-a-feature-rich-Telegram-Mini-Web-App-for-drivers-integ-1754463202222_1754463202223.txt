@@ -1,0 +1,162 @@
+Develop a full-stack Telegram Driver Bot and a feature-rich Telegram Mini Web App for drivers, integrating seamlessly with the existing food delivery system. The system will manage driver registration, real-time location tracking, order assignment, and delivery management, with a focus on intuitive UI/UX and operational efficiency.
+
+Key Requirements & Workflow Breakdown
+1. Driver Registration (Bot & Mini Web App)
+
+Bot Interaction:
+
+When a driver first interacts with the bot (e.g., /start command), the bot should present an inline keyboard with a prominent "Register Now" button.
+
+Clicking this button will launch the Telegram Mini Web App for registration.
+
+Mini Web App Registration Form:
+
+The registration form in the Mini Web App should be visually appealing and user-friendly, inspired by modern delivery app UIs.
+
+Automatic Pre-fill: The form must automatically pre-fill the driver's name, phone number, and Telegram ID using Telegram.WebApp.initDataUnsafe. These fields should be read-only but visible.
+
+Government ID Upload: Include fields for uploading images of the driver's government ID (front and back). This should use standard HTML file input (<input type="file" accept="image/*">) and display a preview of the selected images.
+
+Submission: A "Submit Registration" button will send this data to the backend.
+
+Superadmin Approval:
+
+Upon submission, the driver's registration status in the database should be pending_approval.
+
+The driver's Mini Web App should display a message indicating their registration is awaiting superadmin approval.
+
+Backend: A new API endpoint will be needed for superadmins to view and approve or reject driver registrations. Once approved, the driver's status changes to active.
+
+2. Real-time Location & Order Reception
+
+Permission Request (Post-Approval):
+
+Immediately after a driver's registration is approved by a superadmin, their Mini Web App must prompt them to "Share Telegram Live Location". This is crucial for the system to detect nearby drivers for order assignment.
+
+The Mini Web App should guide the driver on how to share their live location via Telegram.
+
+Driver Availability Toggle: Introduce a prominent "Go Online" / "Go Offline" toggle button in the driver's Mini Web App. When "Online", the driver's live location is actively tracked (via Telegram's live location feature, which the bot can access), making them eligible for orders.
+
+Real-time Order Notification:
+
+When a Kitchen Staff member clicks the "Start Prepare" button for an order, the system should trigger a real-time notification to nearby, online drivers.
+
+The notification in the driver's Mini Web App should be clear and actionable, displaying basic order information (e.g., "New Order Available!").
+
+3. Order Acceptance & Navigation
+
+Order Card Display:
+
+When a new order is notified, it should appear as a clear, concise card in the driver's Mini Web App.
+
+The card must include: Order ID, Restaurant Name (pickup location), Customer Name (delivery location), Estimated Earnings for the delivery, and Total Distance.
+
+Action Buttons:
+
+"Accept Order" Button: When clicked, this assigns the order to the driver. The order status changes to driver_assigned.
+
+"Reject Order" Button: Allows the driver to decline the order, making it available to other drivers.
+
+Navigation Integration:
+
+Once an order is accepted, the driver's Mini Web App should display two distinct buttons: "Navigate to Restaurant (Pickup)" and "Navigate to Customer (Delivery)".
+
+Clicking these buttons should open a mapping application (like Google Maps or OpenStreetMap) with the respective destination pre-filled for navigation.
+
+Enhanced Features (from E-commerce Driver Delivery Systems)
+Driver Profile & Earnings:
+
+A dedicated section in the Mini Web App for the driver to view their profile, current status, and a summary of their earnings (e.g., "Today's Earnings," "Weekly Earnings," "Total Deliveries").
+
+A simple "Delivery History" list showing completed orders.
+
+Order Details View:
+
+Upon accepting an order, a detailed view should be available, showing all ordered items, special instructions, and customer contact information (phone number for calls/messages).
+
+Delivery Status Updates:
+
+Buttons for the driver to update the order status:
+
+"Picked Up": Changes order status to picked_up.
+
+"Delivered": Changes order status to delivered. This should also trigger a confirmation to the customer bot.
+
+In-App Support/Chat (Optional but valuable):
+
+A basic chat function to communicate with the restaurant or customer in case of issues.
+
+Notifications: Implement robust push notifications for new orders and status changes, even when the app is in the background.
+
+Backend & Database Considerations
+New Driver Schema:
+
+userId (reference to User collection)
+
+telegramId
+
+phoneNumber
+
+name
+
+governmentIdFrontUrl
+
+governmentIdBackUrl
+
+status (e.g., pending_approval, active, rejected, inactive)
+
+isOnline (boolean, toggled by driver)
+
+currentLocation (GeoPoint or latitude/longitude for live tracking)
+
+earnings (numeric field)
+
+lastOnline (timestamp)
+
+Updated Order Schema:
+
+Add driverId (reference to Driver collection, optional until assigned).
+
+Add pickupLocation (from Restaurant details).
+
+Add deliveryLocation (from Customer order).
+
+Expand status enum to include driver-specific states (e.g., driver_assigned, picked_up, delivered).
+
+API Endpoints:
+
+POST /api/drivers/register: For driver registration.
+
+PUT /api/drivers/:driverId/status: To toggle isOnline status.
+
+PUT /api/drivers/:driverId/location: To update live location.
+
+GET /api/superadmin/drivers/pending: For superadmin to view pending registrations.
+
+PUT /api/superadmin/drivers/:driverId/approve: To approve/reject driver.
+
+GET /api/drivers/:driverId/orders/available: To fetch available orders nearby.
+
+PUT /api/orders/:orderId/assign-driver: To assign an order to a driver.
+
+PUT /api/orders/:orderId/driver-status: To update order status by driver (picked up, delivered).
+
+Real-time Communication (Socket.IO):
+
+Implement Socket.IO to push new order notifications to eligible drivers in real-time.
+
+Update driver location in real-time on a map (if a map view is implemented for admins/customers).
+
+Notify customer bot when order is picked up/delivered by the driver.
+
+Final Output
+The Replit AI Agent should provide the complete, self-contained code for:
+
+The Python Telegram Bot handling initial user interaction, contact/location requests, and Mini Web App launch.
+
+The HTML/CSS/JavaScript for the Telegram Mini Web App, implementing all specified UI/UX elements and workflows for driver registration, status management, order reception, and delivery.
+
+Updated Node.js/Express.js backend routes and MongoDB schemas to support the new driver functionalities, including superadmin approval and real-time order assignment.
+
+Integration of Socket.IO for real-time communication between the backend and driver Mini Web App.
+

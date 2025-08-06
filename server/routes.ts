@@ -2023,6 +2023,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==============================================
+  // DRIVER API ROUTES
+  // ==============================================
+
+  // Driver registration route
+  app.post('/api/drivers/register', upload.fields([
+    { name: 'governmentIdFront', maxCount: 1 },
+    { name: 'governmentIdBack', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const { telegramId, name, phoneNumber } = req.body;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+      if (!telegramId || !name || !phoneNumber) {
+        return res.status(400).json({ message: 'Telegram ID, name, and phone number are required' });
+      }
+
+      // Check if driver already registered
+      const existingDriver = await storage.getDriverByTelegramId(telegramId);
+      if (existingDriver) {
+        return res.status(409).json({ message: 'Driver already registered with this Telegram account' });
+      }
+
+      // Create or get user
+      let user = await storage.getUserByTelegramId(telegramId);
+      if (!user) {
+        user = await storage.upsertUser({
+          telegramUserId: telegramId,
+          firstName: name.split(' ')[0],
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          role: 'driver'
+        });
+      }
+
+      // Handle file uploads
+      const governmentIdFrontUrl = files.governmentIdFront ? `/uploads/${files.governmentIdFront[0].filename}` : null;
+      const governmentIdBackUrl = files.governmentIdBack ? `/uploads/${files.governmentIdBack[0].filename}` : null;
+
+      // Create driver profile
+      const driver = await storage.createDriver({
+        userId: user.id,
+        telegramId,
+        phoneNumber,
+        name,
+        governmentIdFrontUrl,
+        governmentIdBackUrl,
+        status: 'pending_approval',
+        isOnline: false,
+        isAvailable: false,
+        isApproved: false,
+        rating: '0.00',
+        totalDeliveries: 0,
+        totalEarnings: '0.00',
+        todayEarnings: '0.00',
+        weeklyEarnings: '0.00'
+      });
+
+      res.status(201).json({
+        message: 'Driver registration submitted successfully',
+        driver
+      });
+    } catch (error) {
+      console.error('Error registering driver:', error);
+      res.status(500).json({ message: 'Failed to register driver' });
+    }
+  });
+
+  // Get driver by Telegram ID
+  app.get('/api/drivers/telegram/:telegramId', async (req, res) => {
+    try {
+      const { telegramId } = req.params;
+      const driver = await storage.getDriverByTelegramId(telegramId);
+
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      res.json(driver);
+    } catch (error) {
+      console.error('Error fetching driver:', error);
+      res.status(500).json({ message: 'Failed to fetch driver' });
+    }
+  });
+
+  // Update driver online status
+  app.put('/api/drivers/:driverId/status', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { isOnline } = req.body;
+
+      const driver = await storage.updateDriverStatus(driverId, isOnline, isOnline);
+      res.json(driver);
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+      res.status(500).json({ message: 'Failed to update driver status' });
+    }
+  });
+
+  // Update driver location
+  app.put('/api/drivers/:driverId/location', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { latitude, longitude } = req.body;
+
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      const driver = await storage.updateDriverLocation(driverId, {
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude)
+      });
+
+      res.json({
+        message: 'Location updated successfully',
+        driver
+      });
+    } catch (error) {
+      console.error('Error updating driver location:', error);
+      res.status(500).json({ message: 'Failed to update driver location' });
+    }
+  });
+
   // Get menu categories for a specific restaurant
   app.get('/api/telegram/restaurants/:id/menu', async (req, res) => {
     try {
@@ -2084,6 +2207,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/telegram-app.js', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/telegram-app.js'));
+  });
+
+  // Serve Driver Mini Web App
+  app.get('/driver-app.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/driver-app.html'));
+  });
+  
+  app.get('/driver-app.js', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/driver-app.js'));
   });
 
   return httpServer;

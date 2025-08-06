@@ -845,13 +845,303 @@ export class MongoStorage implements IStorage {
       throw error;
     }
   }
-  async getDriver(id: string): Promise<DriverType | undefined> { return undefined; }
-  async getDriverByUserId(userId: string): Promise<DriverType | undefined> { return undefined; }
-  async createDriver(driver: InsertDriver): Promise<DriverType> { throw new Error('Not implemented'); }
-  async updateDriver(id: string, driver: Partial<InsertDriver>): Promise<DriverType> { throw new Error('Not implemented'); }
-  async getAvailableDrivers(): Promise<DriverType[]> { return []; }
-  async updateDriverLocation(id: string, location: any): Promise<DriverType> { throw new Error('Not implemented'); }
-  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<DriverType> { throw new Error('Not implemented'); }
+  async getDriver(id: string): Promise<DriverType | undefined> {
+    try {
+      const driver = await DriverModel.findById(id);
+      return driver ? this.convertDriverDocument(driver) : undefined;
+    } catch (error) {
+      console.error('Error getting driver:', error);
+      return undefined;
+    }
+  }
+
+  async getDriverById(id: string): Promise<DriverType | undefined> {
+    return this.getDriver(id);
+  }
+
+  async getDriverByUserId(userId: string): Promise<DriverType | undefined> {
+    try {
+      const driver = await DriverModel.findOne({ userId });
+      return driver ? this.convertDriverDocument(driver) : undefined;
+    } catch (error) {
+      console.error('Error getting driver by userId:', error);
+      return undefined;
+    }
+  }
+
+  async getDriverByTelegramId(telegramId: string): Promise<DriverType | undefined> {
+    try {
+      const driver = await DriverModel.findOne({ telegramId });
+      return driver ? this.convertDriverDocument(driver) : undefined;
+    } catch (error) {
+      console.error('Error getting driver by telegramId:', error);
+      return undefined;
+    }
+  }
+
+  async createDriver(driverData: InsertDriver): Promise<DriverType> {
+    try {
+      const driver = new DriverModel(driverData);
+      const savedDriver = await driver.save();
+      return this.convertDriverDocument(savedDriver);
+    } catch (error) {
+      console.error('Error creating driver:', error);
+      throw error;
+    }
+  }
+
+  async updateDriver(id: string, driverUpdate: Partial<InsertDriver>): Promise<DriverType> {
+    try {
+      const updatedDriver = await DriverModel.findByIdAndUpdate(
+        id,
+        { ...driverUpdate, updatedAt: new Date() },
+        { new: true }
+      );
+
+      if (!updatedDriver) {
+        throw new Error('Driver not found');
+      }
+
+      return this.convertDriverDocument(updatedDriver);
+    } catch (error) {
+      console.error('Error updating driver:', error);
+      throw error;
+    }
+  }
+
+  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<DriverType> {
+    try {
+      const updatedDriver = await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          isOnline, 
+          isAvailable,
+          lastOnline: new Date(),
+          updatedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      if (!updatedDriver) {
+        throw new Error('Driver not found');
+      }
+
+      return this.convertDriverDocument(updatedDriver);
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+      throw error;
+    }
+  }
+
+  async updateDriverLocation(id: string, location: { lat: number; lng: number }): Promise<DriverType> {
+    try {
+      const updatedDriver = await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          currentLocation: location,
+          updatedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      if (!updatedDriver) {
+        throw new Error('Driver not found');
+      }
+
+      return this.convertDriverDocument(updatedDriver);
+    } catch (error) {
+      console.error('Error updating driver location:', error);
+      throw error;
+    }
+  }
+
+  async updateDriverEarnings(id: string, earnings: number): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findById(id);
+      if (!driver) {
+        throw new Error('Driver not found');
+      }
+
+      const currentTotal = parseFloat(driver.totalEarnings || '0');
+      const currentToday = parseFloat(driver.todayEarnings || '0');
+      const currentWeekly = parseFloat(driver.weeklyEarnings || '0');
+
+      const updatedDriver = await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          totalEarnings: (currentTotal + earnings).toFixed(2),
+          todayEarnings: (currentToday + earnings).toFixed(2),
+          weeklyEarnings: (currentWeekly + earnings).toFixed(2),
+          totalDeliveries: driver.totalDeliveries + 1,
+          updatedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      return this.convertDriverDocument(updatedDriver!);
+    } catch (error) {
+      console.error('Error updating driver earnings:', error);
+      throw error;
+    }
+  }
+
+  async approveDriver(id: string): Promise<DriverType> {
+    try {
+      const updatedDriver = await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          status: 'active',
+          isApproved: true,
+          updatedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      if (!updatedDriver) {
+        throw new Error('Driver not found');
+      }
+
+      return this.convertDriverDocument(updatedDriver);
+    } catch (error) {
+      console.error('Error approving driver:', error);
+      throw error;
+    }
+  }
+
+  async rejectDriver(id: string, reason?: string): Promise<void> {
+    try {
+      await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          status: 'rejected',
+          isApproved: false,
+          rejectionReason: reason,
+          updatedAt: new Date() 
+        }
+      );
+    } catch (error) {
+      console.error('Error rejecting driver:', error);
+      throw error;
+    }
+  }
+
+  async getAvailableDrivers(): Promise<DriverType[]> {
+    try {
+      const drivers = await DriverModel.find({ 
+        status: 'active',
+        isOnline: true,
+        isAvailable: true 
+      });
+      return drivers.map(driver => this.convertDriverDocument(driver));
+    } catch (error) {
+      console.error('Error getting available drivers:', error);
+      return [];
+    }
+  }
+
+  async getPendingDrivers(): Promise<DriverType[]> {
+    try {
+      const drivers = await DriverModel.find({ status: 'pending_approval' });
+      return drivers.map(driver => this.convertDriverDocument(driver));
+    } catch (error) {
+      console.error('Error getting pending drivers:', error);
+      return [];
+    }
+  }
+
+  async getAvailableOrdersForDriver(driverId: string): Promise<Order[]> {
+    try {
+      const orders = await OrderModel.find({ 
+        status: 'ready_for_pickup',
+        driverId: { $exists: false }
+      }).limit(10);
+      
+      return orders.map(order => this.convertOrderDocument(order));
+    } catch (error) {
+      console.error('Error getting available orders for driver:', error);
+      return [];
+    }
+  }
+
+  async assignOrderToDriver(orderId: string, driverId: string): Promise<Order> {
+    try {
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        orderId,
+        { 
+          driverId,
+          status: 'driver_assigned',
+          updatedAt: new Date() 
+        },
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        throw new Error('Order not found');
+      }
+
+      return this.convertOrderDocument(updatedOrder);
+    } catch (error) {
+      console.error('Error assigning order to driver:', error);
+      throw error;
+    }
+  }
+
+  async getDriverDeliveryHistory(driverId: string): Promise<any[]> {
+    try {
+      const orders = await OrderModel.find({ 
+        driverId,
+        status: 'delivered' 
+      }).sort({ updatedAt: -1 }).limit(20);
+      
+      return orders.map(order => ({
+        orderNumber: order.orderNumber,
+        deliveryTime: order.updatedAt,
+        earnings: this.calculateDeliveryEarnings(order),
+        distance: '2.5' // Mock distance for now
+      }));
+    } catch (error) {
+      console.error('Error getting driver delivery history:', error);
+      return [];
+    }
+  }
+
+  private convertDriverDocument(driver: any): DriverType {
+    return {
+      id: driver._id.toString(),
+      userId: driver.userId,
+      telegramId: driver.telegramId,
+      phoneNumber: driver.phoneNumber,
+      name: driver.name,
+      governmentIdFrontUrl: driver.governmentIdFrontUrl,
+      governmentIdBackUrl: driver.governmentIdBackUrl,
+      licenseNumber: driver.licenseNumber,
+      vehicleType: driver.vehicleType,
+      vehiclePlate: driver.vehiclePlate,
+      licenseImageUrl: driver.licenseImageUrl,
+      vehicleImageUrl: driver.vehicleImageUrl,
+      idCardImageUrl: driver.idCardImageUrl,
+      currentLocation: driver.currentLocation,
+      status: driver.status,
+      isOnline: driver.isOnline,
+      isAvailable: driver.isAvailable,
+      isApproved: driver.isApproved,
+      rating: driver.rating,
+      totalDeliveries: driver.totalDeliveries,
+      totalEarnings: driver.totalEarnings,
+      todayEarnings: driver.todayEarnings,
+      weeklyEarnings: driver.weeklyEarnings,
+      zone: driver.zone,
+      lastOnline: driver.lastOnline,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt
+    };
+  }
+
+  private calculateDeliveryEarnings(order: any): string {
+    const baseEarnings = parseFloat(order.total) * 0.15; // 15% of order total
+    const minEarnings = 2.50; // Minimum earnings per delivery
+    return Math.max(baseEarnings, minEarnings).toFixed(2);
+  }
   async getDeliveries(): Promise<Delivery[]> { return []; }
   async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }
   async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> { return []; }
