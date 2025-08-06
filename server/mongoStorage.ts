@@ -774,8 +774,77 @@ export class MongoStorage implements IStorage {
       throw error;
     }
   }
-  async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> { throw new Error('Not implemented'); }
-  async updateOrderStatus(id: string, status: string): Promise<Order> { throw new Error('Not implemented'); }
+  async updateOrder(id: string, orderUpdate: Partial<InsertOrder>): Promise<Order> {
+    try {
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        { 
+          ...orderUpdate,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        throw new Error('Order not found');
+      }
+
+      return {
+        id: updatedOrder._id.toString(),
+        orderNumber: updatedOrder.orderNumber,
+        customerId: updatedOrder.customerId,
+        restaurantId: updatedOrder.restaurantId,
+        items: updatedOrder.items,
+        subtotal: updatedOrder.subtotal,
+        total: updatedOrder.total,
+        deliveryAddress: updatedOrder.deliveryAddress,
+        paymentMethod: updatedOrder.paymentMethod,
+        status: updatedOrder.status,
+        specialInstructions: updatedOrder.specialInstructions,
+        createdAt: updatedOrder.createdAt,
+        updatedAt: updatedOrder.updatedAt
+      };
+    } catch (error) {
+      console.error('Error updating order:', error);
+      throw error;
+    }
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order> {
+    try {
+      const updatedOrder = await OrderModel.findByIdAndUpdate(
+        id,
+        { 
+          status,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        throw new Error('Order not found');
+      }
+
+      return {
+        id: updatedOrder._id.toString(),
+        orderNumber: updatedOrder.orderNumber,
+        customerId: updatedOrder.customerId,
+        restaurantId: updatedOrder.restaurantId,
+        items: updatedOrder.items,
+        subtotal: updatedOrder.subtotal,
+        total: updatedOrder.total,
+        deliveryAddress: updatedOrder.deliveryAddress,
+        paymentMethod: updatedOrder.paymentMethod,
+        status: updatedOrder.status,
+        specialInstructions: updatedOrder.specialInstructions,
+        createdAt: updatedOrder.createdAt,
+        updatedAt: updatedOrder.updatedAt
+      };
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      throw error;
+    }
+  }
   async getDriver(id: string): Promise<DriverType | undefined> { return undefined; }
   async getDriverByUserId(userId: string): Promise<DriverType | undefined> { return undefined; }
   async createDriver(driver: InsertDriver): Promise<DriverType> { throw new Error('Not implemented'); }

@@ -1,0 +1,34 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-WERSD76P.js?v=2512a115:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+kitchen-login:1 [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) <input data-replit-metadata=​"client/​src/​pages/​KitchenLogin.tsx:​88:​16" data-component-name=​"Input" type=​"password" class=​"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:​border-0 file:​bg-transparent file:​text-sm file:​font-medium file:​text-foreground placeholder:​text-muted-foreground focus-visible:​outline-none focus-visible:​ring-2 focus-visible:​ring-ring focus-visible:​ring-offset-2 disabled:​cursor-not-allowed disabled:​opacity-50 md:​text-sm" id=​"password" placeholder=​"Enter your password" required value=​"123456" disabled>​
+api/auth/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+KitchenDashboard.tsx:289 Setting up Socket.IO connection for kitchen staff...
+KitchenDashboard.tsx:299 Socket.IO connected: RjplTbKhpbffdvv7AAAB
+KitchenDashboard.tsx:307 Socket.IO authenticated: Object
+api/kitchen/689208e3f476f48ad7cfdcc3/orders/6892f3b9a279bc80023af31f/check-availability:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+KitchenDashboard.tsx:493  PUT https://e8ea5e1f-dfc7-45ec-9d68-011c4f932406-00-3f7vwzf78ig5l.kirk.replit.dev/api/kitchen/689208e3f476f48ad7cfdcc3/orders/6892f3b9a279bc80023af31f/check-availability 500 (Internal Server Error)
+mutationFn @ KitchenDashboard.tsx:493
+fn @ @tanstack_react-query.js?v=2512a115:1189
+run @ @tanstack_react-query.js?v=2512a115:494
+start @ @tanstack_react-query.js?v=2512a115:536
+execute @ @tanstack_react-query.js?v=2512a115:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=2512a115:2630
+(anonymous) @ @tanstack_react-query.js?v=2512a115:3295
+handleSubmitAvailability @ KitchenDashboard.tsx:630
+callCallback2 @ chunk-WERSD76P.js?v=2512a115:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2512a115:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2512a115:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WERSD76P.js?v=2512a115:3736
+executeDispatch @ chunk-WERSD76P.js?v=2512a115:7014
+processDispatchQueueItemsInOrder @ chunk-WERSD76P.js?v=2512a115:7034
+processDispatchQueue @ chunk-WERSD76P.js?v=2512a115:7043
+dispatchEventsForPlugins @ chunk-WERSD76P.js?v=2512a115:7051
+(anonymous) @ chunk-WERSD76P.js?v=2512a115:7174
+batchedUpdates$1 @ chunk-WERSD76P.js?v=2512a115:18913
+batchedUpdates @ chunk-WERSD76P.js?v=2512a115:3579
+dispatchEventForPluginEventSystem @ chunk-WERSD76P.js?v=2512a115:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WERSD76P.js?v=2512a115:5478
+dispatchEvent @ chunk-WERSD76P.js?v=2512a115:5472
+dispatchDiscreteEvent @ chunk-WERSD76P.js?v=2512a115:5449
