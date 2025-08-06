@@ -33,13 +33,115 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const httpServer = createServer(app);
+
+  // Add driver location routes BEFORE auth middleware to bypass authentication
+  // Update driver location (public route for Telegram Mini Apps)
+  app.put('/api/drivers/:driverId/location', async (req, res) => {
+    try {
+      console.log('Location update request received:', { 
+        driverId: req.params.driverId, 
+        body: req.body 
+      });
+
+      const { driverId } = req.params;
+      const { latitude, longitude } = req.body;
+
+      if (!latitude || !longitude) {
+        console.log('Missing latitude or longitude:', { latitude, longitude });
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      console.log('Attempting to update driver location...');
+      const updatedDriver = await storage.updateDriverLocation(driverId, {
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude)
+      });
+      console.log('Driver location updated successfully');
+
+      // Also update driver status to online when location is shared
+      console.log('Updating driver status to online...');
+      await storage.updateDriverStatus(driverId, true, true);
+      console.log('Driver status updated successfully');
+
+      broadcast('driver_location_updated', {
+        driverId,
+        location: { lat: parseFloat(latitude), lng: parseFloat(longitude) }
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Location updated successfully',
+        driver: updatedDriver 
+      });
+    } catch (error) {
+      console.error('Detailed error updating driver location:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ message: 'Failed to update location: ' + error.message });
+    }
+  });
+
+  // Save driver live location (public route)
+  app.post('/api/drivers/:driverId/live-location', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { latitude, longitude, timestamp } = req.body;
+
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      await storage.saveLiveLocation(driverId, { 
+        lat: parseFloat(latitude), 
+        lng: parseFloat(longitude), 
+        timestamp 
+      });
+
+      res.json({ success: true, message: 'Live location saved successfully' });
+    } catch (error) {
+      console.error('Error saving live location:', error);
+      res.status(500).json({ message: 'Failed to save live location' });
+    }
+  });
+
+  // Get driver by telegram ID (public route for Telegram Mini Apps)
+  app.get('/api/drivers/telegram/:telegramId', async (req, res) => {
+    try {
+      const { telegramId } = req.params;
+      const driver = await storage.getDriverByTelegramId(telegramId);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      res.json(driver);
+    } catch (error) {
+      console.error('Error getting driver by telegram ID:', error);
+      res.status(500).json({ message: 'Failed to get driver' });
+    }
+  });
+
+  // Update driver status (public route)
+  app.put('/api/drivers/:driverId/status', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { isOnline, isAvailable } = req.body;
+      
+      const driver = await storage.updateDriverStatus(driverId, isOnline, isAvailable);
+      broadcast('driver_status_updated', driver);
+      
+      res.json(driver);
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+      res.status(500).json({ message: 'Failed to update driver status' });
+    }
+  });
+
   // Auth middleware
   await setupAuth(app);
 
   // Setup Telegram bots
   await setupTelegramBots();
-
-  const httpServer = createServer(app);
 
   // Initialize Socket.IO for real-time updates
   const io = initWebSocket(httpServer);
@@ -1261,62 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update driver location
-  app.put('/api/drivers/:driverId/location', async (req, res) => {
-    try {
-      const { driverId } = req.params;
-      const { latitude, longitude } = req.body;
 
-      if (!latitude || !longitude) {
-        return res.status(400).json({ message: 'Latitude and longitude are required' });
-      }
-
-      const updatedDriver = await storage.updateDriverLocation(driverId, {
-        lat: parseFloat(latitude),
-        lng: parseFloat(longitude)
-      });
-
-      // Also update driver status to online when location is shared
-      await storage.updateDriverStatus(driverId, true, true);
-
-      broadcast('driver_location_updated', {
-        driverId,
-        location: { lat: latitude, lng: longitude }
-      });
-
-      res.json({ 
-        success: true, 
-        message: 'Location updated successfully',
-        driver: updatedDriver 
-      });
-    } catch (error) {
-      console.error('Error updating driver location:', error);
-      res.status(500).json({ message: 'Failed to update location' });
-    }
-  });
-
-  // Save driver live location
-  app.post('/api/drivers/:driverId/live-location', async (req, res) => {
-    try {
-      const { driverId } = req.params;
-      const { latitude, longitude, timestamp } = req.body;
-
-      if (!latitude || !longitude) {
-        return res.status(400).json({ message: 'Latitude and longitude are required' });
-      }
-
-      await storage.saveLiveLocation(driverId, { 
-        lat: parseFloat(latitude), 
-        lng: parseFloat(longitude), 
-        timestamp 
-      });
-
-      res.json({ success: true, message: 'Live location saved successfully' });
-    } catch (error) {
-      console.error('Error saving live location:', error);
-      res.status(500).json({ message: 'Failed to save live location' });
-    }
-  });
 
   // Get drivers for restaurant
   app.get('/api/restaurants/:restaurantId/drivers', async (req, res) => {

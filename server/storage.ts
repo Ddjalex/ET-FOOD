@@ -84,8 +84,6 @@ export interface IStorage {
   getAvailableOrdersForDriver(driverId: string): Promise<Order[]>;
   assignOrderToDriver(orderId: string, driverId: string): Promise<Order>;
   getDriverDeliveryHistory(driverId: string): Promise<any[]>;
-  updateDriverLocation(id: string, location: any): Promise<Driver>;
-  updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver>;
 
   // Delivery operations
   getDeliveries(): Promise<Delivery[]>;
