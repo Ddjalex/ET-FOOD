@@ -8,8 +8,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>
     <script>
         // Initialize Telegram Web App early
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+            window.Telegram.WebApp.enableClosingConfirmation();
+            
+            // Log available methods for debugging
+            console.log('Telegram WebApp initialized');
+            console.log('Available methods:', Object.keys(window.Telegram.WebApp));
+            
+            // Check for contact sharing capability
+            if (typeof window.Telegram.WebApp.requestContact === 'function') {
+                console.log('Contact sharing is available');
+            } else {
+                console.log('Contact sharing method not available');
+            }
+        } else {
+            console.log('Telegram WebApp not available');
+        }
     </script>
     <style>
         * {
