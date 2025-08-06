@@ -3,6 +3,8 @@
 ## Overview
 BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's delivery ecosystem, built around Telegram. It connects restaurants, drivers, and customers through interconnected dashboards and a Telegram bot interface. Key capabilities include real-time order tracking, driver management, restaurant administration, and seamless integration with Telegram Mini Web Apps. The project aims to provide a full-stack solution for efficient food delivery.
 
+**Migration Status**: ✅ Successfully migrated from Replit Agent to standard Replit environment (January 2025). All systems operational including Telegram bots (Enbela_bot for customers, EnbelaDriver_bot for drivers), database connections, and real-time features.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
