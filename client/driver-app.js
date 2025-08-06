@@ -105,7 +105,21 @@ class DriverApp {
             const nameField = document.getElementById('driverName');
             if (nameField) {
                 nameField.value = this.telegramUser.fullName;
+                nameField.style.backgroundColor = '#f0f9f4';
                 nameField.placeholder = 'Name loaded from Telegram';
+            }
+        }
+
+        // Add Telegram ID info display for user confirmation
+        if (this.telegramUser?.id) {
+            const telegramInfo = document.createElement('div');
+            telegramInfo.style.cssText = 'background: #e6f3ff; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #0066cc; border: 1px solid #b3d9ff;';
+            telegramInfo.innerHTML = `📱 Telegram ID: ${this.telegramUser.id} ${this.telegramUser.username ? `(@${this.telegramUser.username})` : ''}`;
+            
+            const nameField = document.getElementById('driverName');
+            if (nameField && nameField.parentNode && !document.querySelector('[data-telegram-info]')) {
+                telegramInfo.setAttribute('data-telegram-info', 'true');
+                nameField.parentNode.insertBefore(telegramInfo, nameField.nextSibling);
             }
         }
 
@@ -181,18 +195,21 @@ class DriverApp {
         phoneField.style.cursor = 'text';
         phoneField.focus();
         
-        // Show a message to the user
-        const messageDiv = document.createElement('div');
-        messageDiv.style.cssText = 'background: #fff3cd; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #856404;';
-        messageDiv.textContent = 'Contact sharing not available. Please enter your phone number manually.';
-        phoneField.parentNode.insertBefore(messageDiv, phoneField.nextSibling);
-        
-        // Remove message after 5 seconds
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.parentNode.removeChild(messageDiv);
-            }
-        }, 5000);
+        // Show a message to the user (avoid duplicates)
+        if (!phoneField.parentNode.querySelector('[data-fallback-message]')) {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = 'background: #fff3cd; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #856404;';
+            messageDiv.textContent = 'Contact sharing not available. Please enter your phone number manually.';
+            messageDiv.setAttribute('data-fallback-message', 'true');
+            phoneField.parentNode.insertBefore(messageDiv, phoneField.nextSibling);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
     }
 
     showRegistrationForm() {
