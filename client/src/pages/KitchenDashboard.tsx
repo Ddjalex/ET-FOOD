@@ -21,7 +21,9 @@ import {
   Timer,
   Play,
   Package,
-  Trash2
+  Trash2,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -778,11 +780,40 @@ export function KitchenDashboard() {
               <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
               <p className="text-muted-foreground">Manage orders and menu items</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-muted-foreground">
-                {isConnected ? 'Real-time notifications ON' : 'Connecting...'}
-              </span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm text-muted-foreground">
+                  {isConnected ? 'Real-time notifications ON' : 'Connecting...'}
+                </span>
+              </div>
+              
+              {/* User Info and Logout */}
+              <div className="flex items-center space-x-2 border-l pl-4">
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {typedUser?.firstName} {typedUser?.lastName}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fetch('/api/admin/logout', { 
+                      method: 'POST', 
+                      credentials: 'include' 
+                    }).then(() => {
+                      queryClient.clear();
+                      window.location.reload();
+                    });
+                  }}
+                  className="flex items-center space-x-1 text-red-600 hover:text-red-700"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -2017,7 +2017,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Status is required' });
       }
 
-      const updatedOrder = await storage.updateOrderStatus(orderId, status);
+      // Use orderService to handle status updates with proper workflow
+      const updatedOrder = await orderService.updateOrderStatus(orderId, status);
+      
+      // Trigger automated driver assignment when order is marked as ready
+      if (status === 'ready' || status === 'ready_for_pickup') {
+        setTimeout(async () => {
+          try {
+            await orderService.triggerAutomatedDriverAssignment(orderId);
+          } catch (error) {
+            console.error('Error in automated driver assignment:', error);
+          }
+        }, 1000);
+      }
       
       res.json(updatedOrder);
     } catch (error) {
@@ -2245,9 +2257,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { restaurantId, orderId } = req.params;
 
-      const order = await storage.updateOrder(orderId, {
-        status: 'in_preparation'
-      });
+      // Use orderService for proper status handling
+      const order = await orderService.updateOrderStatus(orderId, 'preparing');
 
       // Notify restaurant admin that preparation has started
       notifyRestaurantAdmin(restaurantId, 'order_preparation_started', {
@@ -2271,9 +2282,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { restaurantId, orderId } = req.params;
 
-      const order = await storage.updateOrder(orderId, {
-        status: 'ready_for_pickup'
-      });
+      // Use orderService to handle status updates with proper workflow
+      const order = await orderService.updateOrderStatus(orderId, 'ready');
 
       // Notify restaurant admin that order is ready for pickup
       notifyRestaurantAdmin(restaurantId, 'order_ready_for_pickup', {
@@ -2284,6 +2294,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'Order ready for pickup/delivery',
         timestamp: new Date()
       });
+
+      // Trigger automated driver assignment
+      setTimeout(async () => {
+        try {
+          console.log(`Triggering automated driver assignment for order ${orderId}`);
+          await orderService.triggerAutomatedDriverAssignment(orderId);
+        } catch (error) {
+          console.error('Error in automated driver assignment:', error);
+        }
+      }, 1000);
 
       res.json(order);
     } catch (error) {
