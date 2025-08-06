@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map, Filter, Phone, Mail, Calendar, Star, TrendingUp, Award, Copy, Send } from 'lucide-react';
 import { DriverLocationMap } from '@/components/DriverLocationMap';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -1783,14 +1783,17 @@ function SuperAdminDashboardContent() {
             <h2 className="text-2xl font-bold">Driver Management</h2>
           </div>
 
-          {/* Driver Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Enhanced Driver Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Total Drivers</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{drivers.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{drivers.filter(d => new Date(d.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -1801,16 +1804,22 @@ function SuperAdminDashboardContent() {
                 <div className="text-2xl font-bold text-orange-600">
                   {drivers.filter(d => !d.isApproved).length}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Awaiting review
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Online Drivers</CardTitle>
+                <CardTitle className="text-sm font-medium">Online Now</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
                   {drivers.filter(d => d.isOnline && d.isApproved).length}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round((drivers.filter(d => d.isOnline && d.isApproved).length / Math.max(drivers.filter(d => d.isApproved).length, 1)) * 100)}% of approved
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -1821,9 +1830,109 @@ function SuperAdminDashboardContent() {
                 <div className="text-2xl font-bold text-blue-600">
                   {drivers.filter(d => d.isAvailable && d.isApproved).length}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Ready for orders
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-bold">
+                  {drivers.sort((a, b) => (b.totalDeliveries || 0) - (a.totalDeliveries || 0))[0]?.name?.split(' ')[0] || 'N/A'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {drivers.sort((a, b) => (b.totalDeliveries || 0) - (a.totalDeliveries || 0))[0]?.totalDeliveries || 0} deliveries
+                </p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Driver Filters & Search */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Driver Filters & Analytics
+              </CardTitle>
+              <CardDescription>Filter and analyze driver performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Filter by Status</label>
+                  <Select defaultValue="all">
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Drivers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Drivers</SelectItem>
+                      <SelectItem value="online">Online Only</SelectItem>
+                      <SelectItem value="available">Available Only</SelectItem>
+                      <SelectItem value="pending">Pending Approval</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Sort by Performance</label>
+                  <Select defaultValue="deliveries">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deliveries">Most Deliveries</SelectItem>
+                      <SelectItem value="rating">Highest Rating</SelectItem>
+                      <SelectItem value="earnings">Top Earners</SelectItem>
+                      <SelectItem value="recent">Most Recent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Location Filter</label>
+                  <Select defaultValue="all">
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Areas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Areas</SelectItem>
+                      <SelectItem value="with-location">With Location</SelectItem>
+                      <SelectItem value="no-location">No Location Data</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Performance Summary */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-800">Average Rating</h4>
+                  <p className="text-2xl font-bold text-green-900">
+                    {drivers.length > 0 ? (
+                      (drivers.reduce((sum, d) => sum + parseFloat(d.rating || '0'), 0) / drivers.length).toFixed(1)
+                    ) : '0.0'}
+                  </p>
+                  <p className="text-xs text-green-700">Across all drivers</p>
+                </div>
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-800">Total Deliveries</h4>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {drivers.reduce((sum, d) => sum + (d.totalDeliveries || 0), 0)}
+                  </p>
+                  <p className="text-xs text-blue-700">All time deliveries</p>
+                </div>
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-purple-800">Fleet Earnings</h4>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {parseFloat(drivers.reduce((sum, d) => sum + parseFloat(d.totalEarnings || '0'), 0).toFixed(2)).toLocaleString()} ETB
+                  </p>
+                  <p className="text-xs text-purple-700">Total driver earnings</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Live Driver Map */}
           <Card>
@@ -1832,7 +1941,7 @@ function SuperAdminDashboardContent() {
                 <MapPin className="w-5 h-5" />
                 Live Driver Locations
               </CardTitle>
-              <CardDescription>Real-time tracking of active drivers</CardDescription>
+              <CardDescription>Real-time tracking of active drivers across Addis Ababa</CardDescription>
             </CardHeader>
             <CardContent>
               <DriverLocationMap drivers={drivers} height="500px" />
@@ -1938,63 +2047,107 @@ function SuperAdminDashboardContent() {
             </Card>
           )}
 
-          {/* All Drivers Table */}
+          {/* Enhanced Drivers Table */}
           <Card>
             <CardHeader>
-              <CardTitle>All Drivers</CardTitle>
-              <CardDescription>Complete list of registered drivers</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Driver Fleet Management</CardTitle>
+                  <CardDescription>Complete driver profiles and performance analytics</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    Export Reports
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Send className="w-4 h-4 mr-1" />
+                    Bulk Notify
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Driver Info</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Performance</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Joined</TableHead>
+                    <TableHead>Driver Profile</TableHead>
+                    <TableHead>Contact & Vehicle</TableHead>
+                    <TableHead>Status & Availability</TableHead>
+                    <TableHead>Performance Metrics</TableHead>
+                    <TableHead>Location & Earnings</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {drivers.map((driver) => (
-                    <TableRow key={driver.id}>
+                    <TableRow key={driver.id} className="hover:bg-gray-50">
                       <TableCell>
-                        <div className="space-y-1">
-                          <div>
-                            <p className="font-medium">
-                              {driver.user?.firstName} {driver.user?.lastName}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {driver.user?.email}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              📞 {driver.user?.phoneNumber}
-                            </p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            License: {driver.licenseNumber}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                              {driver.name ? driver.name.charAt(0).toUpperCase() : 'D'}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {driver.name || `${driver.user?.firstName} ${driver.user?.lastName}`}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                ID: {driver.id.slice(-8)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Member since {new Date(driver.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <Badge variant={driver.isApproved ? 'default' : 'secondary'}>
-                            {driver.isApproved ? 'Approved' : 'Pending'}
-                          </Badge>
-                          {driver.isBlocked && (
-                            <Badge variant="destructive" className="text-xs">
-                              Blocked
+                          <div className="flex items-center gap-1 text-sm">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            <span>{driver.phoneNumber || driver.user?.phoneNumber || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <Mail className="w-3 h-3 text-gray-400" />
+                            <span className="truncate max-w-32">{driver.user?.email || 'N/A'}</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            🚗 {driver.vehicleType || 'Unknown'} • {driver.vehiclePlate || 'No plate'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            License: {driver.licenseNumber || 'Not provided'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant={driver.isApproved ? 'default' : 'secondary'} className="text-xs">
+                              {driver.isApproved ? 'Approved' : 'Pending'}
                             </Badge>
-                          )}
+                            {driver.isBlocked && (
+                              <Badge variant="destructive" className="text-xs">
+                                Blocked
+                              </Badge>
+                            )}
+                          </div>
                           {driver.isApproved && !driver.isBlocked && (
-                            <div className="flex gap-1">
-                              <Badge variant={driver.isOnline ? 'default' : 'outline'} className="text-xs">
-                                {driver.isOnline ? 'Online' : 'Offline'}
+                            <div className="flex flex-wrap gap-1">
+                              <Badge 
+                                variant={driver.isOnline ? 'default' : 'outline'} 
+                                className={`text-xs ${driver.isOnline ? 'bg-green-500 hover:bg-green-600' : 'text-gray-500'}`}
+                              >
+                                {driver.isOnline ? '🟢 Online' : '⚫ Offline'}
                               </Badge>
                               {driver.isAvailable && driver.isOnline && (
-                                <Badge variant="outline" className="text-xs bg-green-50">
-                                  Available
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                  ✅ Available
+                                </Badge>
+                              )}
+                              {!driver.isAvailable && driver.isOnline && (
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                                  🚚 Busy
                                 </Badge>
                               )}
                             </div>
@@ -2002,25 +2155,45 @@ function SuperAdminDashboardContent() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          <p>⭐ {driver.rating}</p>
-                          <p className="text-muted-foreground">{driver.totalDeliveries} deliveries</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Star className="w-4 h-4 text-yellow-500" />
+                            <span className="font-medium">{driver.rating || '0.0'}</span>
+                            <span className="text-xs text-gray-500">rating</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium">{driver.totalDeliveries || 0}</span>
+                            <span className="text-xs text-gray-500">deliveries</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Today: {driver.todayEarnings ? `${driver.todayEarnings} ETB` : '0 ETB'}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          {driver.currentLocation ? (
-                            <span className="text-green-600">📍 Live location</span>
-                          ) : (
-                            <span className="text-muted-foreground">No location</span>
-                          )}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            {driver.currentLocation ? (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                📍 Live GPS
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500">
+                                📍 No location
+                              </Badge>
+                            )}
+                          </div>
                           {driver.zone && (
-                            <p className="text-muted-foreground text-xs">Zone: {driver.zone}</p>
+                            <p className="text-xs text-gray-500">Zone: {driver.zone}</p>
                           )}
+                          <div className="font-medium text-sm">
+                            💰 {parseFloat(driver.totalEarnings || '0').toLocaleString()} ETB
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Week: {driver.weeklyEarnings || '0'} ETB
+                          </p>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(driver.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
@@ -2031,10 +2204,10 @@ function SuperAdminDashboardContent() {
                               setSelectedDriver(driver);
                               setIsDriverInfoDialogOpen(true);
                             }}
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
                           >
                             <Eye className="w-3 h-3 mr-1" />
-                            View Info
+                            View Profile
                           </Button>
                           {driver.isBlocked ? (
                             <Button
@@ -2042,7 +2215,7 @@ function SuperAdminDashboardContent() {
                               variant="outline"
                               onClick={() => unblockDriverMutation.mutate(driver.id)}
                               disabled={unblockDriverMutation.isPending}
-                              className="text-green-600 border-green-600 hover:bg-green-50"
+                              className="text-green-600 border-green-200 hover:bg-green-50 hover:border-green-300"
                             >
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {unblockDriverMutation.isPending ? 'Unblocking...' : 'Unblock'}
@@ -2053,25 +2226,12 @@ function SuperAdminDashboardContent() {
                               variant="outline"
                               onClick={() => blockDriverMutation.mutate(driver.id)}
                               disabled={blockDriverMutation.isPending}
-                              className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                              className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
                             >
                               <Shield className="w-3 h-3 mr-1" />
                               {blockDriverMutation.isPending ? 'Blocking...' : 'Block'}
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to permanently delete this driver? This action cannot be undone.')) {
-                                deleteDriverMutation.mutate(driver.id);
-                              }
-                            }}
-                            disabled={deleteDriverMutation.isPending}
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            {deleteDriverMutation.isPending ? 'Deleting...' : 'Delete'}
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -2080,6 +2240,283 @@ function SuperAdminDashboardContent() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Driver Profile Detail Dialog */}
+          <Dialog open={isDriverInfoDialogOpen} onOpenChange={setIsDriverInfoDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {selectedDriver?.name ? selectedDriver.name.charAt(0).toUpperCase() : 'D'}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">
+                      {selectedDriver?.name || `${selectedDriver?.user?.firstName} ${selectedDriver?.user?.lastName}`}
+                    </h3>
+                    <p className="text-sm text-gray-500">Driver Profile & Performance Analytics</p>
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+              
+              {selectedDriver && (
+                <div className="space-y-6">
+                  {/* Status Overview */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-l-4 border-l-blue-500">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Current Status</p>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant={selectedDriver.isApproved ? 'default' : 'secondary'}>
+                                {selectedDriver.isApproved ? 'Approved' : 'Pending'}
+                              </Badge>
+                              {selectedDriver.isOnline && (
+                                <Badge variant="outline" className="bg-green-50 text-green-700">
+                                  🟢 Online
+                                </Badge>
+                              )}
+                              {selectedDriver.isAvailable && selectedDriver.isOnline && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  Available
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <User className="w-8 h-8 text-gray-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-l-4 border-l-green-500">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Performance Rating</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Star className="w-5 h-5 text-yellow-500" />
+                              <span className="text-2xl font-bold">{selectedDriver.rating || '0.0'}</span>
+                              <span className="text-sm text-gray-500">/ 5.0</span>
+                            </div>
+                          </div>
+                          <Award className="w-8 h-8 text-gray-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-l-4 border-l-purple-500">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+                            <p className="text-2xl font-bold text-purple-600">
+                              {parseFloat(selectedDriver.totalEarnings || '0').toLocaleString()} ETB
+                            </p>
+                          </div>
+                          <DollarSign className="w-8 h-8 text-gray-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Detailed Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Personal Information */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="w-5 h-5" />
+                          Personal Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Full Name</label>
+                          <p className="text-lg font-medium">
+                            {selectedDriver.name || `${selectedDriver.user?.firstName} ${selectedDriver.user?.lastName}`}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Phone Number</label>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-gray-400" />
+                              <p>{selectedDriver.phoneNumber || selectedDriver.user?.phoneNumber || 'N/A'}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Email</label>
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-gray-400" />
+                              <p className="text-sm truncate">{selectedDriver.user?.email || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Driver ID</label>
+                            <p className="font-mono text-sm">{selectedDriver.id}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Joined Date</label>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <p className="text-sm">{new Date(selectedDriver.createdAt).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Vehicle Information */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Truck className="w-5 h-5" />
+                          Vehicle & License
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Vehicle Type</label>
+                            <p className="font-medium capitalize">{selectedDriver.vehicleType || 'Not specified'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">License Plate</label>
+                            <p className="font-medium">{selectedDriver.vehiclePlate || 'Not provided'}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">License Number</label>
+                          <p className="font-medium">{selectedDriver.licenseNumber || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Service Zone</label>
+                          <p className="font-medium">{selectedDriver.zone || 'Not assigned'}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Performance Metrics */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5" />
+                        Performance Dashboard
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <p className="text-sm text-blue-600 font-medium">Total Deliveries</p>
+                              <p className="text-2xl font-bold text-blue-800">{selectedDriver.totalDeliveries || 0}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="text-sm text-green-600 font-medium">Today's Earnings</p>
+                              <p className="text-2xl font-bold text-green-800">{selectedDriver.todayEarnings || '0'} ETB</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-purple-600" />
+                            <div>
+                              <p className="text-sm text-purple-600 font-medium">This Week</p>
+                              <p className="text-2xl font-bold text-purple-800">{selectedDriver.weeklyEarnings || '0'} ETB</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-yellow-50 p-4 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-yellow-600" />
+                            <div>
+                              <p className="text-sm text-yellow-600 font-medium">Location Status</p>
+                              <p className="text-lg font-bold text-yellow-800">
+                                {selectedDriver.currentLocation ? '📍 Active' : '📍 Inactive'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Location Information */}
+                      {selectedDriver.currentLocation && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Current Location
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600">Latitude:</span>
+                              <span className="ml-2 font-mono">{selectedDriver.currentLocation.lat}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Longitude:</span>
+                              <span className="ml-2 font-mono">{selectedDriver.currentLocation.lng}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Actions */}
+                  <div className="flex gap-4 pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsDriverInfoDialogOpen(false)}
+                    >
+                      Close
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Message
+                    </Button>
+                    {selectedDriver.isBlocked ? (
+                      <Button
+                        onClick={() => {
+                          unblockDriverMutation.mutate(selectedDriver.id);
+                          setIsDriverInfoDialogOpen(false);
+                        }}
+                        disabled={unblockDriverMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        {unblockDriverMutation.isPending ? 'Unblocking...' : 'Unblock Driver'}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          blockDriverMutation.mutate(selectedDriver.id);
+                          setIsDriverInfoDialogOpen(false);
+                        }}
+                        disabled={blockDriverMutation.isPending}
+                        className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        {blockDriverMutation.isPending ? 'Blocking...' : 'Block Driver'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
