@@ -32,13 +32,18 @@ const offlineDriverIcon = new Icon({
 
 interface Driver {
   id: string;
-  name: string;
-  phoneNumber: string;
+  name?: string;
+  phoneNumber?: string;
   isOnline: boolean;
   isAvailable: boolean;
   currentLocation?: {
     lat: number;
     lng: number;
+  };
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
   };
 }
 
@@ -54,12 +59,27 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
   // Default center (Addis Ababa, Ethiopia)
   const defaultCenter: [number, number] = [9.0155, 38.7635];
 
+  // Debug logging
+  console.log('DriverLocationMap received drivers:', drivers);
+  console.log('Drivers count:', drivers.length);
+  drivers.forEach((driver, idx) => {
+    console.log(`Driver ${idx}:`, {
+      id: driver.id,
+      name: driver.name,
+      currentLocation: driver.currentLocation,
+      isOnline: driver.isOnline,
+      user: driver.user
+    });
+  });
+
   // Filter drivers with valid locations
   const driversWithLocation = drivers.filter(d => 
     d.currentLocation && 
     typeof d.currentLocation.lat === 'number' && 
     typeof d.currentLocation.lng === 'number'
   );
+
+  console.log('Drivers with location:', driversWithLocation.length);
 
   return (
     <div 
@@ -85,8 +105,12 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
           >
             <Popup>
               <div className="text-sm">
-                <div className="font-semibold">{driver.name}</div>
-                <div className="text-gray-600">{driver.phoneNumber}</div>
+                <div className="font-semibold">
+                  {driver.name || `${driver.user?.firstName || ''} ${driver.user?.lastName || ''}`.trim() || 'Driver'}
+                </div>
+                <div className="text-gray-600">
+                  {driver.phoneNumber || driver.user?.phoneNumber || 'No phone'}
+                </div>
                 <div className="mt-1">
                   <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                     driver.isOnline 
