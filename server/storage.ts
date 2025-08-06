@@ -61,6 +61,7 @@ export interface IStorage {
   getOrdersByStatus(status: string): Promise<Order[]>;
   getOrdersByRestaurant(restaurantId: string): Promise<Order[]>;
   getOrdersByCustomer(customerId: string): Promise<Order[]>;
+  getOrdersByDriver(driverId: string): Promise<Order[]>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order>;
   updateOrderStatus(id: string, status: string): Promise<Order>;

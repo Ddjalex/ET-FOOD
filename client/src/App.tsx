@@ -23,6 +23,9 @@ import Payments from "@/pages/Payments";
 import Analytics from "@/pages/Analytics";
 import Settings from "@/pages/Settings";
 import Notifications from "@/pages/Notifications";
+import DriverPanel from "@/pages/DriverPanel";
+import DriverLogin from "@/pages/DriverLogin";
+import DriverRegistration from "@/pages/DriverRegistration";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -34,6 +37,8 @@ function Router() {
       <Route path="/superadmin-login" component={SuperAdminLogin} />
       <Route path="/restaurant-admin-login" component={RestaurantAdminLogin} />
       <Route path="/kitchen-login" component={KitchenLogin} />
+      <Route path="/driver-login" component={DriverLogin} />
+      <Route path="/register-driver" component={DriverRegistration} />
       <Route path="/superadmin" component={SuperadminDashboard} />
       <Route path="/admin" component={RestaurantAdminDashboard} />
       <Route path="/restaurant-admin" component={RestaurantAdminDashboard} />
@@ -47,6 +52,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
       <Route path="/notifications" component={Notifications} />
+      <Route path="/driver-panel" component={DriverPanel} />
       
       {/* Regular routes with Replit Auth */}
       {isLoading || !isAuthenticated ? (

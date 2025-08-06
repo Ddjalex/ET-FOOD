@@ -1092,6 +1092,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver Panel API Routes
+  // Get driver profile
+  app.get('/api/drivers/profile', async (req, res) => {
+    try {
+      // For now, return a mock driver profile
+      // In production, this would be based on authenticated user
+      const driverId = req.query.driverId || 'mock-driver-id';
+      const driver = await storage.getDriverById(driverId as string);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+      
+      res.json(driver);
+    } catch (error) {
+      console.error("Error fetching driver profile:", error);
+      res.status(500).json({ message: "Failed to fetch driver profile" });
+    }
+  });
+
+  // Get available orders for approved drivers
+  app.get('/api/drivers/available-orders', async (req, res) => {
+    try {
+      // Get orders that are ready for pickup and don't have an assigned driver
+      const availableOrders = await storage.getOrdersByStatus('ready_for_pickup');
+      
+      // Enrich orders with restaurant and customer data
+      const enrichedOrders = await Promise.all(
+        availableOrders
+          .filter(order => !order.driverId) // Only orders without assigned drivers
+          .map(async (order) => {
+            const restaurant = await storage.getRestaurant(order.restaurantId);
+            // For customer data, we'll use mock data since we don't have customer table
+            const customer = {
+              name: 'Customer Name',
+              phoneNumber: '+251912345678'
+            };
+            
+            return {
+              ...order,
+              restaurant: restaurant ? {
+                name: restaurant.name,
+                address: restaurant.address,
+                phoneNumber: restaurant.phoneNumber,
+                location: restaurant.location
+              } : null,
+              customer
+            };
+          })
+      );
+      
+      res.json(enrichedOrders);
+    } catch (error) {
+      console.error("Error fetching available orders:", error);
+      res.status(500).json({ message: "Failed to fetch available orders" });
+    }
+  });
+
+  // Get assigned orders for a driver
+  app.get('/api/drivers/assigned-orders', async (req, res) => {
+    try {
+      const driverId = req.query.driverId || 'mock-driver-id';
+      
+      // Get orders assigned to this driver
+      const assignedOrders = await storage.getOrdersByDriver(driverId as string);
+      
+      // Enrich orders with restaurant and customer data
+      const enrichedOrders = await Promise.all(
+        assignedOrders.map(async (order) => {
+          const restaurant = await storage.getRestaurant(order.restaurantId);
+          const customer = {
+            name: 'Customer Name',
+            phoneNumber: '+251912345678'
+          };
+          
+          return {
+            ...order,
+            restaurant: restaurant ? {
+              name: restaurant.name,
+              address: restaurant.address,
+              phoneNumber: restaurant.phoneNumber,
+              location: restaurant.location
+            } : null,
+            customer
+          };
+        })
+      );
+      
+      res.json(enrichedOrders);
+    } catch (error) {
+      console.error("Error fetching assigned orders:", error);
+      res.status(500).json({ message: "Failed to fetch assigned orders" });
+    }
+  });
+
+  // Accept an order
+  app.post('/api/drivers/accept-order/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const driverId = req.body.driverId || 'mock-driver-id';
+      
+      // Update order to assign driver and change status
+      const updatedOrder = await storage.updateOrder(orderId, {
+        driverId,
+        status: 'driver_assigned'
+      });
+      
+      // Broadcast the order assignment
+      broadcast('order_driver_assigned', updatedOrder);
+      
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error("Error accepting order:", error);
+      res.status(500).json({ message: "Failed to accept order" });
+    }
+  });
+
+  // Update order status by driver
+  app.post('/api/drivers/update-order-status', async (req, res) => {
+    try {
+      const { orderId, status } = req.body;
+      
+      if (!orderId || !status) {
+        return res.status(400).json({ message: 'Order ID and status are required' });
+      }
+      
+      const updatedOrder = await storage.updateOrderStatus(orderId, status);
+      
+      // Update delivery time for completed deliveries
+      if (status === 'delivered') {
+        await storage.updateOrder(orderId, {
+          actualDeliveryTime: new Date()
+        });
+      }
+      
+      broadcast('order_status_updated', updatedOrder);
+      
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // Toggle driver availability
+  app.post('/api/drivers/toggle-availability', async (req, res) => {
+    try {
+      const driverId = req.body.driverId || 'mock-driver-id';
+      
+      const driver = await storage.getDriverById(driverId);
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+      
+      const updatedDriver = await storage.updateDriverStatus(
+        driverId,
+        driver.isOnline ?? true,
+        !driver.isAvailable
+      );
+      
+      broadcast('driver_status_updated', updatedDriver);
+      
+      res.json(updatedDriver);
+    } catch (error) {
+      console.error("Error toggling driver availability:", error);
+      res.status(500).json({ message: "Failed to toggle availability" });
+    }
+  });
+
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
