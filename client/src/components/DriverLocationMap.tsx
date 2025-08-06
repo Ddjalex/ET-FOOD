@@ -59,27 +59,25 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
   // Default center (Addis Ababa, Ethiopia)
   const defaultCenter: [number, number] = [9.0155, 38.7635];
 
-  // Debug logging
-  console.log('DriverLocationMap received drivers:', drivers);
-  console.log('Drivers count:', drivers.length);
-  drivers.forEach((driver, idx) => {
-    console.log(`Driver ${idx}:`, {
-      id: driver.id,
-      name: driver.name,
-      currentLocation: driver.currentLocation,
-      isOnline: driver.isOnline,
-      user: driver.user
-    });
+  // Filter drivers with valid locations
+  const driversWithLocation = drivers.filter(d => {
+    // More flexible location checking
+    const hasLocation = d.currentLocation && 
+      (typeof d.currentLocation.lat === 'number' || typeof d.currentLocation.lat === 'string') && 
+      (typeof d.currentLocation.lng === 'number' || typeof d.currentLocation.lng === 'string') &&
+      !isNaN(Number(d.currentLocation.lat)) &&
+      !isNaN(Number(d.currentLocation.lng)) &&
+      Number(d.currentLocation.lat) !== 0 &&
+      Number(d.currentLocation.lng) !== 0;
+    
+    return hasLocation;
   });
 
-  // Filter drivers with valid locations
-  const driversWithLocation = drivers.filter(d => 
-    d.currentLocation && 
-    typeof d.currentLocation.lat === 'number' && 
-    typeof d.currentLocation.lng === 'number'
-  );
-
-  console.log('Drivers with location:', driversWithLocation.length);
+  console.log('Total drivers:', drivers.length);
+  console.log('Drivers with valid location:', driversWithLocation.length);
+  if (driversWithLocation.length > 0) {
+    console.log('First driver with location:', driversWithLocation[0]);
+  }
 
   return (
     <div 
@@ -100,7 +98,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
         {driversWithLocation.map((driver) => (
           <Marker
             key={driver.id}
-            position={[driver.currentLocation!.lat, driver.currentLocation!.lng]}
+            position={[Number(driver.currentLocation!.lat), Number(driver.currentLocation!.lng)]}
             icon={driver.isOnline ? onlineDriverIcon : offlineDriverIcon}
           >
             <Popup>
@@ -130,7 +128,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
                   )}
                 </div>
                 <div className="mt-1 text-xs text-gray-500">
-                  {driver.currentLocation!.lat.toFixed(4)}, {driver.currentLocation!.lng.toFixed(4)}
+                  {Number(driver.currentLocation!.lat).toFixed(4)}, {Number(driver.currentLocation!.lng).toFixed(4)}
                 </div>
               </div>
             </Popup>
@@ -139,7 +137,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
       </MapContainer>
       
       {driversWithLocation.length === 0 && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-600 text-sm">
           No drivers with location data available
         </div>
       )}
