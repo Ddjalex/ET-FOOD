@@ -1575,11 +1575,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/superadmin/drivers/:id', requireSession, async (req, res) => {
     try {
+      console.log('Delete driver request - Session user:', req.session.user);
       const user = req.session.user;
       if (!user || user.role !== 'superadmin') {
+        console.log('Access denied - User role:', user?.role);
         return res.status(403).json({ message: 'Access denied' });
       }
 
+      console.log('Deleting driver:', req.params.id);
       await storage.deleteDriver(req.params.id);
       res.json({ message: 'Driver deleted successfully' });
     } catch (error) {
