@@ -1,0 +1,137 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-WERSD76P.js?v=2512a115:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=2512a115:840
+run @ @tanstack_react-query.js?v=2512a115:494
+start @ @tanstack_react-query.js?v=2512a115:536
+fetch @ @tanstack_react-query.js?v=2512a115:926
+executeFetch_fn @ @tanstack_react-query.js?v=2512a115:2211
+onSubscribe @ @tanstack_react-query.js?v=2512a115:1898
+subscribe @ @tanstack_react-query.js?v=2512a115:24
+(anonymous) @ @tanstack_react-query.js?v=2512a115:3022
+subscribeToStore @ chunk-WERSD76P.js?v=2512a115:11984
+commitHookEffectListMount @ chunk-WERSD76P.js?v=2512a115:16915
+commitPassiveMountOnFiber @ chunk-WERSD76P.js?v=2512a115:18156
+commitPassiveMountEffects_complete @ chunk-WERSD76P.js?v=2512a115:18129
+commitPassiveMountEffects_begin @ chunk-WERSD76P.js?v=2512a115:18119
+commitPassiveMountEffects @ chunk-WERSD76P.js?v=2512a115:18109
+flushPassiveEffectsImpl @ chunk-WERSD76P.js?v=2512a115:19490
+flushPassiveEffects @ chunk-WERSD76P.js?v=2512a115:19447
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18868
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2512a115:9119
+commitRootImpl @ chunk-WERSD76P.js?v=2512a115:19432
+commitRoot @ chunk-WERSD76P.js?v=2512a115:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=2512a115:18805
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18718
+workLoop @ chunk-WERSD76P.js?v=2512a115:197
+flushWork @ chunk-WERSD76P.js?v=2512a115:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=2512a115:384
+SuperAdminDashboard.tsx:931 WebSocket connected
+SuperAdminDashboard.tsx:943 WebSocket authenticated: {success: true, user: {…}}
+SuperAdminDashboard.tsx:2029 Uncaught ReferenceError: Shield is not defined
+    at SuperAdminDashboard.tsx:2029:32
+    at Array.map (<anonymous>)
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:1945:28)
+    at renderWithHooks (chunk-WERSD76P.js?v=2512a115:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2512a115:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2512a115:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=2512a115:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=2512a115:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=2512a115:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=2512a115:19765:15)
+(anonymous) @ SuperAdminDashboard.tsx:2029
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:1945
+renderWithHooks @ chunk-WERSD76P.js?v=2512a115:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2512a115:14582
+beginWork @ chunk-WERSD76P.js?v=2512a115:15924
+callCallback2 @ chunk-WERSD76P.js?v=2512a115:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2512a115:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2512a115:3733
+beginWork$1 @ chunk-WERSD76P.js?v=2512a115:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=2512a115:19198
+workLoopSync @ chunk-WERSD76P.js?v=2512a115:19137
+renderRootSync @ chunk-WERSD76P.js?v=2512a115:19116
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18874
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2512a115:9119
+(anonymous) @ chunk-WERSD76P.js?v=2512a115:18627
+SuperAdminDashboard.tsx:2029 Uncaught ReferenceError: Shield is not defined
+    at SuperAdminDashboard.tsx:2029:32
+    at Array.map (<anonymous>)
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:1945:28)
+    at renderWithHooks (chunk-WERSD76P.js?v=2512a115:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2512a115:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2512a115:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=2512a115:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=2512a115:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=2512a115:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=2512a115:19765:15)
+(anonymous) @ SuperAdminDashboard.tsx:2029
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:1945
+renderWithHooks @ chunk-WERSD76P.js?v=2512a115:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2512a115:14582
+beginWork @ chunk-WERSD76P.js?v=2512a115:15924
+callCallback2 @ chunk-WERSD76P.js?v=2512a115:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=2512a115:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=2512a115:3733
+beginWork$1 @ chunk-WERSD76P.js?v=2512a115:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=2512a115:19198
+workLoopSync @ chunk-WERSD76P.js?v=2512a115:19137
+renderRootSync @ chunk-WERSD76P.js?v=2512a115:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=2512a115:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2512a115:9119
+(anonymous) @ chunk-WERSD76P.js?v=2512a115:18627
+chunk-WERSD76P.js?v=2512a115:14032 The above error occurred in the <SuperAdminDashboardContent> component:
+
+    at SuperAdminDashboardContent (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/src/pages/SuperAdminDashboard.tsx:87:20)
+    at SuperAdminDashboard (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/src/pages/SuperAdminDashboard.tsx:5616:48)
+    at Route (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2512a115:323:16)
+    at Switch (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=2512a115:379:17)
+    at Router (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/src/App.tsx?v=HmNaHYbfyBC6fVpb2dY5L:45:42)
+    at Provider (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-MAE4WKEQ.js?v=2512a115:38:15)
+    at TooltipProvider (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=2512a115:59:5)
+    at QueryClientProvider (https://6bc025e5-e02b-424e-95d4-4ff9bfea6519-00-h4r7488jrton.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=2512a115:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=2512a115:14032
+update.callback @ chunk-WERSD76P.js?v=2512a115:14052
+callCallback @ chunk-WERSD76P.js?v=2512a115:11248
+commitUpdateQueue @ chunk-WERSD76P.js?v=2512a115:11265
+commitLayoutEffectOnFiber @ chunk-WERSD76P.js?v=2512a115:17093
+commitLayoutMountEffects_complete @ chunk-WERSD76P.js?v=2512a115:17980
+commitLayoutEffects_begin @ chunk-WERSD76P.js?v=2512a115:17969
+commitLayoutEffects @ chunk-WERSD76P.js?v=2512a115:17920
+commitRootImpl @ chunk-WERSD76P.js?v=2512a115:19353
+commitRoot @ chunk-WERSD76P.js?v=2512a115:19277
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18895
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2512a115:9119
+(anonymous) @ chunk-WERSD76P.js?v=2512a115:18627
+chunk-WERSD76P.js?v=2512a115:9129 Uncaught ReferenceError: Shield is not defined
+    at SuperAdminDashboard.tsx:2029:32
+    at Array.map (<anonymous>)
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:1945:28)
+    at renderWithHooks (chunk-WERSD76P.js?v=2512a115:11548:26)
+    at updateFunctionComponent (chunk-WERSD76P.js?v=2512a115:14582:28)
+    at beginWork (chunk-WERSD76P.js?v=2512a115:15924:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=2512a115:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=2512a115:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=2512a115:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=2512a115:19116:15)
+(anonymous) @ SuperAdminDashboard.tsx:2029
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:1945
+renderWithHooks @ chunk-WERSD76P.js?v=2512a115:11548
+updateFunctionComponent @ chunk-WERSD76P.js?v=2512a115:14582
+beginWork @ chunk-WERSD76P.js?v=2512a115:15924
+beginWork$1 @ chunk-WERSD76P.js?v=2512a115:19753
+performUnitOfWork @ chunk-WERSD76P.js?v=2512a115:19198
+workLoopSync @ chunk-WERSD76P.js?v=2512a115:19137
+renderRootSync @ chunk-WERSD76P.js?v=2512a115:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=2512a115:18736
+performSyncWorkOnRoot @ chunk-WERSD76P.js?v=2512a115:18879
+flushSyncCallbacks @ chunk-WERSD76P.js?v=2512a115:9119
+(anonymous) @ chunk-WERSD76P.js?v=2512a115:18627
+SuperAdminDashboard.tsx:939 WebSocket disconnected
