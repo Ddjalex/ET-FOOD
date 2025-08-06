@@ -76,8 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Detailed error updating driver location:', error);
-      console.error('Error stack:', error.stack);
-      res.status(500).json({ message: 'Failed to update location: ' + error.message });
+      console.error('Error stack:', (error as Error).stack);
+      res.status(500).json({ message: 'Failed to update location: ' + (error as Error).message });
     }
   });
 
@@ -1117,20 +1117,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Driver routes
-  app.get('/api/drivers', isAuthenticated, async (req, res) => {
+  app.get('/api/drivers', requireSession, async (req, res) => {
     try {
-      const drivers = await storage.getDrivers();
-      res.json(drivers);
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Superadmin can see all drivers
+      if (user.role === UserRole.SUPERADMIN) {
+        const drivers = await storage.getDrivers();
+        res.json(drivers);
+        return;
+      }
+
+      // Restaurant admins should only see drivers assigned to orders for their restaurant
+      if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
+        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
+        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
+        
+        if (orderDriverIds.size === 0) {
+          // No drivers assigned to any orders for this restaurant yet
+          res.json([]);
+          return;
+        }
+
+        const allDrivers = await storage.getDrivers();
+        const restaurantDrivers = allDrivers.filter(driver => orderDriverIds.has(driver.id));
+        res.json(restaurantDrivers);
+        return;
+      }
+
+      // Other roles (kitchen staff, customers) should not access driver lists
+      res.status(403).json({ message: 'Access denied: Insufficient permissions to view driver information' });
     } catch (error) {
       console.error("Error fetching drivers:", error);
       res.status(500).json({ message: "Failed to fetch drivers" });
     }
   });
 
-  app.get('/api/drivers/available', isAuthenticated, async (req, res) => {
+  app.get('/api/drivers/available', requireSession, async (req, res) => {
     try {
-      const drivers = await storage.getAvailableDrivers();
-      res.json(drivers);
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Superadmin can see all available drivers
+      if (user.role === UserRole.SUPERADMIN) {
+        const drivers = await storage.getAvailableDrivers();
+        res.json(drivers);
+        return;
+      }
+
+      // Restaurant admins should only see available drivers assigned to their orders
+      if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
+        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
+        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
+        
+        if (orderDriverIds.size === 0) {
+          // No drivers assigned to any orders for this restaurant yet
+          res.json([]);
+          return;
+        }
+
+        const allAvailableDrivers = await storage.getAvailableDrivers();
+        const restaurantAvailableDrivers = allAvailableDrivers.filter(driver => orderDriverIds.has(driver.id));
+        res.json(restaurantAvailableDrivers);
+        return;
+      }
+
+      // Other roles should not access available driver lists
+      res.status(403).json({ message: 'Access denied: Insufficient permissions to view available driver information' });
     } catch (error) {
       console.error("Error fetching available drivers:", error);
       res.status(500).json({ message: "Failed to fetch available drivers" });
@@ -1366,16 +1424,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Get nearby drivers for restaurant admin
-  app.get('/api/drivers/nearby', async (req, res) => {
+  app.get('/api/drivers/nearby', requireSession, async (req, res) => {
     try {
-      // Get all approved, active drivers
-      const drivers = await storage.getAllDrivers();
-      const nearbyDrivers = drivers.filter(driver => 
-        driver.isApproved && 
-        driver.status === 'active'
-      );
-      
-      res.json(nearbyDrivers);
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Superadmin can see all nearby drivers
+      if (user.role === UserRole.SUPERADMIN) {
+        const drivers = await storage.getAllDrivers();
+        const nearbyDrivers = drivers.filter(driver => 
+          driver.isApproved && 
+          driver.status === 'active'
+        );
+        res.json(nearbyDrivers);
+        return;
+      }
+
+      // Restaurant admins should only see nearby drivers assigned to their orders
+      if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
+        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
+        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
+        
+        if (orderDriverIds.size === 0) {
+          // No drivers assigned to any orders for this restaurant yet
+          res.json([]);
+          return;
+        }
+
+        const allDrivers = await storage.getAllDrivers();
+        const nearbyDrivers = allDrivers.filter(driver => 
+          driver.isApproved && 
+          driver.status === 'active' &&
+          orderDriverIds.has(driver.id)
+        );
+        res.json(nearbyDrivers);
+        return;
+      }
+
+      // Other roles should not access nearby driver information
+      res.status(403).json({ message: 'Access denied: Insufficient permissions to view nearby driver information' });
     } catch (error) {
       console.error('Error fetching nearby drivers:', error);
       res.status(500).json({ message: 'Failed to fetch nearby drivers' });
@@ -1383,15 +1472,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get drivers for restaurant
-  app.get('/api/restaurants/:restaurantId/drivers', async (req, res) => {
+  app.get('/api/restaurants/:restaurantId/drivers', requireSession, requireRestaurantAccess, async (req, res) => {
     try {
       const { restaurantId } = req.params;
-      
-      // Get all approved drivers (in real multi-tenant system, this would be filtered by restaurant assignment)
-      const allDrivers = await storage.getAllDrivers();
-      const approvedDrivers = allDrivers.filter(driver => driver.status === 'active' && driver.isApproved);
-      
-      res.json(approvedDrivers);
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Superadmin can see all approved drivers
+      if (user.role === UserRole.SUPERADMIN) {
+        const allDrivers = await storage.getAllDrivers();
+        const approvedDrivers = allDrivers.filter(driver => driver.status === 'active' && driver.isApproved);
+        res.json(approvedDrivers);
+        return;
+      }
+
+      // Restaurant admin can only see drivers assigned to orders for their specific restaurant
+      if (user.role === UserRole.RESTAURANT_ADMIN) {
+        const orders = await storage.getOrdersByRestaurant(restaurantId);
+        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
+        
+        if (orderDriverIds.size === 0) {
+          // No drivers assigned to any orders for this restaurant yet
+          res.json([]);
+          return;
+        }
+
+        const allDrivers = await storage.getAllDrivers();
+        const restaurantDrivers = allDrivers.filter(driver => 
+          driver.status === 'active' && 
+          driver.isApproved && 
+          orderDriverIds.has(driver.id)
+        );
+        res.json(restaurantDrivers);
+        return;
+      }
+
+      res.status(403).json({ message: 'Access denied: Insufficient permissions' });
     } catch (error) {
       console.error('Error fetching restaurant drivers:', error);
       res.status(500).json({ message: 'Failed to fetch drivers' });

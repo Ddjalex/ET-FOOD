@@ -15,12 +15,14 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - ✅ Express server running on port 5000 with all APIs functional
 - ✅ WebSocket connections working for real-time features
 - ✅ Admin dashboard accessible with proper authentication
+- ✅ **Security Enhancement**: Implemented driver visibility restrictions for restaurant admins
 - ✅ Project migration from Replit Agent to standard Replit environment complete
 
 ## Recent Updates (August 2025)
 - **Driver Location Sharing Fixed**: Resolved issue where approved drivers couldn't share location due to status validation problems
 - **Enhanced Driver App**: Added real-time data refresh, debug status display, and manual refresh capability
 - **Telegram Bot Integration**: Both customer and driver bots fully operational with proper approval workflows
+- **Security Enhancement**: Implemented strict driver visibility restrictions for restaurant admins - they now only see drivers assigned to orders for their specific restaurant, enhancing operational relevance and security
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
