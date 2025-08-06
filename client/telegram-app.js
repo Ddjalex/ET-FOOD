@@ -491,13 +491,18 @@ class BeUDeliveryApp {
         const tax = subtotal * 0.08;
         const total = subtotal + deliveryFee + tax;
 
+        // Get customer phone number from form input
+        const customerPhone = document.getElementById('customerPhoneInput').value || '+251911234567';
+
         const orderData = {
             items: this.cart,
             restaurantId: this.cart[0].restaurantId,
             restaurantName: this.cart[0].restaurantName,
             deliveryAddress: {
                 address: deliveryAddress,
-                coordinates: this.userLocation
+                latitude: this.userLocation?.latitude || 9.005401, // Default to Addis Ababa coordinates
+                longitude: this.userLocation?.longitude || 38.763611,
+                phoneNumber: recipientInfo?.phone || customerPhone
             },
             recipientInfo,
             paymentMethod,

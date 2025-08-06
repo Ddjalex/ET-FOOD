@@ -43,6 +43,7 @@ Uses **PostgreSQL** as the primary database with **Drizzle ORM** for schema mana
 **Recent Changes (August 2025):**
 - **Project Migration to Standard Replit Environment Completed**: Successfully migrated from Replit Agent to standard Replit environment with full functionality restored
 - **Telegram Bot Tokens Configured**: Added CUSTOMER_BOT_TOKEN and DRIVER_BOT_TOKEN environment variables, both bots (Enbela_bot and EnbelaDriver_bot) now running successfully
+- **Telegram Mini Web App Order Placement Fixed**: Resolved "Failed to place order" error by updating order data structure to include required MongoDB schema fields (deliveryAddress.latitude, deliveryAddress.longitude, deliveryAddress.phoneNumber)
 - **Order Creation System Fixed**: Resolved MongoDB connection issues in storage layer, fixed data type mismatches, and verified order placement functionality works correctly
 - **Telegram Bot Integration Verified**: Both customer and driver bots are running successfully with proper environment variable configuration
 - **Environment Variables Configured**: Set up secure secret management with SESSION_SECRET, AUTH_SECRET, and Telegram bot tokens
