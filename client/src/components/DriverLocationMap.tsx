@@ -137,8 +137,11 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
       </MapContainer>
       
       {driversWithLocation.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-600 text-sm">
-          No drivers with location data available
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 text-gray-500 text-xs p-2">
+          <div className="text-center">
+            <div className="text-gray-400 mb-1">📍</div>
+            <div>No active drivers</div>
+          </div>
         </div>
       )}
     </div>

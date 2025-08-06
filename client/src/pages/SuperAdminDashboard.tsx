@@ -1936,15 +1936,15 @@ function SuperAdminDashboardContent() {
 
           {/* Live Driver Map */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="w-4 h-4" />
                 Live Driver Locations
               </CardTitle>
-              <CardDescription>Real-time tracking of active drivers across Addis Ababa</CardDescription>
+              <CardDescription className="text-sm">Real-time tracking across Addis Ababa</CardDescription>
             </CardHeader>
-            <CardContent>
-              <DriverLocationMap drivers={drivers} height="300px" />
+            <CardContent className="pt-0">
+              <DriverLocationMap drivers={drivers} height="250px" />
             </CardContent>
           </Card>
 
