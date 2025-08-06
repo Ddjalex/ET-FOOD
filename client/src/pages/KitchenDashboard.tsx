@@ -30,6 +30,8 @@ import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 
 // Type definitions to match our database schema
 interface MenuCategory {
@@ -275,9 +277,82 @@ export function KitchenDashboard() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Type-safe user with proper typing
   const typedUser = user as any;
+
+  // Setup Socket.IO connection for real-time notifications
+  useEffect(() => {
+    if (isAuthenticated && typedUser?.id && typedUser?.restaurantId) {
+      console.log('Setting up Socket.IO connection for kitchen staff...');
+      
+      const newSocket = io({
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      });
+
+      newSocket.on('connect', () => {
+        console.log('Socket.IO connected:', newSocket.id);
+        setIsConnected(true);
+        
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: typedUser.id });
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('Socket.IO authenticated:', data);
+        toast({
+          title: "Connected",
+          description: "Real-time notifications enabled",
+        });
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('Socket.IO disconnected');
+        setIsConnected(false);
+      });
+
+      newSocket.on('authentication_error', (error) => {
+        console.error('Socket.IO authentication error:', error);
+      });
+
+      // Listen for new orders
+      newSocket.on('new_order', (orderData) => {
+        console.log('New order received:', orderData);
+        toast({
+          title: "🔔 New Order!",
+          description: `Order ${orderData.orderNumber} - $${orderData.total}`,
+        });
+        
+        // Refresh orders list
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] 
+        });
+      });
+
+      // Listen for order status updates
+      newSocket.on('order_status_updated', (orderData) => {
+        console.log('Order status updated:', orderData);
+        
+        // Refresh orders list
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] 
+        });
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
+      };
+    }
+  }, [isAuthenticated, typedUser?.id, typedUser?.restaurantId, queryClient, toast]);
 
   // Always call hooks first - never conditionally
   // Get restaurant orders
@@ -655,8 +730,18 @@ export function KitchenDashboard() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
-          <p className="text-muted-foreground">Manage orders and menu items</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
+              <p className="text-muted-foreground">Manage orders and menu items</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <span className="text-sm text-muted-foreground">
+                {isConnected ? 'Real-time notifications ON' : 'Connecting...'}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Navigation Tabs */}
