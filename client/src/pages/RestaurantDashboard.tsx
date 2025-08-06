@@ -38,8 +38,8 @@ export default function RestaurantDashboard() {
 
   // Get restaurant orders
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["/api/orders"],
-    enabled: isAuthenticated,
+    queryKey: ["/api/restaurants", user?.restaurantId, "orders"],
+    enabled: isAuthenticated && !!user?.restaurantId,
   });
 
   // Get restaurant menu items
@@ -140,7 +140,6 @@ export default function RestaurantDashboard() {
         });
         
         // Refresh orders list
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
         queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
       });
 
@@ -150,7 +149,7 @@ export default function RestaurantDashboard() {
           title: "✅ Kitchen Confirmed",
           description: `Order ${data.orderNumber}: ${data.action}`,
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
       });
 
       newSocket.on('order_preparation_started', (data) => {
@@ -158,7 +157,7 @@ export default function RestaurantDashboard() {
           title: "👨‍🍳 Preparation Started",
           description: `Order ${data.orderNumber}: ${data.action}`,
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
       });
 
       newSocket.on('order_ready_for_pickup', (data) => {
@@ -166,7 +165,7 @@ export default function RestaurantDashboard() {
           title: "🍽️ Ready for Pickup",
           description: `Order ${data.orderNumber}: ${data.action}`,
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
       });
 
       newSocket.on('order_needs_attention', (data) => {
@@ -175,7 +174,7 @@ export default function RestaurantDashboard() {
           description: `Order ${data.orderNumber}: ${data.action}`,
           variant: "destructive",
         });
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
       });
 
       setSocket(newSocket);
@@ -196,7 +195,6 @@ export default function RestaurantDashboard() {
           title: "🔔 New Order!",
           description: `Order #${lastMessage.data.orderNumber} received`,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         queryClient.invalidateQueries({ queryKey: ["/api/restaurants", user?.restaurantId, "orders"] });
       } else if (lastMessage.type === 'order_status_updated') {
         const statusMessages = {
@@ -211,7 +209,6 @@ export default function RestaurantDashboard() {
           title: "📋 Order Status Updated",
           description: `Order #${lastMessage.data.orderNumber}: ${statusMessages[lastMessage.data.status] || lastMessage.data.status}`,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         queryClient.invalidateQueries({ queryKey: ["/api/restaurants", user?.restaurantId, "orders"] });
       }
     }
@@ -249,7 +246,17 @@ export default function RestaurantDashboard() {
       <main className="flex-1 ml-64">
         <TopBar 
           title="Restaurant Dashboard" 
-          subtitle="Manage your orders and menu items"
+          subtitle={
+            <div className="flex items-center gap-2">
+              <span>Manage your orders and menu items</span>
+              <div className="flex items-center gap-1">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-xs text-gray-500">
+                  {isConnected ? 'Real-time ON' : 'Real-time OFF'}
+                </span>
+              </div>
+            </div>
+          }
           user={user}
         />
         
