@@ -294,6 +294,12 @@ class MemoryStorage implements IStorage {
     return updatedUser;
   }
 
+  async getUsersByRole(role: string): Promise<User[]> {
+    return Array.from(this.users.values())
+      .filter(user => user.role === role)
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  }
+
   async getAllAdminUsers(): Promise<User[]> {
     return Array.from(this.users.values())
       .filter(user => user.role && ['superadmin', 'restaurant_admin', 'kitchen_staff'].includes(user.role))
