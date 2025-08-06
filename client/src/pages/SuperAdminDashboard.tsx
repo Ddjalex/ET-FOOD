@@ -234,9 +234,9 @@ function SuperAdminDashboardContent() {
   const profileForm = useForm<ProfileUpdateData>({
     resolver: zodResolver(profileUpdateSchema),
     defaultValues: {
-      email: user?.email || '',
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
+      email: (user as any)?.email || '',
+      firstName: (user as any)?.firstName || '',
+      lastName: (user as any)?.lastName || '',
       currentPassword: ''
     }
   });
@@ -246,9 +246,8 @@ function SuperAdminDashboardContent() {
     defaultValues: {
       title: '',
       message: '',
-      imageUrl: '',
       messageType: 'announcement',
-      targetAudience: 'all'
+      targetAudience: 'customers'
     }
   });
 
@@ -462,7 +461,7 @@ function SuperAdminDashboardContent() {
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: ProfileUpdateData) => 
-      fetch(`/api/superadmin/admins/${user?.id}`, {
+      fetch(`/api/superadmin/admins/${(user as any)?.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1852,6 +1851,207 @@ function SuperAdminDashboardContent() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Broadcast Messages Tab */}
+      {selectedTab === 'broadcast' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Broadcast Messages</h2>
+              <p className="text-muted-foreground">Send announcements and updates to customers via Telegram</p>
+            </div>
+            <Dialog open={isBroadcastDialogOpen} onOpenChange={setIsBroadcastDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Send Broadcast
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px]">
+                <DialogHeader>
+                  <DialogTitle>Send Broadcast Message</DialogTitle>
+                  <DialogDescription>
+                    Send a message to all customers via Telegram bot. You can include an image and choose the message type.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...broadcastForm}>
+                  <form onSubmit={broadcastForm.handleSubmit((data) => broadcastMutation.mutate({ ...data, image: broadcastImageFile || undefined }))} className="space-y-4">
+                    <FormField
+                      control={broadcastForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message Title</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter message title" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={broadcastForm.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message Content</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Enter your message content..."
+                              className="min-h-[120px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={broadcastForm.control}
+                        name="messageType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Message Type</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select message type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="welcome">👋 Welcome</SelectItem>
+                                <SelectItem value="product">🆕 New Product</SelectItem>
+                                <SelectItem value="announcement">📢 Announcement</SelectItem>
+                                <SelectItem value="promotion">🎉 Promotion</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={broadcastForm.control}
+                        name="targetAudience"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Target Audience</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select audience" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="all">All Users</SelectItem>
+                                <SelectItem value="customers">Customers Only</SelectItem>
+                                <SelectItem value="drivers">Drivers Only</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <FormLabel>Image (Optional)</FormLabel>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setBroadcastImageFile(file);
+                              const reader = new FileReader();
+                              reader.onload = (e) => setBroadcastImagePreview(e.target?.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        {broadcastImagePreview && (
+                          <div className="relative">
+                            <img src={broadcastImagePreview} alt="Preview" className="w-16 h-16 object-cover rounded" />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                              onClick={() => {
+                                setBroadcastImageFile(null);
+                                setBroadcastImagePreview(null);
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsBroadcastDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={broadcastMutation.isPending}>
+                        {broadcastMutation.isPending ? 'Sending...' : 'Send Broadcast'}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Broadcast Guidelines</CardTitle>
+              <CardDescription>Tips for effective customer communication</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Message Types</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span>👋</span>
+                      <span><strong>Welcome:</strong> Greet new customers and introduce your service</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>🆕</span>
+                      <span><strong>New Product:</strong> Announce new menu items or restaurants</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>📢</span>
+                      <span><strong>Announcement:</strong> Important service updates or changes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>🎉</span>
+                      <span><strong>Promotion:</strong> Special offers and discounts</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-medium">Best Practices</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• Keep messages concise and engaging</li>
+                    <li>• Use images to make announcements more appealing</li>
+                    <li>• Send welcome messages to new customers</li>
+                    <li>• Time promotions appropriately (lunch/dinner hours)</li>
+                    <li>• Don't over-communicate - respect your customers</li>
+                  </ul>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
