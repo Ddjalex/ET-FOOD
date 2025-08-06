@@ -1301,11 +1301,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { driverId } = req.params;
       const { latitude, longitude, timestamp } = req.body;
 
-      await storage.saveLiveLocation(driverId, {
-        lat: latitude,
-        lng: longitude,
-        timestamp: timestamp || new Date().toISOString()
-      });
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      await storage.saveLiveLocation(driverId, latitude, longitude, timestamp);
 
       res.json({ success: true, message: 'Live location saved successfully' });
     } catch (error) {
@@ -1321,7 +1321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all approved drivers (in real multi-tenant system, this would be filtered by restaurant assignment)
       const allDrivers = await storage.getAllDrivers();
-      const approvedDrivers = allDrivers.filter(driver => driver.status === 'approved');
+      const approvedDrivers = allDrivers.filter(driver => driver.status === 'active' && driver.isApproved);
       
       res.json(approvedDrivers);
     } catch (error) {

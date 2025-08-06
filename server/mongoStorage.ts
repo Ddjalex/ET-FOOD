@@ -938,7 +938,11 @@ export class MongoStorage implements IStorage {
       const updatedDriver = await DriverModel.findByIdAndUpdate(
         id,
         { 
-          currentLocation: location,
+          currentLocation: {
+            lat: location.lat,
+            lng: location.lng
+          },
+          lastLocationUpdate: new Date(),
           updatedAt: new Date() 
         },
         { new: true }
@@ -1120,7 +1124,7 @@ export class MongoStorage implements IStorage {
       licenseImageUrl: driver.licenseImageUrl,
       vehicleImageUrl: driver.vehicleImageUrl,
       idCardImageUrl: driver.idCardImageUrl,
-      currentLocation: driver.currentLocation,
+      currentLocation: driver.currentLocation && driver.currentLocation.lat ? driver.currentLocation : null,
       status: driver.status,
       isOnline: driver.isOnline,
       isAvailable: driver.isAvailable,

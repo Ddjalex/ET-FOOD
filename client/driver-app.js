@@ -84,8 +84,12 @@ class DriverApp {
                 
                 if (response.ok) {
                     this.driverData = await response.json();
+                    console.log('Driver data loaded:', this.driverData);
+                    console.log('Driver status:', this.driverData.status);
+                    console.log('Driver ID:', this.driverData.id);
                     this.showDashboard();
                 } else if (response.status === 404) {
+                    console.log('Driver not found, showing registration form');
                     this.showRegistrationForm();
                 } else {
                     console.error('Error loading driver data:', response.status);
@@ -376,6 +380,29 @@ class DriverApp {
 
     requestLiveLocation() {
         console.log('Requesting live location...');
+        console.log('Driver data available:', !!this.driverData);
+        console.log('Driver ID:', this.driverData?.id);
+        
+        // Check if driver is registered and approved
+        if (!this.driverData || !this.driverData.id) {
+            const errorMsg = 'Please complete registration first before sharing location.';
+            if (this.tg) {
+                this.tg.showAlert(errorMsg);
+            } else {
+                alert(errorMsg);
+            }
+            return;
+        }
+        
+        if (this.driverData.status !== 'approved') {
+            const errorMsg = 'Please wait for approval before sharing location.';
+            if (this.tg) {
+                this.tg.showAlert(errorMsg);
+            } else {
+                alert(errorMsg);
+            }
+            return;
+        }
         
         if (this.tg && this.tg.requestLocation) {
             console.log('Using Telegram location API');
@@ -439,6 +466,12 @@ class DriverApp {
 
     async saveLiveLocation(latitude, longitude) {
         try {
+            // Ensure we have driver data
+            if (!this.driverData || !this.driverData.id) {
+                console.error('Driver data not available, cannot save live location');
+                return;
+            }
+            
             const response = await fetch(`/api/drivers/${this.driverData.id}/live-location`, {
                 method: 'POST',
                 headers: {
@@ -453,6 +486,8 @@ class DriverApp {
 
             if (response.ok) {
                 console.log('Live location saved successfully');
+            } else {
+                console.error('Failed to save live location:', response.status);
             }
         } catch (error) {
             console.error('Error saving live location:', error);
@@ -462,6 +497,14 @@ class DriverApp {
     async updateLocation(latitude, longitude) {
         try {
             console.log('Updating location in backend:', latitude, longitude);
+            
+            // Ensure we have driver data
+            if (!this.driverData || !this.driverData.id) {
+                console.error('Driver data not available, cannot update location');
+                throw new Error('Driver data not available. Please refresh and try again.');
+            }
+            
+            console.log('Driver ID:', this.driverData.id);
             
             const response = await fetch(`/api/drivers/${this.driverData.id}/location`, {
                 method: 'PUT',
@@ -487,7 +530,8 @@ class DriverApp {
                     alert('Location updated successfully! You can now receive orders.');
                 }
             } else {
-                console.error('Failed to update location:', response.status);
+                const errorData = await response.text();
+                console.error('Failed to update location:', response.status, errorData);
                 throw new Error('Failed to update location');
             }
         } catch (error) {
