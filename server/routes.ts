@@ -1365,6 +1365,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Get nearby drivers for restaurant admin
+  app.get('/api/drivers/nearby', async (req, res) => {
+    try {
+      // Get all approved, active drivers
+      const drivers = await storage.getAllDrivers();
+      const nearbyDrivers = drivers.filter(driver => 
+        driver.isApproved && 
+        driver.status === 'active'
+      );
+      
+      res.json(nearbyDrivers);
+    } catch (error) {
+      console.error('Error fetching nearby drivers:', error);
+      res.status(500).json({ message: 'Failed to fetch nearby drivers' });
+    }
+  });
+
   // Get drivers for restaurant
   app.get('/api/restaurants/:restaurantId/drivers', async (req, res) => {
     try {

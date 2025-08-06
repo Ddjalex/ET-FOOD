@@ -27,8 +27,10 @@ import {
   Car,
   MapPin,
   Phone,
-  Star
+  Star,
+  Truck
 } from 'lucide-react';
+import NearbyDrivers from '@/components/NearbyDrivers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -1218,141 +1220,21 @@ function RestaurantAdminDashboardContent() {
       {selectedTab === 'drivers' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Driver Management</h2>
-            <Badge variant="outline" className="text-sm">
-              {drivers.length} Available Drivers
-            </Badge>
+            <div>
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Truck className="h-6 w-6" />
+                Nearby Drivers
+              </h2>
+              <p className="text-muted-foreground">View available drivers in real-time for order delivery</p>
+            </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Car className="w-5 h-5 mr-2" />
-                Available Drivers
-              </CardTitle>
-              <CardDescription>Manage drivers who can deliver orders for your restaurant</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Driver Info</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Total Deliveries</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {drivers.map((driver: any) => (
-                    <TableRow key={driver.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                            <Car className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{driver.name}</div>
-                            <div className="text-sm text-muted-foreground">ID: {driver.id.slice(-8)}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center">
-                            <Phone className="w-4 h-4 mr-1 text-muted-foreground" />
-                            <span className="text-sm">{driver.phoneNumber}</span>
-                          </div>
-                          {driver.telegramId && (
-                            <div className="text-xs text-muted-foreground">
-                              Telegram: {driver.telegramId}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Badge className={
-                            driver.status === 'approved' 
-                              ? driver.isOnline 
-                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-100'
-                          }>
-                            {driver.status === 'approved' 
-                              ? driver.isOnline 
-                                ? 'Online' 
-                                : 'Offline'
-                              : driver.status
-                            }
-                          </Badge>
-                          {driver.isAvailable && driver.isOnline && (
-                            <div className="text-xs text-green-600">Available for orders</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                          <span>{driver.rating || '5.0'}</span>
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({driver.totalDeliveries || 0})
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-center">
-                          <div className="font-medium">{driver.totalDeliveries || 0}</div>
-                          <div className="text-xs text-muted-foreground">Completed</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {driver.currentLocation ? (
-                          <div className="flex items-center text-sm">
-                            <MapPin className="w-4 h-4 text-green-500 mr-1" />
-                            <span className="text-green-600">Shared</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center text-sm">
-                            <MapPin className="w-4 h-4 text-gray-400 mr-1" />
-                            <span className="text-muted-foreground">Not shared</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // View driver details
-                              toast({ 
-                                title: 'Driver Details', 
-                                description: `${driver.name} - ${driver.phoneNumber}` 
-                              });
-                            }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {drivers.length === 0 && (
-                <div className="text-center py-8">
-                  <Car className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No drivers available yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Drivers will appear here once they are approved by the superadmin
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <NearbyDrivers 
+            restaurantLocation={{
+              lat: 9.0320, // Default Addis Ababa location
+              lng: 38.7469
+            }}
+          />
         </div>
       )}
 
