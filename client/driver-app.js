@@ -87,6 +87,7 @@ class DriverApp {
                     console.log('Driver data loaded:', this.driverData);
                     console.log('Driver status:', this.driverData.status);
                     console.log('Driver ID:', this.driverData.id);
+                    console.log('Driver isApproved:', this.driverData.isApproved);
                     this.showDashboard();
                 } else if (response.status === 404) {
                     console.log('Driver not found, showing registration form');
@@ -103,6 +104,25 @@ class DriverApp {
             console.error('Error loading driver data:', error);
             this.showRegistrationForm();
         }
+    }
+
+    async refreshDriverData() {
+        console.log('Refreshing driver data...');
+        if (this.telegramUser?.id) {
+            try {
+                const response = await fetch(`/api/drivers/telegram/${this.telegramUser.id}`);
+                if (response.ok) {
+                    this.driverData = await response.json();
+                    console.log('Driver data refreshed:', this.driverData);
+                    return this.driverData;
+                } else {
+                    console.error('Failed to refresh driver data:', response.status);
+                }
+            } catch (error) {
+                console.error('Error refreshing driver data:', error);
+            }
+        }
+        return this.driverData;
     }
 
     autofillRegistrationForm() {
@@ -208,6 +228,21 @@ class DriverApp {
         document.getElementById('totalEarnings').textContent = `${this.driverData.totalEarnings || '0.00'} ETB`;
         document.getElementById('totalDeliveries').textContent = this.driverData.totalDeliveries || '0';
         document.getElementById('driverRating').textContent = this.driverData.rating || '0.0';
+
+        // Update debug info
+        this.updateDebugStatus();
+    }
+
+    updateDebugStatus() {
+        const statusEl = document.getElementById('debugStatus');
+        const idEl = document.getElementById('debugId');
+        
+        if (statusEl && this.driverData) {
+            statusEl.textContent = this.driverData.status || 'unknown';
+        }
+        if (idEl && this.driverData) {
+            idEl.textContent = this.driverData.id || 'unknown';
+        }
     }
 
     updateStatusIndicator() {
@@ -386,6 +421,7 @@ class DriverApp {
         // Check if driver is registered and approved
         if (!this.driverData || !this.driverData.id) {
             const errorMsg = 'Please complete registration first before sharing location.';
+            console.log('Driver data issue - driverData:', this.driverData);
             if (this.tg) {
                 this.tg.showAlert(errorMsg);
             } else {
@@ -394,8 +430,10 @@ class DriverApp {
             return;
         }
         
-        if (this.driverData.status !== 'approved') {
+        console.log('Driver status check:', this.driverData.status);
+        if (this.driverData.status !== 'approved' && this.driverData.status !== 'active') {
             const errorMsg = 'Please wait for approval before sharing location.';
+            console.log('Driver not approved yet, status:', this.driverData.status);
             if (this.tg) {
                 this.tg.showAlert(errorMsg);
             } else {
@@ -588,9 +626,14 @@ class DriverApp {
 
         this.socket.on('driver-approved', (driverData) => {
             console.log('Driver approved event received:', driverData);
-            this.driverData = driverData;
-            this.showDashboard();
-            this.showNotification('🎉 Congratulations! Your driver application has been approved. You can now start accepting orders.', 'success');
+            // Force refresh driver data from server to ensure we have the latest status
+            this.refreshDriverData().then((updatedData) => {
+                if (updatedData) {
+                    this.driverData = updatedData;
+                    this.showDashboard();
+                    this.showNotification('🎉 Congratulations! Your driver application has been approved. You can now start accepting orders.', 'success');
+                }
+            });
         });
 
         this.socket.on('driver-rejected', (data) => {
