@@ -58,8 +58,17 @@ class DriverApp {
                 const { first_name, last_name, username, id } = initData.user;
                 const fullName = `${first_name} ${last_name || ''}`.trim();
                 
+                // Store Telegram user data for registration
+                this.telegramUser = {
+                    id: id.toString(),
+                    first_name,
+                    last_name,
+                    username,
+                    fullName
+                };
+                
                 // Pre-fill registration form
-                document.getElementById('driverName').value = fullName;
+                this.autofillRegistrationForm();
                 
                 // Check if driver exists
                 const response = await fetch(`/api/drivers/telegram/${id}`);
@@ -83,19 +92,42 @@ class DriverApp {
         }
     }
 
+    autofillRegistrationForm() {
+        // Fill name from Telegram profile
+        if (this.telegramUser?.fullName) {
+            const nameField = document.getElementById('driverName');
+            if (nameField) {
+                nameField.value = this.telegramUser.fullName;
+                nameField.placeholder = 'Name loaded from Telegram';
+            }
+        }
+
+        // Show button to request phone number
+        this.setupPhoneNumberRequest();
+    }
+
+    setupPhoneNumberRequest() {
+        const phoneField = document.getElementById('driverPhone');
+        if (phoneField && this.tg) {
+            phoneField.placeholder = 'Tap to share your contact';
+            phoneField.addEventListener('click', () => {
+                this.tg.requestContact((contact) => {
+                    if (contact && contact.phone_number) {
+                        phoneField.value = contact.phone_number;
+                        phoneField.placeholder = 'Phone number from Telegram';
+                    }
+                });
+            });
+        }
+    }
+
     showRegistrationForm() {
         document.getElementById('registrationForm').classList.remove('hidden');
         document.getElementById('pendingApproval').classList.add('hidden');
         document.getElementById('driverDashboard').classList.add('hidden');
 
-        // Request contact if available
-        if (this.tg) {
-            this.tg.requestContact((contact) => {
-                if (contact && contact.phone_number) {
-                    document.getElementById('driverPhone').value = contact.phone_number;
-                }
-            });
-        }
+        // Ensure form is autofilled when shown
+        this.autofillRegistrationForm();
     }
 
     showPendingApproval() {
@@ -168,15 +200,30 @@ class DriverApp {
         submitBtn.textContent = 'Submitting...';
 
         try {
-            const initData = this.tg?.initDataUnsafe;
-            if (!initData?.user) {
+            if (!this.telegramUser) {
                 throw new Error('Telegram user data not available');
             }
 
+            // Validate required fields
+            const driverName = document.getElementById('driverName').value.trim();
+            const driverPhone = document.getElementById('driverPhone').value.trim();
+            
+            if (!driverName) {
+                throw new Error('Full name is required');
+            }
+            
+            if (!driverPhone) {
+                throw new Error('Phone number is required');
+            }
+
+            if (!this.telegramUser.id) {
+                throw new Error('Telegram ID is required');
+            }
+
             const formData = new FormData();
-            formData.append('telegramId', initData.user.id.toString());
-            formData.append('name', document.getElementById('driverName').value);
-            formData.append('phoneNumber', document.getElementById('driverPhone').value);
+            formData.append('telegramId', this.telegramUser.id);
+            formData.append('name', driverName);
+            formData.append('phoneNumber', driverPhone);
 
             const govIdFront = document.getElementById('govIdFront').files[0];
             const govIdBack = document.getElementById('govIdBack').files[0];
