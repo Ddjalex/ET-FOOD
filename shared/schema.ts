@@ -143,20 +143,29 @@ export const orders = pgTable("orders", {
 export const drivers = pgTable("drivers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").unique().notNull(),
-  licenseNumber: varchar("license_number").unique().notNull(),
-  vehicleType: varchar("vehicle_type").notNull(), // motorcycle, bicycle, car
-  vehiclePlate: varchar("vehicle_plate").notNull(),
+  telegramId: varchar("telegram_id"),
+  phoneNumber: varchar("phone_number"),
+  name: varchar("name"),
+  governmentIdFrontUrl: varchar("government_id_front_url"),
+  governmentIdBackUrl: varchar("government_id_back_url"),
+  licenseNumber: varchar("license_number"),
+  vehicleType: varchar("vehicle_type"), // motorcycle, bicycle, car
+  vehiclePlate: varchar("vehicle_plate"),
   licenseImageUrl: varchar("license_image_url"),
   vehicleImageUrl: varchar("vehicle_image_url"),
   idCardImageUrl: varchar("id_card_image_url"),
   currentLocation: point("current_location"), // GeoJSON Point
+  status: varchar("status").default("pending_approval"), // pending_approval, active, inactive, rejected
   isOnline: boolean("is_online").default(false),
   isAvailable: boolean("is_available").default(false),
   isApproved: boolean("is_approved").default(false),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   totalDeliveries: integer("total_deliveries").default(0),
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00"),
+  todayEarnings: decimal("today_earnings", { precision: 10, scale: 2 }).default("0.00"),
+  weeklyEarnings: decimal("weekly_earnings", { precision: 10, scale: 2 }).default("0.00"),
   zone: varchar("zone"), // delivery zone assignment
+  lastOnline: timestamp("last_online"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

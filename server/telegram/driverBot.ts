@@ -34,9 +34,13 @@ Hello ${firstName}! I'm your driver assistant for managing deliveries.
 
 Ready to start earning with BeU Delivery?`;
 
+    const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+      : 'https://replit.com';
+
     const keyboard = {
       inline_keyboard: [
-        [{ text: '📝 Register as Driver', web_app: { url: `${process.env.FRONTEND_URL || 'http://localhost:5000'}/driver-registration` } }],
+        [{ text: '📝 Register as Driver', web_app: { url: driverAppUrl } }],
         [{ text: '🚗 Driver Dashboard', callback_data: 'driver_dashboard' }],
         [{ text: '📋 Requirements', callback_data: 'driver_requirements' }]
       ]
@@ -62,9 +66,13 @@ Ready to start earning with BeU Delivery?`;
 
       if (!driver) {
         // Not registered as driver yet
+        const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+          : 'https://replit.com';
+
         const keyboard = {
           inline_keyboard: [
-            [{ text: '📝 Register as Driver', web_app: { url: `${process.env.FRONTEND_URL || 'http://localhost:5000'}/driver-registration` } }],
+            [{ text: '📝 Register as Driver', web_app: { url: driverAppUrl } }],
             [{ text: '📋 Driver Requirements', callback_data: 'driver_requirements' }]
           ]
         };

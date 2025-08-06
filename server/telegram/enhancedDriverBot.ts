@@ -21,7 +21,7 @@ export function setupEnhancedDriverBot(bot: Telegraf<DriverContext>) {
         const driver = await storage.getDriverByUserId(existingUser.id);
         
         if (driver) {
-          if (driver.status === 'active' && driver.isApproved) {
+          if (driver.isApproved) {
             await ctx.reply(
               `🚗 Welcome back, ${firstName}!\n\n` +
               `You're registered and approved to deliver with BeU.\n\n` +
@@ -34,7 +34,7 @@ export function setupEnhancedDriverBot(bot: Telegraf<DriverContext>) {
                 [Markup.button.webApp('🚗 Open Driver Dashboard', getDriverAppUrl())]
               ])
             );
-          } else if (driver.status === 'pending_approval') {
+          } else if (!driver.isApproved) {
             await ctx.reply(
               `⏳ Hello ${firstName}!\n\n` +
               `Your driver registration is being reviewed by our team. You'll be notified once approved.\n\n` +
@@ -43,7 +43,7 @@ export function setupEnhancedDriverBot(bot: Telegraf<DriverContext>) {
                 [Markup.button.webApp('📱 Check Status', getDriverAppUrl())]
               ])
             );
-          } else if (driver.status === 'rejected') {
+          } else {
             await ctx.reply(
               `❌ Unfortunately, your driver registration was not approved.\n\n` +
               `You can reapply with updated documents.`,
@@ -128,23 +128,23 @@ export function setupEnhancedDriverBot(bot: Telegraf<DriverContext>) {
       let statusEmoji = '⏳';
       let statusText = 'Pending Approval';
       
-      if (driver.status === 'active') {
+      if (driver.isApproved) {
         statusEmoji = driver.isOnline ? '🟢' : '🔴';
         statusText = driver.isOnline ? 'Online & Ready for Orders' : 'Offline';
-      } else if (driver.status === 'rejected') {
-        statusEmoji = '❌';
-        statusText = 'Registration Rejected';
+      } else {
+        statusEmoji = '⏳';
+        statusText = 'Pending Approval';
       }
 
       await ctx.reply(
         `🚗 *Driver Status Report*\n\n` +
         `Status: ${statusEmoji} ${statusText}\n` +
-        `Name: ${driver.name}\n` +
-        `Phone: ${driver.phoneNumber}\n\n` +
+        `Name: ${(driver as any).name || 'Not provided'}\n` +
+        `Phone: ${(driver as any).phoneNumber || 'Not provided'}\n\n` +
         `📊 *Performance:*\n` +
-        `• Total Deliveries: ${driver.totalDeliveries}\n` +
+        `• Total Deliveries: ${driver.totalDeliveries || 0}\n` +
         `• Total Earnings: $${driver.totalEarnings}\n` +
-        `• Today's Earnings: $${driver.todayEarnings || '0.00'}\n` +
+        `• Today's Earnings: $${(driver as any).todayEarnings || '0.00'}\n` +
         `• Rating: ⭐ ${driver.rating}/5.0\n\n` +
         `${driver.zone ? `🗺 Zone: ${driver.zone}` : ''}`,
         {
@@ -178,15 +178,16 @@ export function setupEnhancedDriverBot(bot: Telegraf<DriverContext>) {
         return;
       }
 
-      const avgPerDelivery = driver.totalDeliveries > 0 
-        ? (parseFloat(driver.totalEarnings || '0') / driver.totalDeliveries).toFixed(2)
+      const totalDeliveries = driver.totalDeliveries || 0;
+      const avgPerDelivery = totalDeliveries > 0 
+        ? (parseFloat(driver.totalEarnings || '0') / totalDeliveries).toFixed(2)
         : '0.00';
 
       await ctx.reply(
         `💰 *Earnings Summary*\n\n` +
         `📈 *Current Period:*\n` +
-        `• Today: $${driver.todayEarnings || '0.00'}\n` +
-        `• This Week: $${driver.weeklyEarnings || '0.00'}\n\n` +
+        `• Today: $${(driver as any).todayEarnings || '0.00'}\n` +
+        `• This Week: $${(driver as any).weeklyEarnings || '0.00'}\n\n` +
         `📊 *All Time:*\n` +
         `• Total Earnings: $${driver.totalEarnings}\n` +
         `• Total Deliveries: ${driver.totalDeliveries}\n` +
@@ -301,11 +302,16 @@ async function showRegistrationWelcome(ctx: DriverContext, firstName: string) {
 async function toggleDriverStatus(ctx: DriverContext, isOnline: boolean) {
   const telegramId = ctx.from?.id.toString();
   
+  if (!telegramId) {
+    await ctx.reply('Unable to identify user. Please try again.');
+    return;
+  }
+  
   try {
     const user = await storage.getUserByTelegramId(telegramId);
     const driver = user ? await storage.getDriverByUserId(user.id) : null;
     
-    if (!driver || driver.status !== 'active') {
+    if (!driver || !driver.isApproved) {
       await ctx.reply(
         '❌ You need to be an approved driver first.',
         Markup.inlineKeyboard([
@@ -342,6 +348,9 @@ async function toggleDriverStatus(ctx: DriverContext, isOnline: boolean) {
 }
 
 function getDriverAppUrl(): string {
-  const baseUrl = process.env.REPL_URL || 'https://localhost:5000';
-  return `${baseUrl}/driver-app.html`;
+  const domain = process.env.REPLIT_DEV_DOMAIN;
+  if (domain) {
+    return `https://${domain}/driver-app.html`;
+  }
+  return 'https://replit.com'; // Fallback
 }
