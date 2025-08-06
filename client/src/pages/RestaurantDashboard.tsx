@@ -11,11 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 
 export default function RestaurantDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const { lastMessage } = useWebSocket('/ws');
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -94,16 +98,124 @@ export default function RestaurantDashboard() {
     },
   });
 
-  // Handle real-time order updates
+  // Setup Socket.IO connection for real-time notifications
   useEffect(() => {
-    if (lastMessage && lastMessage.type === 'order_created') {
-      toast({
-        title: "New Order!",
-        description: `Order #${lastMessage.data.orderNumber} received`,
+    if (isAuthenticated && user?.id && user?.restaurantId) {
+      console.log('Setting up Socket.IO connection for restaurant admin...');
+      
+      const newSocket = io({
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+
+      newSocket.on('connect', () => {
+        console.log('Socket.IO connected:', newSocket.id);
+        setIsConnected(true);
+        
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: user.id });
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('Socket.IO authenticated:', data);
+        toast({
+          title: "Connected",
+          description: "Real-time notifications enabled",
+        });
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('Socket.IO disconnected');
+        setIsConnected(false);
+      });
+
+      // Listen for new orders
+      newSocket.on('new_order', (orderData) => {
+        console.log('New order received:', orderData);
+        toast({
+          title: "🔔 New Order!",
+          description: `Order ${orderData.orderNumber} - $${orderData.total}`,
+        });
+        
+        // Refresh orders list
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/restaurants', user?.restaurantId, 'orders'] });
+      });
+
+      // Listen for kitchen staff notifications
+      newSocket.on('order_confirmed_by_kitchen', (data) => {
+        toast({
+          title: "✅ Kitchen Confirmed",
+          description: `Order ${data.orderNumber}: ${data.action}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      });
+
+      newSocket.on('order_preparation_started', (data) => {
+        toast({
+          title: "👨‍🍳 Preparation Started",
+          description: `Order ${data.orderNumber}: ${data.action}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      });
+
+      newSocket.on('order_ready_for_pickup', (data) => {
+        toast({
+          title: "🍽️ Ready for Pickup",
+          description: `Order ${data.orderNumber}: ${data.action}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      });
+
+      newSocket.on('order_needs_attention', (data) => {
+        toast({
+          title: "⚠️ Admin Attention Required",
+          description: `Order ${data.orderNumber}: ${data.action}`,
+          variant: "destructive",
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+        setSocket(null);
+        setIsConnected(false);
+      };
     }
-  }, [lastMessage, toast]);
+  }, [isAuthenticated, user?.id, user?.restaurantId, queryClient, toast]);
+
+  // Handle real-time order updates from WebSocket (fallback)
+  useEffect(() => {
+    if (lastMessage) {
+      if (lastMessage.type === 'order_created') {
+        toast({
+          title: "🔔 New Order!",
+          description: `Order #${lastMessage.data.orderNumber} received`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/restaurants", user?.restaurantId, "orders"] });
+      } else if (lastMessage.type === 'order_status_updated') {
+        const statusMessages = {
+          confirmed: "Order confirmed and sent to kitchen",
+          preparing: "Kitchen started preparing",
+          in_preparation: "Order is being prepared",
+          ready_for_pickup: "Order ready for pickup/delivery",
+          awaiting_admin_intervention: "Needs admin attention"
+        };
+        
+        toast({
+          title: "📋 Order Status Updated",
+          description: `Order #${lastMessage.data.orderNumber}: ${statusMessages[lastMessage.data.status] || lastMessage.data.status}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/restaurants", user?.restaurantId, "orders"] });
+      }
+    }
+  }, [lastMessage, toast, queryClient, user?.restaurantId]);
 
   if (isLoading) {
     return (
