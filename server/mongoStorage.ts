@@ -1365,13 +1365,13 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async saveLiveLocation(driverId: string, latitude: number, longitude: number, timestamp?: string): Promise<void> {
+  async saveLiveLocation(driverId: string, location: any): Promise<void> {
     try {
       await DriverModel.findByIdAndUpdate(driverId, { 
         liveLocation: {
-          lat: latitude,
-          lng: longitude,
-          timestamp: timestamp || new Date().toISOString()
+          lat: location.lat,
+          lng: location.lng,
+          timestamp: location.timestamp || new Date().toISOString()
         },
         lastLocationUpdate: new Date()
       });

@@ -570,14 +570,24 @@ class DriverApp {
             } else {
                 const errorData = await response.text();
                 console.error('Failed to update location:', response.status, errorData);
-                throw new Error('Failed to update location');
+                
+                let errorMessage = 'Failed to update location';
+                if (response.status === 500) {
+                    errorMessage = 'Server error. Please try refreshing your data first.';
+                } else if (response.status === 404) {
+                    errorMessage = 'Driver not found. Please refresh your data.';
+                } else if (response.status === 400) {
+                    errorMessage = 'Invalid location data. Please try again.';
+                }
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('Error updating location:', error);
+            const errorMessage = error.message || 'Failed to update location. Please try again.';
             if (this.tg) {
-                this.tg.showAlert('Failed to update location. Please try again.');
+                this.tg.showAlert(errorMessage);
             } else {
-                alert('Failed to update location. Please try again.');
+                alert(errorMessage);
             }
         }
     }

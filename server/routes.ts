@@ -1272,8 +1272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedDriver = await storage.updateDriverLocation(driverId, {
-        lat: latitude,
-        lng: longitude
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude)
       });
 
       // Also update driver status to online when location is shared
@@ -1305,7 +1305,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Latitude and longitude are required' });
       }
 
-      await storage.saveLiveLocation(driverId, latitude, longitude, timestamp);
+      await storage.saveLiveLocation(driverId, { 
+        lat: parseFloat(latitude), 
+        lng: parseFloat(longitude), 
+        timestamp 
+      });
 
       res.json({ success: true, message: 'Live location saved successfully' });
     } catch (error) {
