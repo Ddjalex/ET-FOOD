@@ -226,7 +226,7 @@ interface OrderItem {
   specialInstructions?: string;
 }
 
-interface Order {
+interface OrderWithItems {
   id: string;
   orderNumber: string;
   customerId: string;
@@ -267,7 +267,7 @@ export function KitchenDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState('orders');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [availabilityCheck, setAvailabilityCheck] = useState<{[key: string]: boolean}>({});
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -294,7 +294,7 @@ export function KitchenDashboard() {
 
   // Type-safe menu data
   const menu = menuData as { categories: MenuCategory[], items: MenuItem[] } || { categories: [], items: [] };
-  const typedOrders = orders as Order[];
+  const typedOrders = orders as OrderWithItems[];
 
   // Always call mutations (React hooks must be called in same order)
   
@@ -536,7 +536,7 @@ export function KitchenDashboard() {
     );
   }
 
-  const handleCheckAvailability = (order: Order) => {
+  const handleCheckAvailability = (order: OrderWithItems) => {
     setSelectedOrder(order);
     const initialCheck: {[key: string]: boolean} = {};
     order.items.forEach(item => {
@@ -579,7 +579,7 @@ export function KitchenDashboard() {
     );
   };
 
-  const renderOrderCard = (order: Order) => (
+  const renderOrderCard = (order: OrderWithItems) => (
     <Card key={order.id} className="mb-4">
       <CardHeader>
         <div className="flex justify-between items-start">

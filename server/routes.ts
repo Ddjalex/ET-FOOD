@@ -1698,6 +1698,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unavailableItems: unavailableItems || null
       });
 
+      // Send real-time notification to restaurant admin about availability issue
+      if (status === 'awaiting_admin_intervention') {
+        notifyRestaurantAdmin(restaurantId, 'order_needs_attention', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          unavailableItems,
+          customerName: 'Customer',
+          total: order.total,
+          action: 'Items unavailable - needs admin intervention',
+          timestamp: new Date()
+        });
+      } else {
+        // All items available - notify admin that kitchen confirmed order
+        notifyRestaurantAdmin(restaurantId, 'order_confirmed_by_kitchen', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: 'Customer',
+          total: order.total,
+          action: 'All items available - ready for preparation',
+          timestamp: new Date()
+        });
+      }
+
       res.json(order);
     } catch (error) {
       console.error('Error checking order availability:', error);
@@ -1708,10 +1731,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kitchen Staff: Start preparing order
   app.put('/api/kitchen/:restaurantId/orders/:orderId/start-prepare', requireSession, requireKitchenAccess, async (req, res) => {
     try {
-      const { orderId } = req.params;
+      const { restaurantId, orderId } = req.params;
 
       const order = await storage.updateOrder(orderId, {
         status: 'in_preparation'
+      });
+
+      // Notify restaurant admin that preparation has started
+      notifyRestaurantAdmin(restaurantId, 'order_preparation_started', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: 'Customer',
+        total: order.total,
+        action: 'Kitchen started preparing order',
+        timestamp: new Date()
       });
 
       res.json(order);
@@ -1724,10 +1757,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Kitchen Staff: Mark order ready for pickup
   app.put('/api/kitchen/:restaurantId/orders/:orderId/ready-for-pickup', requireSession, requireKitchenAccess, async (req, res) => {
     try {
-      const { orderId } = req.params;
+      const { restaurantId, orderId } = req.params;
 
       const order = await storage.updateOrder(orderId, {
         status: 'ready_for_pickup'
+      });
+
+      // Notify restaurant admin that order is ready for pickup
+      notifyRestaurantAdmin(restaurantId, 'order_ready_for_pickup', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: 'Customer',
+        total: order.total,
+        action: 'Order ready for pickup/delivery',
+        timestamp: new Date()
       });
 
       res.json(order);
@@ -1760,8 +1803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           total: orderData.total,
           deliveryAddress: orderData.deliveryAddress,
           paymentMethod: orderData.paymentMethod,
-          status: 'pending',
-          specialInstructions: orderData.specialInstructions || ''
+          status: 'pending'
         });
 
         // Send real-time notification to kitchen staff
@@ -1817,16 +1859,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: orderData.total,
         deliveryAddress: orderData.deliveryAddress,
         paymentMethod: orderData.paymentMethod,
-        status: 'pending',
-        specialInstructions: orderData.specialInstructions || ''
+        status: 'pending'
       });
 
       // Send real-time notification to kitchen staff
       notifyKitchenStaff(orderData.restaurantId as string, 'new_order', {
         id: order.id,
         orderNumber: order.orderNumber,
-        customerName: session?.firstName || 'Customer',
-        customerPhone: session?.phoneNumber || orderData.deliveryAddress?.phoneNumber || 'Not provided',
+        customerName: 'Customer',
+        customerPhone: orderData.deliveryAddress?.phoneNumber || 'Not provided',
         items: orderData.items,
         total: orderData.total,
         deliveryAddress: orderData.deliveryAddress.address,
