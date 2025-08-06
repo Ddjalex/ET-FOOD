@@ -1314,6 +1314,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get drivers for restaurant
+  app.get('/api/restaurants/:restaurantId/drivers', async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+      
+      // Get all approved drivers (in real multi-tenant system, this would be filtered by restaurant assignment)
+      const allDrivers = await storage.getAllDrivers();
+      const approvedDrivers = allDrivers.filter(driver => driver.status === 'approved');
+      
+      res.json(approvedDrivers);
+    } catch (error) {
+      console.error('Error fetching restaurant drivers:', error);
+      res.status(500).json({ message: 'Failed to fetch drivers' });
+    }
+  });
+
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
