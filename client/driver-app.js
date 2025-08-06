@@ -110,14 +110,32 @@ class DriverApp {
         const phoneField = document.getElementById('driverPhone');
         if (phoneField && this.tg) {
             phoneField.placeholder = 'Tap to share your contact';
-            phoneField.addEventListener('click', () => {
-                this.tg.requestContact((contact) => {
-                    if (contact && contact.phone_number) {
-                        phoneField.value = contact.phone_number;
-                        phoneField.placeholder = 'Phone number from Telegram';
-                    }
-                });
-            });
+            phoneField.style.cursor = 'pointer';
+            phoneField.readOnly = true;
+            
+            const requestContact = () => {
+                // Use the proper Telegram Web App method
+                if (this.tg && this.tg.requestContact) {
+                    this.tg.requestContact((contact) => {
+                        console.log('Contact received:', contact);
+                        if (contact && contact.phone_number) {
+                            phoneField.value = contact.phone_number;
+                            phoneField.placeholder = 'Phone number from Telegram';
+                            phoneField.style.backgroundColor = '#f0f9f4';
+                            phoneField.readOnly = false; // Allow editing after receiving contact
+                        }
+                    });
+                } else {
+                    // Fallback: show input for manual entry
+                    phoneField.readOnly = false;
+                    phoneField.placeholder = 'Enter your phone number manually';
+                    phoneField.style.backgroundColor = '#fff3cd';
+                    phoneField.focus();
+                }
+            };
+            
+            phoneField.addEventListener('click', requestContact);
+            phoneField.addEventListener('focus', requestContact);
         }
     }
 

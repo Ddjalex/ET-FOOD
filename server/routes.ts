@@ -2080,6 +2080,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weeklyEarnings: '0.00'
       });
 
+      // Send real-time notification to SuperAdmin
+      broadcast('driverRegistration', {
+        type: 'new_driver_registration',
+        driver: {
+          id: driver.id,
+          name: driver.name,
+          phoneNumber: driver.phoneNumber,
+          telegramId: driver.telegramId,
+          status: driver.status,
+          createdAt: driver.createdAt
+        },
+        message: `New driver registration: ${driver.name}`
+      });
+
       res.status(201).json({
         message: 'Driver registration submitted successfully',
         driver

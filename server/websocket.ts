@@ -71,6 +71,13 @@ export const getSocketIO = (): SocketIOServer => {
 };
 
 // Notification functions
+export const broadcast = (event: string, data: any) => {
+  if (io) {
+    io.emit(event, data);
+    console.log(`Broadcasting ${event}:`, data);
+  }
+};
+
 export const notifyRestaurantAdmin = (restaurantId: string, event: string, data: any) => {
   if (io) {
     io.to(`restaurant:${restaurantId}`).to('role:restaurant_admin').emit(event, data);
@@ -105,9 +112,10 @@ export const broadcastMenuUpdate = (restaurantId: string, menuData: any) => {
   }
 };
 
-// General broadcast function
-export const broadcast = (event: { type: string, data: any }) => {
+// Notify SuperAdmin about driver registrations
+export const notifySuperAdmin = (event: string, data: any) => {
   if (io) {
-    io.emit(event.type, event.data);
+    io.to('role:superadmin').emit(event, data);
+    console.log(`SuperAdmin notification - ${event}:`, data);
   }
 };

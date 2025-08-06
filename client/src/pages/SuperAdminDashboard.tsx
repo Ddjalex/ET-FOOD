@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useLocation } from 'wouter';
 import DriversMap from '@/components/DriversMap';
+import { io, Socket } from 'socket.io-client';
 
 interface DashboardStats {
   totalRestaurants: number;
@@ -180,6 +181,9 @@ function SuperAdminDashboardContent() {
   const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(null);
   const [broadcastImageFile, setBroadcastImageFile] = useState<File | null>(null);
   const [broadcastImagePreview, setBroadcastImagePreview] = useState<string | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [pendingNotifications, setPendingNotifications] = useState<number>(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -832,6 +836,50 @@ function SuperAdminDashboardContent() {
     updateProfileMutation.mutate(data);
   };
 
+  // WebSocket connection and real-time notifications
+  useEffect(() => {
+    if (user) {
+      const newSocket = io('/');
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        setIsConnected(true);
+        console.log('WebSocket connected');
+        
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: user.id });
+      });
+
+      newSocket.on('disconnect', () => {
+        setIsConnected(false);
+        console.log('WebSocket disconnected');
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('WebSocket authenticated:', data);
+      });
+
+      newSocket.on('driverRegistration', (data) => {
+        console.log('New driver registration:', data);
+        setPendingNotifications(prev => prev + 1);
+        
+        // Show toast notification
+        toast({
+          title: 'New Driver Registration!',
+          description: `${data.driver.name} has registered as a driver`,
+          duration: 5000,
+        });
+
+        // Refresh driver data
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [user, toast, queryClient]);
+
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -872,6 +920,26 @@ function SuperAdminDashboardContent() {
           <p className="text-muted-foreground">Manage all restaurants, admins, and system operations</p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* WebSocket connection status */}
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-xs text-muted-foreground">
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+          
+          {/* Notification badge */}
+          {pendingNotifications > 0 && (
+            <div className="flex items-center space-x-1">
+              <Bell className="h-4 w-4 text-orange-500" />
+              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full cursor-pointer" 
+                    onClick={() => setPendingNotifications(0)}
+                    title="Click to clear notifications">
+                {pendingNotifications}
+              </span>
+            </div>
+          )}
+          
           <span className="text-sm text-muted-foreground">
             Welcome, {(user as any)?.firstName || 'Super Admin'}
           </span>

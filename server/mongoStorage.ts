@@ -1,7 +1,7 @@
 import { IStorage } from './storage';
 import { User } from './models/User';
 import { Restaurant } from './models/Restaurant';  
-import { Driver } from './models/Driver';
+import { Driver as DriverModel } from './models/Driver';
 import { SystemSettings } from './models/SystemSettings';
 import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
 import { MenuItem as MenuItemModel } from './models/MenuItem';
