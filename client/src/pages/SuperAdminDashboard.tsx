@@ -8,7 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map } from 'lucide-react';
+import { DriverLocationMap } from '@/components/DriverLocationMap';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -172,6 +173,8 @@ function SuperAdminDashboardContent() {
   const [isAdminDialogOpen, setIsAdminDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [isDriverInfoDialogOpen, setIsDriverInfoDialogOpen] = useState(false);
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -1832,7 +1835,7 @@ function SuperAdminDashboardContent() {
               <CardDescription>Real-time tracking of active drivers</CardDescription>
             </CardHeader>
             <CardContent>
-              <DriversMap drivers={drivers} />
+              <DriverLocationMap drivers={drivers} height="500px" />
             </CardContent>
           </Card>
 
@@ -1898,9 +1901,21 @@ function SuperAdminDashboardContent() {
                         <div className="flex flex-col gap-2 ml-4">
                           <Button
                             size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedDriver(driver);
+                              setIsDriverInfoDialogOpen(true);
+                            }}
+                            className="mb-2"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View Details
+                          </Button>
+                          <Button
+                            size="sm"
                             onClick={() => approveDriverMutation.mutate(driver.id)}
                             disabled={approveDriverMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 mb-2"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             {approveDriverMutation.isPending ? 'Approving...' : 'Approve'}
@@ -2009,6 +2024,18 @@ function SuperAdminDashboardContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedDriver(driver);
+                              setIsDriverInfoDialogOpen(true);
+                            }}
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View Info
+                          </Button>
                           {driver.isBlocked ? (
                             <Button
                               size="sm"
@@ -2758,6 +2785,206 @@ function SuperAdminDashboardContent() {
           </Card>
         </div>
       )}
+
+      {/* Driver Info Dialog */}
+      <Dialog open={isDriverInfoDialogOpen} onOpenChange={setIsDriverInfoDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Driver Information</DialogTitle>
+            <DialogDescription>
+              Complete driver profile and documentation
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDriver && (
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Personal Information</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <span className="font-medium">Full Name:</span>
+                      <p>{selectedDriver.user?.firstName} {selectedDriver.user?.lastName}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Email:</span>
+                      <p>{selectedDriver.user?.email}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Phone Number:</span>
+                      <p>{selectedDriver.user?.phoneNumber}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Registration Date:</span>
+                      <p>{new Date(selectedDriver.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Driver Status</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Approval Status:</span>
+                      <Badge variant={selectedDriver.isApproved ? 'default' : 'secondary'}>
+                        {selectedDriver.isApproved ? 'Approved' : 'Pending'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Online Status:</span>
+                      <Badge variant={selectedDriver.isOnline ? 'default' : 'outline'}>
+                        {selectedDriver.isOnline ? 'Online' : 'Offline'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Availability:</span>
+                      <Badge variant={selectedDriver.isAvailable ? 'default' : 'outline'}>
+                        {selectedDriver.isAvailable ? 'Available' : 'Busy'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">Rating:</span>
+                      <p>{selectedDriver.rating}⭐ ({selectedDriver.totalDeliveries} deliveries)</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Total Earnings:</span>
+                      <p>₹{selectedDriver.totalEarnings}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Vehicle Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="font-medium">License Number:</span>
+                    <p>{selectedDriver.licenseNumber}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Vehicle Type:</span>
+                    <p className="capitalize">{selectedDriver.vehicleType}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium">Vehicle Plate:</span>
+                    <p>{selectedDriver.vehiclePlate}</p>
+                  </div>
+                </div>
+                
+                {selectedDriver.zone && (
+                  <div>
+                    <span className="font-medium">Assigned Zone:</span>
+                    <p>{selectedDriver.zone}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Location Information */}
+              {selectedDriver.currentLocation && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Current Location</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="font-medium">Latitude:</span>
+                      <p>{selectedDriver.currentLocation.latitude}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Longitude:</span>
+                      <p>{selectedDriver.currentLocation.longitude}</p>
+                    </div>
+                  </div>
+                  {selectedDriver.currentLocation.timestamp && (
+                    <div>
+                      <span className="font-medium">Last Updated:</span>
+                      <p>{new Date(selectedDriver.currentLocation.timestamp).toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Government ID Documents */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Government ID Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {selectedDriver.govIdFrontUrl && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium">ID Front</h4>
+                      <div className="border rounded-lg overflow-hidden">
+                        <img 
+                          src={selectedDriver.govIdFrontUrl} 
+                          alt="Government ID Front"
+                          className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y0ZjRmNCIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {selectedDriver.govIdBackUrl && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium">ID Back</h4>
+                      <div className="border rounded-lg overflow-hidden">
+                        <img 
+                          src={selectedDriver.govIdBackUrl} 
+                          alt="Government ID Back"
+                          className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y0ZjRmNCIvPjx0ZXh0IHg9IjE1MCIgeT0iMTAwIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBub3QgYXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {!selectedDriver.govIdFrontUrl && !selectedDriver.govIdBackUrl && (
+                  <div className="text-center py-8 text-muted-foreground bg-gray-50 rounded-lg">
+                    <p>No government ID documents uploaded</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {!selectedDriver.isApproved && (
+                <div className="flex gap-4 pt-4 border-t">
+                  <Button
+                    onClick={() => {
+                      approveDriverMutation.mutate(selectedDriver.id);
+                      setIsDriverInfoDialogOpen(false);
+                    }}
+                    disabled={approveDriverMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {approveDriverMutation.isPending ? 'Approving...' : 'Approve Driver'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      rejectDriverMutation.mutate(selectedDriver.id);
+                      setIsDriverInfoDialogOpen(false);
+                    }}
+                    disabled={rejectDriverMutation.isPending}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {rejectDriverMutation.isPending ? 'Rejecting...' : 'Reject Driver'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

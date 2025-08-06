@@ -129,7 +129,20 @@ Choose an option:`, { reply_markup: keyboard });
         case 'driver_online':
           await storage.updateDriverStatus(driver.id, true, true);
           await ctx.answerCbQuery('You are now online and available for deliveries!');
-          await ctx.editMessageText('🟢 You are now ONLINE and available for deliveries!\n\nWe will notify you when new orders are available in your area.');
+          
+          // Request live location sharing
+          const locationKeyboard = {
+            inline_keyboard: [
+              [
+                {
+                  text: '📍 Share Live Location',
+                  callback_data: 'share_live_location'
+                }
+              ]
+            ]
+          };
+          
+          await ctx.editMessageText('🟢 You are now ONLINE and available for deliveries!\n\n📍 Please share your live location to receive nearby orders:', { reply_markup: locationKeyboard });
           break;
 
         case 'driver_offline':
@@ -168,6 +181,41 @@ Total Deliveries: ${driver.totalDeliveries}
 Average per Delivery: ₹${(driver.totalDeliveries || 0) > 0 ? (Number(driver.totalEarnings) / (driver.totalDeliveries || 1)).toFixed(2) : '0'}
 
 Rating: ${driver.rating}⭐`);
+          break;
+
+        case 'share_live_location':
+          await ctx.answerCbQuery();
+          
+          // Request live location from user
+          await ctx.reply('📍 Please share your current location:', {
+            reply_markup: {
+              keyboard: [
+                [
+                  {
+                    text: '📍 Share Live Location',
+                    request_location: true
+                  }
+                ]
+              ],
+              resize_keyboard: true,
+              one_time_keyboard: true
+            }
+          });
+          break;
+
+        case 'driver_dashboard':
+          await ctx.answerCbQuery();
+          const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+            : 'https://replit.com';
+          
+          const dashboardKeyboard = {
+            inline_keyboard: [
+              [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }]
+            ]
+          };
+          
+          await ctx.reply('🚗 Access your driver dashboard:', { reply_markup: dashboardKeyboard });
           break;
 
         case 'driver_requirements':
@@ -221,6 +269,40 @@ Ready to apply? Use the registration form!`);
     } catch (error) {
       console.error('Error updating driver location:', error);
       await ctx.reply('Sorry, unable to update your location. Please try again later.');
+    }
+  });
+
+  // Handle location sharing
+  bot.on('location', async (ctx) => {
+    const telegramUserId = ctx.from?.id.toString();
+    const location = ctx.message.location;
+    
+    if (!telegramUserId || !location) return;
+
+    try {
+      const user = await storage.getUserByTelegramId(telegramUserId);
+      if (!user) return;
+
+      const driver = await storage.getDriverByUserId(user.id);
+      if (!driver) return;
+
+      // Save driver's live location
+      await storage.updateDriverLocation(driver.id, {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timestamp: new Date()
+      });
+
+      await ctx.reply('✅ Location updated successfully!\n\nYou will now receive orders from nearby restaurants.', {
+        reply_markup: {
+          remove_keyboard: true
+        }
+      });
+
+      console.log(`Driver ${driver.name} location updated: ${location.latitude}, ${location.longitude}`);
+    } catch (error) {
+      console.error('Error saving driver location:', error);
+      await ctx.reply('❌ Failed to update location. Please try again.');
     }
   });
 }

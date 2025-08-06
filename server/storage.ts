@@ -112,7 +112,11 @@ export interface IStorage {
   // Driver management methods
   getAllDrivers(): Promise<Driver[]>;
   approveDriver(driverId: string): Promise<Driver>;
-  rejectDriver(driverId: string): Promise<void>;
+  rejectDriver(driverId: string): Promise<Driver | void>;
+  blockDriver(driverId: string): Promise<Driver>;
+  unblockDriver(driverId: string): Promise<Driver>;
+  deleteDriver(driverId: string): Promise<void>;
+  saveLiveLocation(driverId: string, location: any): Promise<void>;
 
   // Analytics operations
   getDashboardStats(): Promise<any>;
@@ -621,6 +625,39 @@ class MemoryStorage implements IStorage {
     const updated = { ...existing, isOnline, isAvailable, updatedAt: new Date() };
     this.drivers.set(id, updated);
     return updated;
+  }
+
+  async rejectDriver(id: string): Promise<Driver> {
+    const driver = this.drivers.get(id);
+    if (!driver) throw new Error('Driver not found');
+    const rejected = { ...driver, isApproved: false, updatedAt: new Date() };
+    this.drivers.set(id, rejected);
+    return rejected;
+  }
+
+  async blockDriver(id: string): Promise<Driver> {
+    const driver = this.drivers.get(id);
+    if (!driver) throw new Error('Driver not found');
+    const blocked = { ...driver, isBlocked: true, updatedAt: new Date() };
+    this.drivers.set(id, blocked);
+    return blocked;
+  }
+
+  async unblockDriver(id: string): Promise<Driver> {
+    const driver = this.drivers.get(id);
+    if (!driver) throw new Error('Driver not found');
+    const unblocked = { ...driver, isBlocked: false, updatedAt: new Date() };
+    this.drivers.set(id, unblocked);
+    return unblocked;
+  }
+
+  async deleteDriver(id: string): Promise<void> {
+    if (!this.drivers.has(id)) throw new Error('Driver not found');
+    this.drivers.delete(id);
+  }
+
+  async saveLiveLocation(driverId: string, location: any): Promise<void> {
+    await this.updateDriverLocation(driverId, location);
   }
 
   // Delivery operations
