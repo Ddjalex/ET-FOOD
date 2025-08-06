@@ -21,7 +21,11 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
   drivers, 
   height = '400px' 
 }) => {
-  const onlineDrivers = drivers.filter(d => d.currentLocation);
+  const onlineDrivers = drivers.filter(d => 
+    d.currentLocation && 
+    typeof d.currentLocation.latitude === 'number' && 
+    typeof d.currentLocation.longitude === 'number'
+  );
 
   return (
     <div 
@@ -38,7 +42,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
         <div className="mt-4 space-y-1">
           {onlineDrivers.slice(0, 3).map(driver => (
             <div key={driver.id} className="text-xs text-gray-500">
-              {driver.name}: {driver.currentLocation?.latitude.toFixed(4)}, {driver.currentLocation?.longitude.toFixed(4)}
+              {driver.name}: {driver.currentLocation?.latitude?.toFixed(4) || '0.0000'}, {driver.currentLocation?.longitude?.toFixed(4) || '0.0000'}
             </div>
           ))}
           {onlineDrivers.length > 3 && (
