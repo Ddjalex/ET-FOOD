@@ -425,6 +425,57 @@ class DriverApp {
         }
     }
 
+    requestLiveLocation() {
+        if (this.tg && this.tg.requestLocation) {
+            this.tg.requestLocation((location) => {
+                if (location) {
+                    this.updateLocation(location.latitude, location.longitude);
+                    this.saveLiveLocation(location.latitude, location.longitude);
+                }
+            });
+        } else {
+            // Fallback for regular geolocation
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        this.updateLocation(lat, lng);
+                        this.saveLiveLocation(lat, lng);
+                    },
+                    (error) => {
+                        console.error('Location error:', error);
+                        if (this.tg) {
+                            this.tg.showAlert('Please enable location access to receive orders');
+                        }
+                    }
+                );
+            }
+        }
+    }
+
+    async saveLiveLocation(latitude, longitude) {
+        try {
+            const response = await fetch(`/api/drivers/${this.driverData.id}/live-location`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude,
+                    longitude,
+                    timestamp: new Date().toISOString()
+                })
+            });
+
+            if (response.ok) {
+                console.log('Live location saved successfully');
+            }
+        } catch (error) {
+            console.error('Error saving live location:', error);
+        }
+    }
+
     async updateLocation(latitude, longitude) {
         try {
             const response = await fetch(`/api/drivers/${this.driverData.id}/location`, {
@@ -440,7 +491,10 @@ class DriverApp {
 
             if (response.ok) {
                 this.driverData.currentLocation = { lat: latitude, lng: longitude };
-                document.getElementById('locationPrompt').classList.add('hidden');
+                const locationPrompt = document.getElementById('locationPrompt');
+                if (locationPrompt) {
+                    locationPrompt.classList.add('hidden');
+                }
                 
                 if (this.tg) {
                     this.tg.showAlert('Location updated successfully!');
@@ -479,7 +533,9 @@ class DriverApp {
             this.driverData = driverData;
             this.showDashboard();
             if (this.tg) {
-                this.tg.showAlert('Congratulations! Your driver registration has been approved.');
+                this.tg.showAlert('Congratulations! Your driver registration has been approved. Please share your live location to start receiving orders.');
+                // Request live location sharing
+                this.requestLiveLocation();
             }
         });
     }

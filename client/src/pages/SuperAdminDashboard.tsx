@@ -824,6 +824,90 @@ function SuperAdminDashboardContent() {
     }
   });
 
+  const blockDriverMutation = useMutation({
+    mutationFn: (driverId: string) => 
+      fetch(`/api/superadmin/drivers/${driverId}/block`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to block driver');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      toast({
+        title: 'Success',
+        description: 'Driver blocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to block driver',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const unblockDriverMutation = useMutation({
+    mutationFn: (driverId: string) => 
+      fetch(`/api/superadmin/drivers/${driverId}/unblock`, {
+        method: 'POST',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to unblock driver');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      toast({
+        title: 'Success',
+        description: 'Driver unblocked successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to unblock driver',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteDriverMutation = useMutation({
+    mutationFn: (driverId: string) => 
+      fetch(`/api/superadmin/drivers/${driverId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      }).then(async (res) => {
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to delete driver');
+        }
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      toast({
+        title: 'Success',
+        description: 'Driver deleted successfully'
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete driver',
+        variant: 'destructive'
+      });
+    }
+  });
+
   const onUpdateSettings = (data: SettingsFormData) => {
     updateSettingsMutation.mutate(data);
   };
@@ -1854,6 +1938,7 @@ function SuperAdminDashboardContent() {
                     <TableHead>Performance</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1880,7 +1965,12 @@ function SuperAdminDashboardContent() {
                           <Badge variant={driver.isApproved ? 'default' : 'secondary'}>
                             {driver.isApproved ? 'Approved' : 'Pending'}
                           </Badge>
-                          {driver.isApproved && (
+                          {driver.isBlocked && (
+                            <Badge variant="destructive" className="text-xs">
+                              Blocked
+                            </Badge>
+                          )}
+                          {driver.isApproved && !driver.isBlocked && (
                             <div className="flex gap-1">
                               <Badge variant={driver.isOnline ? 'default' : 'outline'} className="text-xs">
                                 {driver.isOnline ? 'Online' : 'Offline'}
@@ -1914,6 +2004,46 @@ function SuperAdminDashboardContent() {
                       </TableCell>
                       <TableCell className="text-sm">
                         {new Date(driver.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {driver.isBlocked ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => unblockDriverMutation.mutate(driver.id)}
+                              disabled={unblockDriverMutation.isPending}
+                              className="text-green-600 border-green-600 hover:bg-green-50"
+                            >
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              {unblockDriverMutation.isPending ? 'Unblocking...' : 'Unblock'}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => blockDriverMutation.mutate(driver.id)}
+                              disabled={blockDriverMutation.isPending}
+                              className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                            >
+                              <Shield className="w-3 h-3 mr-1" />
+                              {blockDriverMutation.isPending ? 'Blocking...' : 'Block'}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to permanently delete this driver? This action cannot be undone.')) {
+                                deleteDriverMutation.mutate(driver.id);
+                              }
+                            }}
+                            disabled={deleteDriverMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            {deleteDriverMutation.isPending ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

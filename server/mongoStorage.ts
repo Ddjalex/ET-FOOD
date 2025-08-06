@@ -1330,6 +1330,53 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  async blockDriver(driverId: string): Promise<void> {
+    try {
+      await DriverModel.findByIdAndUpdate(driverId, { 
+        isBlocked: true,
+        isOnline: false,
+        isAvailable: false 
+      });
+    } catch (error) {
+      console.error('Error blocking driver:', error);
+      throw error;
+    }
+  }
+
+  async unblockDriver(driverId: string): Promise<void> {
+    try {
+      await DriverModel.findByIdAndUpdate(driverId, { isBlocked: false });
+    } catch (error) {
+      console.error('Error unblocking driver:', error);
+      throw error;
+    }
+  }
+
+  async deleteDriver(driverId: string): Promise<void> {
+    try {
+      await DriverModel.findByIdAndDelete(driverId);
+    } catch (error) {
+      console.error('Error deleting driver:', error);
+      throw error;
+    }
+  }
+
+  async saveLiveLocation(driverId: string, latitude: number, longitude: number, timestamp?: string): Promise<void> {
+    try {
+      await DriverModel.findByIdAndUpdate(driverId, { 
+        liveLocation: {
+          lat: latitude,
+          lng: longitude,
+          timestamp: timestamp || new Date().toISOString()
+        },
+        lastLocationUpdate: new Date()
+      });
+    } catch (error) {
+      console.error('Error saving live location:', error);
+      throw error;
+    }
+  }
+
   async getDashboardStats(): Promise<any> {
     try {
       const totalRestaurants = await Restaurant.countDocuments();

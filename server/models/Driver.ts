@@ -18,6 +18,13 @@ export interface IDriver extends Document {
     lat: number;
     lng: number;
   };
+  liveLocation?: {
+    lat: number;
+    lng: number;
+    timestamp: string;
+  };
+  lastLocationUpdate?: Date;
+  isBlocked: boolean;
   status: 'pending_approval' | 'active' | 'rejected' | 'inactive';
   isOnline: boolean;
   isAvailable: boolean;
@@ -50,6 +57,12 @@ const DriverSchema = new Schema<IDriver>({
     lat: Number,
     lng: Number
   },
+  liveLocation: {
+    lat: Number,
+    lng: Number,
+    timestamp: String
+  },
+  lastLocationUpdate: Date,
   status: { 
     type: String, 
     enum: ['pending_approval', 'active', 'rejected', 'inactive'], 
@@ -58,6 +71,7 @@ const DriverSchema = new Schema<IDriver>({
   isOnline: { type: Boolean, default: false },
   isAvailable: { type: Boolean, default: false },
   isApproved: { type: Boolean, default: false },
+  isBlocked: { type: Boolean, default: false },
   rating: { type: String, default: '0.00' },
   totalDeliveries: { type: Number, default: 0 },
   totalEarnings: { type: String, default: '0.00' },

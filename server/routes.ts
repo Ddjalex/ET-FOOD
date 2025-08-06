@@ -1187,6 +1187,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const driver = await storage.approveDriver(req.params.id);
+      
+      // Send notification to driver via Telegram to request live location
+      try {
+        const driverData = await storage.getDriverByTelegramId(driver.telegramId);
+        if (driverData && driverData.telegramId) {
+          await sendLocationRequestToDriver(driverData.telegramId, driverData.name);
+        }
+      } catch (locationError) {
+        console.error('Failed to send location request to driver:', locationError);
+        // Don't fail the approval if location request fails
+      }
+      
       res.json(driver);
     } catch (error) {
       console.error('Failed to approve driver:', error);
@@ -1206,6 +1218,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to reject driver:', error);
       res.status(500).json({ message: 'Failed to reject driver' });
+    }
+  });
+
+  app.post('/api/superadmin/drivers/:id/block', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      await storage.blockDriver(req.params.id);
+      res.json({ message: 'Driver blocked successfully' });
+    } catch (error) {
+      console.error('Failed to block driver:', error);
+      res.status(500).json({ message: 'Failed to block driver' });
+    }
+  });
+
+  app.post('/api/superadmin/drivers/:id/unblock', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      await storage.unblockDriver(req.params.id);
+      res.json({ message: 'Driver unblocked successfully' });
+    } catch (error) {
+      console.error('Failed to unblock driver:', error);
+      res.status(500).json({ message: 'Failed to unblock driver' });
+    }
+  });
+
+  app.delete('/api/superadmin/drivers/:id', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      await storage.deleteDriver(req.params.id);
+      res.json({ message: 'Driver deleted successfully' });
+    } catch (error) {
+      console.error('Failed to delete driver:', error);
+      res.status(500).json({ message: 'Failed to delete driver' });
     }
   });
 
@@ -2023,6 +2080,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Function to send location request to driver via Telegram
+  async function sendLocationRequestToDriver(telegramId: string, driverName: string) {
+    try {
+      // Send message via driver bot
+      const message = `🎉 Congratulations ${driverName}! Your driver application has been approved.
+
+📍 To start receiving delivery orders, please share your live location by clicking the button below. This helps us assign nearby orders to you.
+
+Your location will be used only for order assignment and delivery tracking purposes.`;
+
+      // Send via driver bot with location request
+      if (driverBot) {
+        await driverBot.telegram.sendMessage(telegramId, message, {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '📍 Share Live Location',
+                  callback_data: 'request_live_location'
+                }
+              ]
+            ]
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error sending location request to driver:', error);
+      throw error;
+    }
+  }
+
   // ==============================================
   // DRIVER API ROUTES
   // ==============================================
@@ -2231,6 +2319,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating driver location:', error);
       res.status(500).json({ message: 'Failed to update driver location' });
+    }
+  });
+
+  // Driver live location save endpoint
+  app.post('/api/drivers/:id/live-location', async (req, res) => {
+    try {
+      const { latitude, longitude, timestamp } = req.body;
+      
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      await storage.saveLiveLocation(req.params.id, latitude, longitude, timestamp);
+      res.json({ message: 'Live location saved successfully' });
+    } catch (error) {
+      console.error('Failed to save live location:', error);
+      res.status(500).json({ message: 'Failed to save live location' });
     }
   });
 
