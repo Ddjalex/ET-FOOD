@@ -375,31 +375,65 @@ class DriverApp {
     }
 
     requestLiveLocation() {
+        console.log('Requesting live location...');
+        
         if (this.tg && this.tg.requestLocation) {
+            console.log('Using Telegram location API');
             this.tg.requestLocation((location) => {
                 if (location) {
+                    console.log('Location received from Telegram:', location);
                     this.updateLocation(location.latitude, location.longitude);
                     this.saveLiveLocation(location.latitude, location.longitude);
                 }
             });
         } else {
+            console.log('Using browser geolocation API');
             // Fallback for regular geolocation
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
+                        console.log('Location received from browser:', lat, lng);
                         this.updateLocation(lat, lng);
                         this.saveLiveLocation(lat, lng);
                     },
                     (error) => {
                         console.error('Location error:', error);
+                        const errorMessage = this.getLocationErrorMessage(error);
                         if (this.tg) {
-                            this.tg.showAlert('Please enable location access to receive orders');
+                            this.tg.showAlert(errorMessage);
+                        } else {
+                            alert(errorMessage);
                         }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
                     }
                 );
+            } else {
+                const errorMsg = 'Geolocation is not supported by this device';
+                if (this.tg) {
+                    this.tg.showAlert(errorMsg);
+                } else {
+                    alert(errorMsg);
+                }
             }
+        }
+    }
+
+    getLocationErrorMessage(error) {
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                return "Location access denied. Please enable location permissions and try again.";
+            case error.POSITION_UNAVAILABLE:
+                return "Location information is unavailable. Please check your GPS settings.";
+            case error.TIMEOUT:
+                return "Location request timed out. Please try again.";
+            default:
+                return "An unknown error occurred while retrieving location.";
         }
     }
 
@@ -427,6 +461,8 @@ class DriverApp {
 
     async updateLocation(latitude, longitude) {
         try {
+            console.log('Updating location in backend:', latitude, longitude);
+            
             const response = await fetch(`/api/drivers/${this.driverData.id}/location`, {
                 method: 'PUT',
                 headers: {
@@ -439,22 +475,50 @@ class DriverApp {
             });
 
             if (response.ok) {
+                console.log('Location updated successfully in backend');
                 this.driverData.currentLocation = { lat: latitude, lng: longitude };
-                const locationPrompt = document.getElementById('locationPrompt');
-                if (locationPrompt) {
-                    locationPrompt.classList.add('hidden');
-                }
+                
+                // Update UI to show location is shared
+                this.updateLocationStatus(true);
                 
                 if (this.tg) {
-                    this.tg.showAlert('Location updated successfully!');
+                    this.tg.showAlert('Location updated successfully! You can now receive orders.');
+                } else {
+                    alert('Location updated successfully! You can now receive orders.');
                 }
             } else {
+                console.error('Failed to update location:', response.status);
                 throw new Error('Failed to update location');
             }
         } catch (error) {
             console.error('Error updating location:', error);
             if (this.tg) {
-                this.tg.showAlert('Failed to update location');
+                this.tg.showAlert('Failed to update location. Please try again.');
+            } else {
+                alert('Failed to update location. Please try again.');
+            }
+        }
+    }
+
+    updateLocationStatus(isShared) {
+        const locationPrompt = document.getElementById('locationPrompt');
+        if (isShared) {
+            locationPrompt.classList.add('hidden');
+            // Add a location indicator to the status
+            const statusIndicator = document.getElementById('statusIndicator');
+            if (statusIndicator && !statusIndicator.querySelector('.location-indicator')) {
+                const locationIndicator = document.createElement('div');
+                locationIndicator.className = 'location-indicator';
+                locationIndicator.innerHTML = '📍 Location Shared';
+                locationIndicator.style.cssText = 'font-size: 12px; color: #22c55e; margin-top: 4px;';
+                statusIndicator.appendChild(locationIndicator);
+            }
+        } else {
+            locationPrompt.classList.remove('hidden');
+            // Remove location indicator
+            const locationIndicator = document.querySelector('.location-indicator');
+            if (locationIndicator) {
+                locationIndicator.remove();
             }
         }
     }

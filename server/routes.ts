@@ -1261,6 +1261,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update driver location
+  app.put('/api/drivers/:driverId/location', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { latitude, longitude } = req.body;
+
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: 'Latitude and longitude are required' });
+      }
+
+      const updatedDriver = await storage.updateDriverLocation(driverId, {
+        lat: latitude,
+        lng: longitude
+      });
+
+      // Also update driver status to online when location is shared
+      await storage.updateDriverStatus(driverId, true, true);
+
+      broadcast('driver_location_updated', {
+        driverId,
+        location: { lat: latitude, lng: longitude }
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Location updated successfully',
+        driver: updatedDriver 
+      });
+    } catch (error) {
+      console.error('Error updating driver location:', error);
+      res.status(500).json({ message: 'Failed to update location' });
+    }
+  });
+
+  // Save driver live location
+  app.post('/api/drivers/:driverId/live-location', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { latitude, longitude, timestamp } = req.body;
+
+      await storage.saveLiveLocation(driverId, {
+        lat: latitude,
+        lng: longitude,
+        timestamp: timestamp || new Date().toISOString()
+      });
+
+      res.json({ success: true, message: 'Live location saved successfully' });
+    } catch (error) {
+      console.error('Error saving live location:', error);
+      res.status(500).json({ message: 'Failed to save live location' });
+    }
+  });
+
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
@@ -2280,7 +2333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 ✅ You can now start accepting delivery orders!
 
-Use the /driver command to access your driver dashboard and start earning with BeU Delivery.`;
+📍 IMPORTANT: To receive orders, you must share your live location when you go online.
+
+Use the buttons below to get started:`;
 
       // Send notification via driver bot
       await driverBot.telegram.sendMessage(telegramId, message, {
@@ -2290,6 +2345,12 @@ Use the /driver command to access your driver dashboard and start earning with B
               {
                 text: '🚗 Open Driver Dashboard',
                 callback_data: 'driver_dashboard'
+              }
+            ],
+            [
+              {
+                text: '📍 Share Location & Go Online',
+                callback_data: 'share_live_location'
               }
             ]
           ]

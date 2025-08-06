@@ -548,7 +548,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-primary" onclick="submitRegistration()" id="submitBtn">
+                <button class="btn btn-primary" onclick="driverApp.submitRegistration()" id="submitBtn">
                     Submit Registration
                 </button>
             </div>
@@ -573,7 +573,7 @@
                 <div>
                     <strong id="statusText">Offline</strong>
                     <label class="toggle-button">
-                        <input type="checkbox" id="onlineToggle" onchange="toggleOnlineStatus()">
+                        <input type="checkbox" id="onlineToggle" onchange="driverApp.toggleOnlineStatus()">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -588,7 +588,7 @@
                 <p style="margin-bottom: 20px; color: #6b7280;">
                     To receive delivery orders, please share your live location with us.
                 </p>
-                <button class="btn btn-primary" onclick="requestLocation()">
+                <button class="btn btn-primary" onclick="driverApp.requestLiveLocation()">
                     📍 Share Live Location
                 </button>
             </div>
@@ -660,5 +660,13 @@
     </div>
 
     <script src="driver-app.js"></script>
+    <script>
+        // Initialize driver app globally
+        let driverApp;
+        window.addEventListener('DOMContentLoaded', () => {
+            driverApp = new DriverApp();
+            window.driverApp = driverApp; // Make it globally accessible
+        });
+    </script>
 </body>
 </html>
