@@ -689,36 +689,79 @@ export function KitchenDashboard() {
           )}
 
           <div className="flex gap-2 pt-2">
+            {/* New orders need to be confirmed first */}
+            {order.status === 'pending' && (
+              <Button
+                onClick={() => handleCheckAvailability(order)}
+                className="flex items-center gap-2"
+                data-testid={`button-check-availability-${order.id}`}
+              >
+                <Eye className="w-4 h-4" />
+                Check Availability
+              </Button>
+            )}
+
+            {/* Confirmed orders can be checked for availability */}
             {order.status === 'confirmed' && (
               <Button
                 onClick={() => handleCheckAvailability(order)}
                 className="flex items-center gap-2"
+                data-testid={`button-check-availability-${order.id}`}
               >
                 <Eye className="w-4 h-4" />
                 Check Availability
               </Button>
             )}
             
+            {/* Orders ready for preparation */}
             {order.status === 'preparing' && (
               <Button
                 onClick={() => startPrepareMutation.mutate(order.id)}
                 disabled={startPrepareMutation.isPending}
                 className="flex items-center gap-2"
+                data-testid={`button-start-prepare-${order.id}`}
               >
                 <Play className="w-4 h-4" />
-                Start Prepare
+                Start Preparation
               </Button>
             )}
             
+            {/* Orders currently being prepared */}
             {order.status === 'in_preparation' && (
               <Button
                 onClick={() => readyForPickupMutation.mutate(order.id)}
                 disabled={readyForPickupMutation.isPending}
                 className="flex items-center gap-2"
+                data-testid={`button-ready-pickup-${order.id}`}
               >
                 <Package className="w-4 h-4" />
                 Ready for Pickup
               </Button>
+            )}
+
+            {/* Orders waiting for admin intervention */}
+            {order.status === 'awaiting_admin_intervention' && (
+              <div className="flex items-center gap-2">
+                <Badge variant="destructive" className="text-xs">
+                  Waiting for Admin
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCheckAvailability(order)}
+                  data-testid={`button-recheck-availability-${order.id}`}
+                >
+                  <Eye className="w-4 h-4" />
+                  Recheck
+                </Button>
+              </div>
+            )}
+
+            {/* Completed orders */}
+            {order.status === 'ready_for_pickup' && (
+              <Badge variant="default" className="text-xs">
+                Ready for Delivery
+              </Badge>
             )}
           </div>
         </div>
