@@ -684,8 +684,8 @@ class DriverApp {
             console.log('🚨 New order notification received:', data);
             if (data.driverId === this.driverData?.id) {
                 this.handleNewOrderNotification(data.order);
-                // Show immediate visual notification
-                this.showOrderNotificationPopup(data.order);
+                // Show enhanced interactive modal instead of simple popup
+                this.showInteractiveOrderModal(data.order);
             }
         });
 
@@ -1434,6 +1434,445 @@ class DriverApp {
         }
         
         rejectedScreen.classList.remove('hidden');
+    }
+
+    // Enhanced Interactive Order Modal Methods
+    showInteractiveOrderModal(order) {
+        console.log('Showing interactive order modal for:', order);
+        
+        // Store current pending order
+        this.pendingOrder = order;
+        
+        // Populate modal with order details
+        document.getElementById('modalOrderNumber').textContent = order.orderNumber;
+        document.getElementById('modalCustomerName').textContent = order.customerName || 'Unknown Customer';
+        document.getElementById('modalRestaurantName').textContent = order.restaurantName || 'Unknown Restaurant';
+        
+        // Set up addresses with fallback
+        document.getElementById('modalRestaurantAddress').textContent = order.restaurantLocation?.address || 'Restaurant Address';
+        document.getElementById('modalCustomerAddress').textContent = order.deliveryAddress || 'Customer Address';
+        
+        // Initialize map
+        this.initializeOrderMap(order);
+        
+        // Calculate and display distance
+        this.calculateOrderDistance(order);
+        
+        // Set up action buttons
+        this.setupModalActionButtons(order);
+        
+        // Show modal with animation
+        const overlay = document.getElementById('orderNotificationOverlay');
+        overlay.style.display = 'block';
+        
+        // Play notification sound and vibrate if available
+        this.playNotificationSound();
+        this.vibrateDevice();
+        
+        // Auto-dismiss after 30 seconds if no action
+        this.modalTimeout = setTimeout(() => {
+            this.closeOrderModal();
+        }, 30000);
+    }
+
+    initializeOrderMap(order) {
+        // Clear existing map if present
+        const mapContainer = document.getElementById('orderMap');
+        mapContainer.innerHTML = '';
+        
+        try {
+            // Use order location data with fallbacks
+            const restaurantLat = order.restaurantLocation?.lat || order.restaurantLat || 9.005;
+            const restaurantLng = order.restaurantLocation?.lng || order.restaurantLng || 38.7639;
+            const customerLat = order.deliveryLocation?.lat || order.customerLat || 9.015;
+            const customerLng = order.deliveryLocation?.lng || order.customerLng || 38.7739;
+            
+            // Initialize Leaflet map
+            const map = L.map('orderMap').setView([restaurantLat, restaurantLng], 13);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Add restaurant marker (orange)
+            const restaurantMarker = L.marker([restaurantLat, restaurantLng], {
+                icon: L.divIcon({
+                    html: '🏪',
+                    iconSize: [30, 30],
+                    className: 'custom-marker restaurant-marker'
+                })
+            }).addTo(map);
+            restaurantMarker.bindPopup(`Restaurant: ${order.restaurantName}`);
+            
+            // Add customer marker (blue)
+            const customerMarker = L.marker([customerLat, customerLng], {
+                icon: L.divIcon({
+                    html: '📍',
+                    iconSize: [30, 30],
+                    className: 'custom-marker customer-marker'
+                })
+            }).addTo(map);
+            customerMarker.bindPopup(`Customer: ${order.customerName}`);
+            
+            // Add driver location if available
+            if (this.driverData?.currentLocation) {
+                const driverMarker = L.marker([this.driverData.currentLocation.lat, this.driverData.currentLocation.lng], {
+                    icon: L.divIcon({
+                        html: '🚗',
+                        iconSize: [30, 30],
+                        className: 'custom-marker driver-marker'
+                    })
+                }).addTo(map);
+                driverMarker.bindPopup('Your Location');
+            }
+            
+            // Fit map to show all markers
+            const group = new L.featureGroup([restaurantMarker, customerMarker]);
+            if (this.driverData?.currentLocation) {
+                // Include driver location in bounds
+                const bounds = L.latLngBounds([
+                    [restaurantLat, restaurantLng],
+                    [customerLat, customerLng],
+                    [this.driverData.currentLocation.lat, this.driverData.currentLocation.lng]
+                ]);
+                map.fitBounds(bounds, { padding: [10, 10] });
+            } else {
+                map.fitBounds(group.getBounds(), { padding: [10, 10] });
+            }
+            
+            // Store map reference
+            this.orderMap = map;
+            
+        } catch (error) {
+            console.error('Error initializing order map:', error);
+            // Fallback: show simple text
+            mapContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; background: #f8f9fa; color: #6b7280;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🗺️</div>
+                    <div>Map unavailable</div>
+                    <div style="font-size: 12px;">Restaurant → Customer</div>
+                </div>
+            `;
+        }
+    }
+
+    calculateOrderDistance(order) {
+        const distanceElement = document.getElementById('modalDistance');
+        
+        try {
+            if (!this.driverData?.currentLocation) {
+                distanceElement.textContent = 'Location needed';
+                return;
+            }
+            
+            const restaurantLat = order.restaurantLocation?.lat || order.restaurantLat;
+            const restaurantLng = order.restaurantLocation?.lng || order.restaurantLng;
+            
+            if (!restaurantLat || !restaurantLng) {
+                distanceElement.textContent = 'Unknown';
+                return;
+            }
+            
+            const distance = this.getDistanceBetweenPoints(
+                this.driverData.currentLocation.lat,
+                this.driverData.currentLocation.lng,
+                restaurantLat,
+                restaurantLng
+            );
+            
+            distanceElement.textContent = `${distance.toFixed(1)} km`;
+            
+        } catch (error) {
+            console.error('Error calculating distance:', error);
+            distanceElement.textContent = 'Unknown';
+        }
+    }
+
+    setupModalActionButtons(order) {
+        const acceptBtn = document.getElementById('acceptOrderBtn');
+        const rejectBtn = document.getElementById('rejectOrderBtn');
+        
+        // Clear existing event listeners
+        acceptBtn.onclick = null;
+        rejectBtn.onclick = null;
+        
+        // Set up accept button
+        acceptBtn.onclick = () => {
+            this.acceptOrderFromModal(order.orderId || order.id);
+        };
+        
+        // Set up reject button
+        rejectBtn.onclick = () => {
+            this.rejectOrderFromModal();
+        };
+        
+        // Enable buttons
+        acceptBtn.disabled = false;
+        rejectBtn.disabled = false;
+        acceptBtn.classList.remove('btn-disabled');
+        rejectBtn.classList.remove('btn-disabled');
+    }
+
+    async acceptOrderFromModal(orderId) {
+        console.log('Accepting order from modal:', orderId);
+        
+        try {
+            // Disable buttons to prevent double-clicking
+            this.disableModalButtons();
+            
+            // Call the enhanced accept order API
+            const response = await fetch(`/api/drivers/accept-order/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    driverId: this.driverData.id 
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Order accepted successfully:', result);
+                
+                // Close modal
+                this.closeOrderModal();
+                
+                // Show success message
+                this.showAlert('Order accepted successfully! 🎉');
+                
+                // Update driver status to busy
+                await this.updateDriverStatus(true, false);
+                
+                // Refresh dashboard to show new active order
+                this.refreshDriverData();
+                this.loadActiveOrders();
+                
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to accept order');
+            }
+            
+        } catch (error) {
+            console.error('Error accepting order:', error);
+            this.showAlert(`Failed to accept order: ${error.message}`);
+            
+            // Re-enable buttons
+            this.enableModalButtons();
+        }
+    }
+
+    rejectOrderFromModal() {
+        console.log('Rejecting order from modal');
+        
+        // Close modal
+        this.closeOrderModal();
+        
+        // Show brief message
+        this.showAlert('Order declined');
+        
+        // Clear pending order
+        this.pendingOrder = null;
+    }
+
+    closeOrderModal() {
+        const overlay = document.getElementById('orderNotificationOverlay');
+        overlay.style.display = 'none';
+        
+        // Clear timeout
+        if (this.modalTimeout) {
+            clearTimeout(this.modalTimeout);
+            this.modalTimeout = null;
+        }
+        
+        // Cleanup map
+        if (this.orderMap) {
+            this.orderMap.remove();
+            this.orderMap = null;
+        }
+        
+        // Clear pending order
+        this.pendingOrder = null;
+    }
+
+    disableModalButtons() {
+        const acceptBtn = document.getElementById('acceptOrderBtn');
+        const rejectBtn = document.getElementById('rejectOrderBtn');
+        
+        acceptBtn.disabled = true;
+        rejectBtn.disabled = true;
+        acceptBtn.classList.add('btn-disabled');
+        rejectBtn.classList.add('btn-disabled');
+        
+        acceptBtn.textContent = 'Processing...';
+    }
+
+    enableModalButtons() {
+        const acceptBtn = document.getElementById('acceptOrderBtn');
+        const rejectBtn = document.getElementById('rejectOrderBtn');
+        
+        acceptBtn.disabled = false;
+        rejectBtn.disabled = false;
+        acceptBtn.classList.remove('btn-disabled');
+        rejectBtn.classList.remove('btn-disabled');
+        
+        acceptBtn.textContent = '✅ Accept Order';
+    }
+
+    async updateDriverStatus(isOnline, isAvailable) {
+        try {
+            const response = await fetch(`/api/drivers/${this.driverData.id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    isOnline, 
+                    isAvailable 
+                })
+            });
+
+            if (response.ok) {
+                console.log('Driver status updated successfully');
+            } else {
+                console.error('Failed to update driver status');
+            }
+        } catch (error) {
+            console.error('Error updating driver status:', error);
+        }
+    }
+
+    async loadActiveOrders() {
+        try {
+            const response = await fetch(`/api/drivers/${this.driverData.id}/orders/assigned`);
+            
+            if (response.ok) {
+                const orders = await response.json();
+                
+                if (orders.length > 0) {
+                    // Show active order section
+                    const activeSection = document.getElementById('activeOrderSection');
+                    const activeCard = document.getElementById('activeOrderCard');
+                    
+                    activeCard.innerHTML = '';
+                    orders.forEach(order => {
+                        const orderCard = this.createActiveOrderCard(order);
+                        activeCard.appendChild(orderCard);
+                    });
+                    
+                    activeSection.classList.remove('hidden');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading active orders:', error);
+        }
+    }
+
+    createActiveOrderCard(order) {
+        const card = document.createElement('div');
+        card.className = 'order-card';
+        
+        const phase = this.getDeliveryPhase(order.status);
+        const navigationActions = this.createNavigationActions(order);
+        
+        card.innerHTML = `
+            <div class="order-phase ${phase.class}">
+                ${phase.text}
+            </div>
+            
+            <div class="order-header">
+                <div class="order-id">Order #${order.orderNumber}</div>
+                <div class="order-status ${order.status}">${order.status}</div>
+            </div>
+            
+            <div class="address-info">
+                <div class="address-label">Restaurant</div>
+                <div class="address-text">${order.restaurantName}</div>
+            </div>
+            
+            <div class="address-info">
+                <div class="address-label">Customer</div>
+                <div class="address-text">${order.deliveryAddress || 'Customer Address'}</div>
+            </div>
+            
+            ${navigationActions}
+        `;
+        
+        return card;
+    }
+
+    getDeliveryPhase(status) {
+        if (status === 'assigned' || status === 'driver_assigned') {
+            return { class: 'phase-pickup', text: 'Phase 1: Go to Restaurant' };
+        } else if (status === 'picked_up') {
+            return { class: 'phase-delivery', text: 'Phase 2: Deliver to Customer' };
+        } else {
+            return { class: 'phase-pickup', text: 'Active Order' };
+        }
+    }
+
+    createNavigationActions(order) {
+        const actions = [];
+        
+        if (order.status === 'assigned' || order.status === 'driver_assigned') {
+            actions.push(`
+                <div class="navigation-buttons">
+                    <button class="btn btn-navigation" onclick="driverApp.navigateToRestaurant('${order.id}')">
+                        🧭 Navigate to Restaurant
+                    </button>
+                    <button class="btn btn-primary" onclick="driverApp.markOrderPickedUp('${order.id}')">
+                        ✅ Mark as Picked Up
+                    </button>
+                </div>
+            `);
+        } else if (order.status === 'picked_up') {
+            actions.push(`
+                <div class="navigation-buttons">
+                    <button class="btn btn-navigation" onclick="driverApp.navigateToCustomer('${order.id}')">
+                        🧭 Navigate to Customer
+                    </button>
+                    <button class="btn btn-success" onclick="driverApp.markOrderDelivered('${order.id}')">
+                        ✅ Mark as Delivered
+                    </button>
+                </div>
+            `);
+        }
+        
+        return actions.join('');
+    }
+
+    async markOrderPickedUp(orderId) {
+        await this.updateOrderStatus(orderId, 'picked_up');
+    }
+
+    async markOrderDelivered(orderId) {
+        await this.updateOrderStatus(orderId, 'delivered');
+    }
+
+    vibrateDevice() {
+        // Vibrate device if supported
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+        }
+        
+        // Telegram haptic feedback if available
+        if (this.tg && this.tg.HapticFeedback) {
+            this.tg.HapticFeedback.impactOccurred('heavy');
+        }
+    }
+
+    getDistanceBetweenPoints(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the Earth in kilometers
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 }
 
