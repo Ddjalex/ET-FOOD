@@ -950,6 +950,20 @@ export class MongoStorage implements IStorage {
 
   async updateOrderStatus(id: string, status: string): Promise<Order> {
     try {
+      console.log(`🔍 Attempting to update order with ID: ${id} to status: ${status}`);
+      
+      // Try to find the order first to debug
+      const existingOrder = await OrderModel.findById(id);
+      if (!existingOrder) {
+        console.log(`❌ Order not found with ID: ${id}`);
+        // Try to find orders that might match
+        const allOrders = await OrderModel.find().limit(5);
+        console.log(`📋 Available orders (first 5):`, allOrders.map(o => ({ id: o._id.toString(), orderNumber: o.orderNumber, status: o.status })));
+        throw new Error(`Order not found with ID: ${id}`);
+      }
+
+      console.log(`✅ Found order: ${existingOrder.orderNumber} with current status: ${existingOrder.status}`);
+
       const updatedOrder = await OrderModel.findByIdAndUpdate(
         id,
         { 

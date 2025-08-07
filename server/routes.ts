@@ -2232,23 +2232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Send real-time notification to customer via Telegram
-      if (order.customerId) {
-        try {
-          const customer = await storage.getUser(order.customerId);
-          if (customer?.telegramUserId) {
-            const { broadcastToSpecificCustomer } = require('./telegram/customerBot');
-            await broadcastToSpecificCustomer(customer.telegramUserId, {
-              title: '👨‍🍳 Order Update',
-              message: `Your order ${order.orderNumber} is now being prepared! It will be ready soon.`,
-              orderNumber: order.orderNumber,
-              status: 'preparing'
-            });
-          }
-        } catch (error) {
-          console.error('Error notifying customer of preparation start:', error);
-        }
-      }
+      // The orderService will handle customer notifications and driver detection
 
       res.json(order);
     } catch (error) {

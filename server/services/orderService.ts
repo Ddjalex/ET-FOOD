@@ -26,6 +26,9 @@ class OrderService {
       case 'confirmed':
         await this.handleOrderConfirmed(order);
         break;
+      case 'preparing':
+        await this.handleOrderPreparing(order);
+        break;
       case 'ready':
         await this.handleOrderReady(order);
         break;
@@ -48,9 +51,30 @@ class OrderService {
     });
   }
 
-  private async handleOrderPreparing(order: any) {
+  async handleOrderPreparing(order: any) {
     try {
-      // Get restaurant location for driver assignment
+      console.log(`🍳 Handling order preparing: ${order.orderNumber}`);
+      
+      // Send immediate notification to customer via Telegram
+      if (order.customerId) {
+        try {
+          const customer = await storage.getUser(order.customerId);
+          if (customer?.telegramUserId) {
+            const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+            await broadcastToSpecificCustomer(customer.telegramUserId, {
+              title: '👨‍🍳 Your Order is Being Prepared!',
+              message: `Great news! Your order ${order.orderNumber} is now being prepared by our kitchen staff. It will be ready soon for pickup.`,
+              orderNumber: order.orderNumber,
+              status: 'preparing'
+            });
+            console.log(`📱 Notified customer ${customer.telegramUserId} about order preparation start`);
+          }
+        } catch (error) {
+          console.error('Error notifying customer of preparation start:', error);
+        }
+      }
+
+      // Get restaurant location for nearby driver detection
       const restaurant = await storage.getRestaurant(order.restaurantId);
       if (!restaurant) {
         console.error('Restaurant not found for order:', order.id);
