@@ -426,6 +426,7 @@ export class MongoStorage implements IStorage {
           telegramId: d.telegramId,
           name: d.name || null,
           phoneNumber: d.phoneNumber || null,
+          profileImageUrl: d.profileImageUrl,
           governmentIdFrontUrl: d.governmentIdFrontUrl,
           governmentIdBackUrl: d.governmentIdBackUrl,
           licenseNumber: d.licenseNumber,

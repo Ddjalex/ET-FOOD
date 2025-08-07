@@ -6,6 +6,7 @@ export interface IDriver extends Document {
   telegramId: string;
   phoneNumber: string;
   name: string;
+  profileImageUrl?: string;
   governmentIdFrontUrl?: string;
   governmentIdBackUrl?: string;
   licenseNumber?: string;
@@ -45,6 +46,7 @@ const DriverSchema = new Schema<IDriver>({
   telegramId: { type: String, required: true, unique: true },
   phoneNumber: { type: String, required: true },
   name: { type: String, required: true },
+  profileImageUrl: String,
   governmentIdFrontUrl: String,
   governmentIdBackUrl: String,
   licenseNumber: String,

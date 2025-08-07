@@ -33,6 +33,10 @@ class DriverApp {
 
     setupEventListeners() {
         // File upload previews
+        document.getElementById('profileImage').addEventListener('change', (e) => {
+            this.handleFilePreview(e, 'profileImagePreview');
+        });
+
         document.getElementById('govIdFront').addEventListener('change', (e) => {
             this.handleFilePreview(e, 'govIdFrontPreview');
         });
@@ -323,15 +327,23 @@ class DriverApp {
             formData.append('name', driverName);
             formData.append('phoneNumber', driverPhone);
 
+            const profileImage = document.getElementById('profileImage').files[0];
             const govIdFront = document.getElementById('govIdFront').files[0];
             const govIdBack = document.getElementById('govIdBack').files[0];
 
             let response;
             
-            // If files are provided, use the multipart endpoint
-            if (govIdFront && govIdBack) {
-                formData.append('governmentIdFront', govIdFront);
-                formData.append('governmentIdBack', govIdBack);
+            // If any files are provided, use the multipart endpoint
+            if (profileImage || govIdFront || govIdBack) {
+                if (profileImage) {
+                    formData.append('profileImage', profileImage);
+                }
+                if (govIdFront) {
+                    formData.append('governmentIdFront', govIdFront);
+                }
+                if (govIdBack) {
+                    formData.append('governmentIdBack', govIdBack);
+                }
 
                 response = await fetch('/api/drivers/register', {
                     method: 'POST',

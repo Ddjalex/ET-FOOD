@@ -17,6 +17,7 @@ function DriverRegistration() {
     vehiclePlate: '',
   });
   const [files, setFiles] = useState({
+    profileImage: null as File | null,
     governmentIdFront: null as File | null,
     governmentIdBack: null as File | null,
   });
@@ -28,7 +29,7 @@ function DriverRegistration() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (field: 'governmentIdFront' | 'governmentIdBack', file: File | null) => {
+  const handleFileChange = (field: 'profileImage' | 'governmentIdFront' | 'governmentIdBack', file: File | null) => {
     setFiles(prev => ({ ...prev, [field]: file }));
   };
 
@@ -49,6 +50,9 @@ function DriverRegistration() {
       submitData.append('telegramId', '383870190'); // For demo, in production get from auth
       
       // Add files if selected
+      if (files.profileImage) {
+        submitData.append('profileImage', files.profileImage);
+      }
       if (files.governmentIdFront) {
         submitData.append('governmentIdFront', files.governmentIdFront);
       }
@@ -134,6 +138,37 @@ function DriverRegistration() {
                       required
                       data-testid="input-phone"
                     />
+                  </div>
+                </div>
+
+                {/* Profile Picture Upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="profileImage">Profile Picture</Label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      Upload Profile Picture
+                    </p>
+                    {files.profileImage ? (
+                      <div className="text-xs text-green-600 mb-2">
+                        {files.profileImage.name}
+                      </div>
+                    ) : null}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange('profileImage', e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="profile-image"
+                      data-testid="input-profile-image"
+                    />
+                    <Label htmlFor="profile-image">
+                      <Button variant="outline" size="sm" type="button" asChild>
+                        <span className="cursor-pointer">
+                          {files.profileImage ? 'Change Picture' : 'Upload Picture'}
+                        </span>
+                      </Button>
+                    </Label>
                   </div>
                 </div>
               </div>

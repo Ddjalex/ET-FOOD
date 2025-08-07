@@ -587,6 +587,16 @@
                 </div>
                 
                 <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <div class="file-upload" onclick="document.getElementById('profileImage').click()">
+                        <input type="file" id="profileImage" accept="image/*">
+                        <div>📷 Upload Profile Picture</div>
+                        <div class="file-upload-text">Tap to select your photo</div>
+                        <img class="file-preview" id="profileImagePreview" alt="Preview">
+                    </div>
+                </div>
+                
+                <div class="form-group">
                     <label class="form-label">Government ID (Front)</label>
                     <div class="file-upload" onclick="document.getElementById('govIdFront').click()">
                         <input type="file" id="govIdFront" accept="image/*">

@@ -2732,6 +2732,7 @@ Use the buttons below to get started:`;
 
   // Driver registration route (with file uploads)
   app.post('/api/drivers/register', upload.fields([
+    { name: 'profileImage', maxCount: 1 },
     { name: 'governmentIdFront', maxCount: 1 },
     { name: 'governmentIdBack', maxCount: 1 }
   ]), async (req, res) => {
@@ -2761,6 +2762,7 @@ Use the buttons below to get started:`;
 
       // Handle file uploads - files may be undefined for form data without files
       const files = (req.files as { [fieldname: string]: Express.Multer.File[] }) || {};
+      const profileImageUrl = files.profileImage ? `/uploads/${files.profileImage[0].filename}` : null;
       const governmentIdFrontUrl = files.governmentIdFront ? `/uploads/${files.governmentIdFront[0].filename}` : null;
       const governmentIdBackUrl = files.governmentIdBack ? `/uploads/${files.governmentIdBack[0].filename}` : null;
 
@@ -2770,6 +2772,7 @@ Use the buttons below to get started:`;
         telegramId,
         phoneNumber,
         name,
+        profileImageUrl,
         governmentIdFrontUrl,
         governmentIdBackUrl,
         status: 'pending_approval',
