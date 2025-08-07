@@ -414,9 +414,9 @@ export async function broadcastToAllCustomers(broadcastData: {
         } catch (error) {
           console.error(`❌ Failed to send message to customer ${customer.telegramUserId}:`, error);
           console.error(`❌ Error details:`, {
-            code: error.code,
-            message: error.message,
-            description: error.description
+            code: (error as any).code,
+            message: (error as any).message,
+            description: (error as any).description
           });
           errorCount++;
         }
