@@ -1341,25 +1341,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accept an order
+  // Accept an order from the interactive modal
   app.post('/api/drivers/accept-order/:orderId', async (req, res) => {
     try {
       const { orderId } = req.params;
-      const driverId = req.body.driverId || 'mock-driver-id';
+      const { driverId } = req.body;
       
-      // Update order to assign driver and change status
-      const updatedOrder = await storage.updateOrder(orderId, {
-        driverId,
-        status: 'driver_assigned'
+      if (!driverId) {
+        return res.status(400).json({ message: 'Driver ID is required' });
+      }
+      
+      // Use driver service to properly assign the order
+      await driverService.assignOrderToDriver(orderId, driverId);
+      
+      // Get the updated order
+      const updatedOrder = await storage.getOrder(orderId);
+      
+      // Notify driver about successful assignment
+      notifyDriver(driverId, 'order_accepted', {
+        orderId: orderId,
+        orderNumber: updatedOrder.orderNumber,
+        message: 'Order accepted! Navigate to restaurant to pick up.'
       });
       
-      // Broadcast the order assignment
-      broadcast('order_driver_assigned', updatedOrder);
+      // Notify restaurant about driver assignment
+      notifyRestaurantAdmin(updatedOrder.restaurantId, 'driver_assigned', {
+        orderId: orderId,
+        orderNumber: updatedOrder.orderNumber,
+        driverName: 'Driver',
+        message: 'Driver assigned to order'
+      });
       
-      res.json(updatedOrder);
+      res.json({ success: true, order: updatedOrder });
     } catch (error) {
       console.error("Error accepting order:", error);
       res.status(500).json({ message: "Failed to accept order" });
+    }
+  });
+
+  // Reject an order from the interactive modal  
+  app.post('/api/drivers/reject-order/:orderId', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { driverId } = req.body;
+      
+      if (!driverId) {
+        return res.status(400).json({ message: 'Driver ID is required' });
+      }
+      
+      // Log the rejection
+      console.log(`Driver ${driverId} rejected order ${orderId}`);
+      
+      // The order remains available for other drivers
+      // No status change needed, just log and respond
+      
+      res.json({ success: true, message: 'Order rejected' });
+    } catch (error) {
+      console.error("Error rejecting order:", error);
+      res.status(500).json({ message: "Failed to reject order" });
     }
   });
 

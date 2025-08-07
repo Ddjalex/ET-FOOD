@@ -1675,17 +1675,40 @@ class DriverApp {
         }
     }
 
-    rejectOrderFromModal() {
+    async rejectOrderFromModal() {
         console.log('Rejecting order from modal');
+        
+        if (!this.pendingOrder) {
+            this.closeOrderModal();
+            return;
+        }
+        
+        try {
+            // Make API call to reject the order
+            const response = await fetch(`/api/drivers/reject-order/${this.pendingOrder.orderId || this.pendingOrder.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    driverId: this.driverData.id 
+                })
+            });
+
+            if (response.ok) {
+                console.log('Order rejected successfully');
+                this.showAlert('Order declined');
+            } else {
+                console.warn('Failed to send rejection to server, but continuing');
+                this.showAlert('Order declined');
+            }
+        } catch (error) {
+            console.error('Error rejecting order:', error);
+            this.showAlert('Order declined');
+        }
         
         // Close modal
         this.closeOrderModal();
-        
-        // Show brief message
-        this.showAlert('Order declined');
-        
-        // Clear pending order
-        this.pendingOrder = null;
     }
 
     closeOrderModal() {

@@ -1,0 +1,39 @@
+Overhauling the Driver Order Notification System
+The current system broadcasts a simple, generic text message. To improve the driver experience, this needs to be replaced with a robust system that sends a detailed data object for each new order. This will allow the driver's mini-app to display an interactive order card with all the necessary information, action buttons, and a map.
+
+Proposed Solution
+The Replit AI agent needs to implement a new notification logic in both the backend and the driver's mini-app.
+
+Backend Changes (API Endpoint)
+Instead of a generic broadcast, the backend must be modified to send a detailed, structured data object to the driver's WebSocket connection when an order is ready for pickup. This object should contain all the information the driver needs:
+
+Order Information:
+
+orderId: A unique identifier for the order.
+
+orderNumber: A user-friendly order number.
+
+customerName: The customer's name.
+
+restaurantName: The name of the restaurant.
+
+Location Information:
+
+restaurantLocation: An object with the restaurant's longitude and latitude, which the driver app will use for mapping.
+
+customerLocation: An object with the customer's longitude and latitude, which the driver app will use for mapping.
+
+Actionable Content:
+
+A status field, like status: 'pending', to indicate that the order is waiting for a driver to accept it.
+
+Client-Side Changes (Driver App)
+The driver's mini-app must be completely redesigned to handle this new data object.
+
+Interactive Order Card: When the app receives the new data object from the backend, it should render an interactive card on the screen.
+
+Key Details: This card will display the orderNumber, customerName, and restaurantName from the received data.
+
+Action Buttons: The card will feature prominent "Accept" and "Reject" buttons. These buttons will send a new API call back to the backend to update the order status and assign it to the driver.
+
+OpenStreetMap Integration: The card will include an embedded OpenStreetMap map that shows the restaurantLocation and customerLocation, providing the driver with a visual representation of the delivery route.
