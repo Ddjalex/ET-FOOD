@@ -384,7 +384,13 @@ export class MongoStorage implements IStorage {
       const driversWithUsers = await DriverModel.aggregate([
         {
           $addFields: {
-            userObjectId: { $toObjectId: "$userId" }
+            userObjectId: { 
+              $cond: {
+                if: { $eq: [{ $type: "$userId" }, "string"] },
+                then: { $toObjectId: "$userId" },
+                else: "$userId"
+              }
+            }
           }
         },
         {

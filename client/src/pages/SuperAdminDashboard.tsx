@@ -2095,7 +2095,7 @@ function SuperAdminDashboardContent() {
                   <TableHeader className="sticky top-0 bg-white z-10">
                     <TableRow>
                       <TableHead>Driver Profile</TableHead>
-                      <TableHead>Contact & Vehicle</TableHead>
+                      <TableHead>Contact & Info</TableHead>
                       <TableHead>Status & Availability</TableHead>
                       <TableHead>Performance Metrics</TableHead>
                       <TableHead>Location & Earnings</TableHead>
@@ -2116,7 +2116,10 @@ function SuperAdminDashboardContent() {
                                 onError={(e) => {
                                   // Fallback to letter avatar if image fails to load
                                   e.currentTarget.style.display = 'none';
-                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                  const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (nextSibling) {
+                                    nextSibling.style.display = 'flex';
+                                  }
                                 }}
                               />
                             ) : null}
@@ -2154,10 +2157,7 @@ function SuperAdminDashboardContent() {
                             <span className="truncate max-w-32">{driver.user?.email || 'N/A'}</span>
                           </div>
                           <div className="text-xs text-gray-500">
-                            🚗 {driver.vehicleType || 'Unknown'} • {driver.vehiclePlate || 'No plate'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            License: {driver.licenseNumber || 'Not provided'}
+                            📱 Telegram ID: {driver.telegramId || 'N/A'}
                           </div>
                         </div>
                       </TableCell>

@@ -146,6 +146,7 @@ export const drivers = pgTable("drivers", {
   telegramId: varchar("telegram_id"),
   phoneNumber: varchar("phone_number"),
   name: varchar("name"),
+  profileImageUrl: varchar("profile_image_url"),
   governmentIdFrontUrl: varchar("government_id_front_url"),
   governmentIdBackUrl: varchar("government_id_back_url"),
   licenseNumber: varchar("license_number"),
