@@ -47,6 +47,26 @@ export async function setupCustomerBot(bot: Telegraf) {
       console.log(`✅ Customer created with ID: ${user.id} and telegramUserId: ${user.telegramUserId}`);
     } else {
       console.log(`👤 Existing customer found: ${user.firstName} ${user.lastName} (telegramUserId: ${user.telegramUserId})`);
+      
+      // Update telegram info if missing or changed
+      if (!user.telegramUserId || user.telegramUserId !== telegramUserId || user.telegramUsername !== username) {
+        console.log(`🔄 Updating customer telegram info: ${telegramUserId}`);
+        user = await storage.upsertUser({
+          id: user.id,
+          telegramUserId,
+          telegramUsername: username,
+          firstName: user.firstName || firstName,
+          lastName: user.lastName || lastName,
+          role: user.role || 'customer',
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          profileImageUrl: user.profileImageUrl,
+          isActive: user.isActive,
+          restaurantId: user.restaurantId,
+          createdBy: user.createdBy
+        });
+        console.log(`✅ Customer telegram info updated: ${user.telegramUserId}`);
+      }
     }
 
     // Initialize customer session
@@ -334,6 +354,13 @@ export async function broadcastToAllCustomers(broadcastData: {
     }
 
     console.log(`Broadcasting to ${customers.length} customers`);
+    
+    // Log customer details for debugging
+    console.log('📊 Customer telegram IDs:', customers.map(c => ({ 
+      name: `${c.firstName} ${c.lastName}`, 
+      telegramUserId: c.telegramUserId,
+      role: c.role 
+    })));
 
     // Get the customer bot instance
     const { getCustomerBot } = await import('./bot');

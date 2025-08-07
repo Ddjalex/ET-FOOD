@@ -387,8 +387,8 @@ export async function broadcastToAllDrivers(broadcastData: {
   timestamp: Date;
 }) {
   try {
-    // Get all driver users from storage
-    const drivers = await storage.getUsersByRole('driver');
+    // Get all drivers (not users with role 'driver', but actual driver records)
+    const drivers = await storage.getAllDrivers();
     
     if (drivers.length === 0) {
       console.log('No drivers found to broadcast to');
@@ -396,6 +396,14 @@ export async function broadcastToAllDrivers(broadcastData: {
     }
 
     console.log(`Broadcasting to ${drivers.length} drivers`);
+    
+    // Log driver details for debugging
+    console.log('📊 Driver telegram IDs:', drivers.map(d => ({ 
+      name: d.name, 
+      telegramId: d.telegramId,
+      isApproved: d.isApproved,
+      status: d.status
+    })));
 
     // Get the driver bot instance
     const { getDriverBot } = await import('./bot');
@@ -422,9 +430,9 @@ export async function broadcastToAllDrivers(broadcastData: {
     let errorCount = 0;
     
     for (const driver of drivers) {
-      if (driver.telegramUserId) {
+      if (driver.telegramId) {
         try {
-          console.log(`📤 Sending message to driver ${driver.telegramUserId} (${driver.firstName} ${driver.lastName})`);
+          console.log(`📤 Sending message to driver ${driver.telegramId} (${driver.name})`);
           
           if (broadcastData.imageUrl) {
             // Send with image
@@ -432,22 +440,22 @@ export async function broadcastToAllDrivers(broadcastData: {
             console.log(`📷 Sending image: ${imageUrl}`);
             
             await driverBot.telegram.sendPhoto(
-              driver.telegramUserId,
+              driver.telegramId,
               { url: imageUrl },
               { caption: formattedMessage }
             );
           } else {
             // Send text only
-            await driverBot.telegram.sendMessage(driver.telegramUserId, formattedMessage);
+            await driverBot.telegram.sendMessage(driver.telegramId, formattedMessage);
           }
 
-          console.log(`✅ Message sent successfully to driver ${driver.telegramUserId}`);
+          console.log(`✅ Message sent successfully to driver ${driver.telegramId}`);
           successCount++;
           
           // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
-          console.error(`❌ Failed to send message to driver ${driver.telegramUserId}:`, error);
+          console.error(`❌ Failed to send message to driver ${driver.telegramId}:`, error);
           console.error(`❌ Error details:`, {
             code: error.code,
             message: error.message,
@@ -456,7 +464,7 @@ export async function broadcastToAllDrivers(broadcastData: {
           errorCount++;
         }
       } else {
-        console.log(`⚠️ Driver ${driver.firstName} ${driver.lastName} has no telegramUserId`);
+        console.log(`⚠️ Driver ${driver.name} has no telegramId`);
       }
     }
     
