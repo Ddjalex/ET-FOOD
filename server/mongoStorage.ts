@@ -794,7 +794,37 @@ export class MongoStorage implements IStorage {
       throw error;
     }
   }
-  async getOrders(): Promise<Order[]> { return []; }
+  async getOrders(): Promise<Order[]> {
+    try {
+      const orders = await OrderModel.find().sort({ createdAt: -1 });
+      return orders.map((order: any) => ({
+        id: order._id.toString(),
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        customerName: order.customerName || null,
+        customerPhone: order.customerPhone || null,
+        restaurantId: order.restaurantId,
+        restaurantName: order.restaurantName || null,
+        driverId: order.driverId || null,
+        items: order.items || [],
+        total: order.total || order.totalAmount || 0,
+        totalAmount: order.totalAmount || order.total || 0,
+        deliveryFee: order.deliveryFee || 0,
+        subtotal: order.subtotal || 0,
+        tax: order.tax || 0,
+        status: order.status,
+        deliveryAddress: order.deliveryAddress,
+        specialInstructions: order.specialInstructions || null,
+        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+        actualDeliveryTime: order.actualDeliveryTime || null,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt
+      }));
+    } catch (error) {
+      console.error('Error getting orders:', error);
+      return [];
+    }
+  }
   async getOrder(id: string): Promise<Order | undefined> {
     try {
       console.log(`🔍 MongoDB getOrder called for ID: ${id}`);
@@ -833,7 +863,37 @@ export class MongoStorage implements IStorage {
       return undefined;
     }
   }
-  async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
+  async getOrdersByStatus(status: string): Promise<Order[]> {
+    try {
+      const orders = await OrderModel.find({ status }).sort({ createdAt: -1 });
+      return orders.map((order: any) => ({
+        id: order._id.toString(),
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        customerName: order.customerName || null,
+        customerPhone: order.customerPhone || null,
+        restaurantId: order.restaurantId,
+        restaurantName: order.restaurantName || null,
+        driverId: order.driverId || null,
+        items: order.items || [],
+        total: order.total || order.totalAmount || 0,
+        totalAmount: order.totalAmount || order.total || 0,
+        deliveryFee: order.deliveryFee || 0,
+        subtotal: order.subtotal || 0,
+        tax: order.tax || 0,
+        status: order.status,
+        deliveryAddress: order.deliveryAddress,
+        specialInstructions: order.specialInstructions || null,
+        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+        actualDeliveryTime: order.actualDeliveryTime || null,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt
+      }));
+    } catch (error) {
+      console.error('Error getting orders by status:', error);
+      return [];
+    }
+  }
   async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
     try {
       const orders = await OrderModel.find({ restaurantId }).sort({ createdAt: -1 }).lean();
@@ -951,6 +1011,8 @@ export class MongoStorage implements IStorage {
   }
   async updateOrder(id: string, orderUpdate: Partial<InsertOrder>): Promise<Order> {
     try {
+      console.log(`🔧 MongoDB updateOrder - updating order ${id} with:`, orderUpdate);
+      
       const updatedOrder = await OrderModel.findByIdAndUpdate(
         id,
         { 
@@ -959,6 +1021,8 @@ export class MongoStorage implements IStorage {
         },
         { new: true }
       );
+      
+      console.log(`✅ MongoDB updateOrder - result:`, updatedOrder ? { id: updatedOrder._id.toString(), driverId: updatedOrder.driverId, status: updatedOrder.status } : 'null');
 
       if (!updatedOrder) {
         throw new Error('Order not found');
@@ -968,14 +1032,22 @@ export class MongoStorage implements IStorage {
         id: updatedOrder._id.toString(),
         orderNumber: updatedOrder.orderNumber,
         customerId: updatedOrder.customerId,
+        customerName: updatedOrder.customerName || null,
+        customerPhone: updatedOrder.customerPhone || null,
         restaurantId: updatedOrder.restaurantId,
-        items: updatedOrder.items,
-        subtotal: updatedOrder.subtotal,
-        total: updatedOrder.total,
-        deliveryAddress: updatedOrder.deliveryAddress,
-        paymentMethod: updatedOrder.paymentMethod,
+        restaurantName: updatedOrder.restaurantName || null,
+        driverId: updatedOrder.driverId || null,
+        items: updatedOrder.items || [],
+        total: updatedOrder.total || updatedOrder.totalAmount || 0,
+        totalAmount: updatedOrder.totalAmount || updatedOrder.total || 0,
+        deliveryFee: updatedOrder.deliveryFee || 0,
+        subtotal: updatedOrder.subtotal || 0,
+        tax: updatedOrder.tax || 0,
         status: updatedOrder.status,
-        specialInstructions: updatedOrder.specialInstructions,
+        deliveryAddress: updatedOrder.deliveryAddress,
+        specialInstructions: updatedOrder.specialInstructions || null,
+        estimatedDeliveryTime: updatedOrder.estimatedDeliveryTime || null,
+        actualDeliveryTime: updatedOrder.actualDeliveryTime || null,
         createdAt: updatedOrder.createdAt,
         updatedAt: updatedOrder.updatedAt
       };
@@ -1408,7 +1480,26 @@ export class MongoStorage implements IStorage {
   }
   async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { throw new Error('Not implemented'); }
   async getNotifications(userId: string): Promise<Notification[]> { return []; }
-  async createNotification(notification: InsertNotification): Promise<Notification> { throw new Error('Not implemented'); }
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    try {
+      // For now, we'll just return a mock notification since the notification system is not fully implemented
+      // In a full implementation, this would create a notification record in MongoDB
+      const notificationRecord: Notification = {
+        id: new ObjectId().toString(),
+        userId: notification.userId,
+        type: notification.type || 'info',
+        title: notification.title || 'Notification',
+        message: notification.message || '',
+        isRead: notification.isRead || false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      return notificationRecord;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      throw error;
+    }
+  }
   async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
   async getOrderAnalytics(): Promise<any> { return {}; }
 

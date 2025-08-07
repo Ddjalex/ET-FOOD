@@ -10,7 +10,7 @@ import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
 import { uploadMiddleware } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
-import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast } from "./websocket";
+import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast, notifyDriver } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 import { getCustomerSession } from "./telegram/customerBot";
 import multer from "multer";
@@ -1483,7 +1483,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get orders that have been assigned to any driver
       const allOrders = await storage.getOrders();
-      const assignedOrders = allOrders.filter(order => order.driverId && (order.status === 'assigned' || order.status === 'picked_up' || order.status === 'ready_for_pickup'));
+      console.log(`📊 Raw orders from DB:`, allOrders.map(o => ({ id: o.id, orderNumber: o.orderNumber, driverId: o.driverId, status: o.status })));
+      
+      const assignedOrders = allOrders.filter(order => order.driverId && (order.status === 'assigned' || order.status === 'driver_assigned' || order.status === 'picked_up' || order.status === 'ready_for_pickup'));
       
       console.log(`Found ${assignedOrders.length} assigned orders out of ${allOrders.length} total orders`);
       

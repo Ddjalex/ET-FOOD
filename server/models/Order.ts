@@ -12,10 +12,17 @@ const OrderItemSchema = new mongoose.Schema({
 const OrderSchema = new mongoose.Schema({
   orderNumber: { type: String, required: true, unique: true },
   customerId: { type: String, required: true },
+  customerName: { type: String },
+  customerPhone: { type: String },
   restaurantId: { type: String, required: true },
+  restaurantName: { type: String },
+  driverId: { type: String }, // Driver assignment field
   items: [OrderItemSchema],
   subtotal: { type: Number, required: true },
   total: { type: Number, required: true },
+  totalAmount: { type: Number }, // Alternative total field
+  deliveryFee: { type: Number, default: 0 },
+  tax: { type: Number, default: 0 },
   deliveryAddress: {
     address: { type: String, required: true },
     latitude: { type: Number, required: true },
@@ -25,10 +32,12 @@ const OrderSchema = new mongoose.Schema({
   paymentMethod: { type: String, required: true },
   status: { 
     type: String, 
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'preparing', 'ready', 'ready_for_pickup', 'assigned', 'driver_assigned', 'picked_up', 'out_for_delivery', 'delivered', 'cancelled'],
     default: 'pending'
   },
   specialInstructions: { type: String },
+  estimatedDeliveryTime: { type: Date },
+  actualDeliveryTime: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {
