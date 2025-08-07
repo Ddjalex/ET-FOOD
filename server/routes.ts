@@ -2563,28 +2563,45 @@ Use the buttons below to get started:`;
   // Driver registration route (for JSON data without files)
   app.post('/api/drivers/register-basic', async (req, res) => {
     try {
+      console.log('🚗 Driver registration received (basic):', req.body);
       const { telegramId, name, phoneNumber } = req.body;
 
       if (!telegramId || !name || !phoneNumber) {
         return res.status(400).json({ message: 'Telegram ID, name, and phone number are required' });
       }
 
+      console.log('📝 Registration data:', { telegramId, name, phoneNumber });
+
       // Check if driver already registered
       const existingDriver = await storage.getDriverByTelegramId(telegramId);
       if (existingDriver) {
+        console.log('❌ Driver already exists:', existingDriver.id);
         return res.status(409).json({ message: 'Driver already registered with this Telegram account' });
       }
 
       // Create or get user
       let user = await storage.getUserByTelegramId(telegramId);
       if (!user) {
+        console.log('👤 Creating new user for telegram ID:', telegramId);
         user = await storage.upsertUser({
           telegramUserId: telegramId,
           firstName: name.split(' ')[0],
           lastName: name.split(' ').slice(1).join(' ') || '',
           role: 'driver'
         });
+        console.log('✅ User created:', user.id);
+      } else {
+        console.log('👤 Found existing user:', user.id);
       }
+
+      console.log('📊 About to create driver with storage type:', storage.constructor.name);
+      console.log('📋 Driver data to save:', {
+        userId: user.id,
+        telegramId,
+        phoneNumber,
+        name,
+        status: 'pending_approval'
+      });
 
       // Create driver profile without files
       const driver = await storage.createDriver({
@@ -2603,6 +2620,13 @@ Use the buttons below to get started:`;
         totalEarnings: '0.00',
         todayEarnings: '0.00',
         weeklyEarnings: '0.00'
+      });
+
+      console.log('🎉 Driver created successfully:', {
+        id: driver.id,
+        name: driver.name,
+        phoneNumber: driver.phoneNumber,
+        telegramId: driver.telegramId
       });
 
       // Send real-time notification to SuperAdmin

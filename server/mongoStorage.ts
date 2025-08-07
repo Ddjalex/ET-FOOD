@@ -947,11 +947,18 @@ export class MongoStorage implements IStorage {
 
   async createDriver(driverData: InsertDriver): Promise<DriverType> {
     try {
+      console.log('💾 MongoDB createDriver called with data:', driverData);
       const driver = new DriverModel(driverData);
       const savedDriver = await driver.save();
+      console.log('✅ Driver saved to MongoDB:', {
+        id: savedDriver._id,
+        name: savedDriver.name,
+        phoneNumber: savedDriver.phoneNumber,
+        telegramId: savedDriver.telegramId
+      });
       return this.convertDriverDocument(savedDriver);
     } catch (error) {
-      console.error('Error creating driver:', error);
+      console.error('❌ Error creating driver in MongoDB:', error);
       throw error;
     }
   }
