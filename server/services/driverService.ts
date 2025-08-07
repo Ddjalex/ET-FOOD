@@ -125,36 +125,60 @@ class DriverService {
   }
 
   async assignOrderToDriver(orderId: string, driverId: string) {
-    const order = await storage.getOrder(orderId);
-    const driver = await storage.getDriver(driverId);
+    try {
+      console.log(`🔗 Attempting to assign order ${orderId} to driver ${driverId}`);
+      
+      const order = await storage.getOrder(orderId);
+      const driver = await storage.getDriver(driverId);
 
-    if (!order || !driver) {
-      throw new Error('Order or driver not found');
+      if (!order) {
+        console.error(`❌ Order not found: ${orderId}`);
+        throw new Error(`Order not found: ${orderId}`);
+      }
+      
+      if (!driver) {
+        console.error(`❌ Driver not found: ${driverId}`);
+        throw new Error(`Driver not found: ${driverId}`);
+      }
+
+      console.log(`✅ Found order ${order.orderNumber} and driver ${driver.name || driver.id}`);
+
+      // Update order with driver
+      await storage.updateOrder(orderId, { driverId, status: 'assigned' });
+      console.log(`📝 Updated order ${orderId} with driver assignment`);
+
+      // Create delivery record
+      const delivery = await storage.createDelivery({
+        orderId,
+        driverId,
+        status: 'assigned',
+      });
+      console.log(`📋 Created delivery record for order ${orderId}`);
+
+      // Update driver availability
+      await storage.updateDriverStatus(driverId, true, false); // online but not available
+      console.log(`🚗 Updated driver ${driverId} status to busy`);
+
+      // Notify driver via notification system
+      try {
+        await storage.createNotification({
+          userId: driver.userId,
+          type: 'order',
+          title: 'New Delivery Assignment',
+          message: `You have been assigned order #${order.orderNumber}`,
+          data: { orderId, deliveryId: delivery.id },
+        });
+        console.log(`📬 Created notification for driver ${driverId}`);
+      } catch (notifyError) {
+        console.error('Error creating notification:', notifyError);
+        // Don't fail the assignment if notification fails
+      }
+
+      return { order, delivery };
+    } catch (error) {
+      console.error('Error in assignOrderToDriver:', error);
+      throw error;
     }
-
-    // Update order with driver
-    await storage.updateOrder(orderId, { driverId, status: 'assigned' });
-
-    // Create delivery record
-    const delivery = await storage.createDelivery({
-      orderId,
-      driverId,
-      status: 'assigned',
-    });
-
-    // Update driver availability
-    await storage.updateDriverStatus(driverId, true, false); // online but not available
-
-    // Notify driver
-    await storage.createNotification({
-      userId: driver.userId,
-      type: 'order',
-      title: 'New Delivery Assignment',
-      message: `You have been assigned order #${order.orderNumber}`,
-      data: { orderId, deliveryId: delivery.id },
-    });
-
-    return { order, delivery };
   }
 
   async updateDeliveryStatus(deliveryId: string, status: string) {

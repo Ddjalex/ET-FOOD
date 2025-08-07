@@ -1,0 +1,59 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-RPCDYKBN.js?v=835bd689:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+queryClient.ts:32  GET https://6be14440-20ab-4335-9f7e-0a5b4b5e974b-00-f33iz0ryrra8.worf.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=835bd689:840
+run @ @tanstack_react-query.js?v=835bd689:494
+start @ @tanstack_react-query.js?v=835bd689:536
+fetch @ @tanstack_react-query.js?v=835bd689:926
+executeFetch_fn @ @tanstack_react-query.js?v=835bd689:2211
+onSubscribe @ @tanstack_react-query.js?v=835bd689:1898
+subscribe @ @tanstack_react-query.js?v=835bd689:24
+(anonymous) @ @tanstack_react-query.js?v=835bd689:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=835bd689:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=835bd689:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=835bd689:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=835bd689:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=835bd689:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=835bd689:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=835bd689:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=835bd689:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=835bd689:19432
+commitRoot @ chunk-RPCDYKBN.js?v=835bd689:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=835bd689:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18718
+workLoop @ chunk-RPCDYKBN.js?v=835bd689:197
+flushWork @ chunk-RPCDYKBN.js?v=835bd689:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=835bd689:384
+KitchenDashboard.tsx:291 Setting up Socket.IO connection for kitchen staff...
+KitchenDashboard.tsx:301 Socket.IO connected: s_0rz_Zz3-MlU6eJAAAH
+KitchenDashboard.tsx:309 Socket.IO authenticated: {success: true, user: {…}}
+KitchenDashboard.tsx:327 New order received: {id: '68949095c7a66b869cca109d', orderNumber: 'ORD-1754566805298', customerName: 'Customer', customerPhone: '+251911234567', items: Array(1), …}
+KitchenDashboard.tsx:538  PUT https://6be14440-20ab-4335-9f7e-0a5b4b5e974b-00-f33iz0ryrra8.worf.replit.dev/api/kitchen/689208e3f476f48ad7cfdcc3/orders/68949095c7a66b869cca109d/ready-for-pickup 500 (Internal Server Error)
+mutationFn @ KitchenDashboard.tsx:538
+fn @ @tanstack_react-query.js?v=835bd689:1189
+run @ @tanstack_react-query.js?v=835bd689:494
+start @ @tanstack_react-query.js?v=835bd689:536
+execute @ @tanstack_react-query.js?v=835bd689:1225
+await in execute
+mutate @ @tanstack_react-query.js?v=835bd689:2630
+(anonymous) @ @tanstack_react-query.js?v=835bd689:3295
+onClick @ KitchenDashboard.tsx:740
+callCallback2 @ chunk-RPCDYKBN.js?v=835bd689:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=835bd689:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=835bd689:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=835bd689:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=835bd689:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=835bd689:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=835bd689:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=835bd689:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=835bd689:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=835bd689:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=835bd689:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=835bd689:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=835bd689:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=835bd689:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=835bd689:5449

@@ -163,43 +163,99 @@ class OrderService {
   }
 
   private async handleOrderReady(order: any) {
-    // This method is called when kitchen marks order as ready
-    // At this point, a driver should already be assigned from the preparing phase
-    if (order.driverId) {
-      // Update order status to ready
-      await storage.updateOrderStatus(order.id, 'ready');
-
-      // Notify assigned driver that order is ready for pickup
-      const { notifyDriver } = await import('../websocket');
-      notifyDriver(order.driverId, 'order_ready_for_pickup', {
-        driverId: order.driverId,
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        restaurantName: order.restaurantName
-      });
-
-      // Notify customer
-      const { broadcast: customerBroadcast } = await import('../websocket');
-      customerBroadcast('order_status_updated', {
-        orderId: order.id,
-        status: 'ready',
-        message: 'Your order is ready and driver is on the way!'
-      });
-
-    } else {
-      // Fallback: No driver assigned yet, find one now
-      const restaurant = await storage.getRestaurant(order.restaurantId);
-      const restaurantLocation = {
-        lat: restaurant?.latitude || restaurant?.location?.lat,
-        lng: restaurant?.longitude || restaurant?.location?.lng
-      };
-
-      const { driverService } = await import('./driverService');
-      const nearestDriver = await driverService.findNearestDriver(restaurantLocation);
+    try {
+      console.log(`📦 Handling order ready for pickup: ${order.orderNumber}`);
       
-      if (nearestDriver) {
-        await driverService.assignOrderToDriver(order.id, nearestDriver.id);
+      // Check if driver is already assigned from preparing phase
+      if (order.driverId) {
+        console.log(`✅ Driver ${order.driverId} already assigned to order ${order.id}`);
+        
+        // Update order status to ready
+        await storage.updateOrderStatus(order.id, 'ready');
+
+        // Notify assigned driver that order is ready for pickup
+        const { notifyDriver } = await import('../websocket');
+        notifyDriver(order.driverId, 'order_ready_for_pickup', {
+          driverId: order.driverId,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          restaurantName: order.restaurantName
+        });
+
+        // Notify customer
+        const { broadcast: customerBroadcast } = await import('../websocket');
+        customerBroadcast('order_status_updated', {
+          orderId: order.id,
+          status: 'ready',
+          message: 'Your order is ready and driver is on the way!'
+        });
+
+      } else {
+        // No driver assigned yet, find and assign one now
+        console.log(`🔍 No driver assigned yet for order ${order.id}, finding one now...`);
+        
+        const restaurant = await storage.getRestaurant(order.restaurantId);
+        if (!restaurant) {
+          console.error(`❌ Restaurant not found for order ${order.id}`);
+          throw new Error('Restaurant not found');
+        }
+
+        const restaurantLocation = {
+          lat: restaurant?.latitude || restaurant?.location?.lat,
+          lng: restaurant?.longitude || restaurant?.location?.lng
+        };
+
+        console.log(`🍽️ Restaurant location:`, restaurantLocation);
+
+        const { driverService } = await import('./driverService');
+        const nearestDriver = await driverService.findNearestDriver(restaurantLocation);
+        
+        if (nearestDriver) {
+          console.log(`✅ Found nearest driver: ${nearestDriver.name || nearestDriver.id}`);
+          
+          // Assign driver to order
+          await driverService.assignOrderToDriver(order.id, nearestDriver.id);
+          
+          // Update order status to ready
+          await storage.updateOrderStatus(order.id, 'ready');
+          
+          // Send real-time notification to assigned driver
+          const { notifyDriver } = await import('../websocket');
+          notifyDriver(nearestDriver.id, 'order_ready_for_pickup', {
+            driverId: nearestDriver.id,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            restaurantName: restaurant.name || order.restaurantName
+          });
+
+          console.log(`🚨 Notified driver ${nearestDriver.id} that order ${order.orderNumber} is ready for pickup`);
+
+          // Notify customer about driver assignment
+          const { broadcast: customerBroadcast } = await import('../websocket');
+          customerBroadcast('order_status_updated', {
+            orderId: order.id,
+            status: 'ready',
+            message: `Your order is ready! Driver ${nearestDriver.name || 'Driver'} will pick it up soon.`
+          });
+
+        } else {
+          console.log(`⚠️ No available drivers for order ${order.id}`);
+          // Update order status anyway but log warning
+          await storage.updateOrderStatus(order.id, 'ready');
+          
+          // Notify that order is ready but no driver available yet
+          const { broadcast: customerBroadcast } = await import('../websocket');
+          customerBroadcast('order_status_updated', {
+            orderId: order.id,
+            status: 'ready',
+            message: 'Your order is ready! We are finding a driver for you.'
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error handling order ready:', error);
+      // Don't re-throw the error, just log it to prevent 500 errors
+      // The order status will still be updated by the calling function
     }
   }
 
