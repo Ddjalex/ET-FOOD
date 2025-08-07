@@ -29,6 +29,7 @@ export interface IStorage {
   updateUserRole(userId: string, role: string): Promise<User>;
   createAdminUser(userData: any): Promise<User>;
   getUsersByRole(role: string): Promise<User[]>;
+  deleteUser(id: string): Promise<void>;
 
   // Restaurant operations
   getRestaurants(): Promise<Restaurant[]>;

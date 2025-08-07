@@ -2275,48 +2275,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files statically
   app.use('/uploads', express.static('uploads'));
 
-  // Debug endpoint to manually update customers with telegram IDs (temporary fix)
-  app.post('/api/debug/update-customers', requireSession, requireSuperadmin, async (req, res) => {
+  // Debug endpoint to completely replace fake customers with real telegram user
+  app.post('/api/debug/replace-fake-customers', requireSession, requireSuperadmin, async (req, res) => {
     try {
-      console.log('🔧 Debug: Updating existing customers with sample telegram IDs');
+      console.log('🔧 Debug: Replacing fake customers with real telegram user');
       
-      // Get customers without telegram IDs
-      const customers = await storage.getUsersByRole('customer');
-      const customersWithoutTelegram = customers.filter(c => !c.telegramUserId);
+      const realTelegramUser = '383870190'; // The actual telegram user
       
-      console.log(`Found ${customersWithoutTelegram.length} customers without telegram IDs`);
+      // Delete all customers with fake telegram IDs
+      const fakeCustomers = await storage.getUsersByRole('customer');
+      const fakeTelegramIds = ['999991', '999992'];
       
-      // Update them with sample telegram IDs for testing
-      for (let i = 0; i < customersWithoutTelegram.length; i++) {
-        const customer = customersWithoutTelegram[i];
-        const sampleTelegramId = `99999${i + 1}`;
-        
-        await storage.upsertUser({
-          id: customer.id,
-          telegramUserId: sampleTelegramId,
-          telegramUsername: `test_user_${i + 1}`,
-          firstName: customer.firstName,
-          lastName: customer.lastName,
-          role: customer.role,
-          email: customer.email,
-          phoneNumber: customer.phoneNumber,
-          profileImageUrl: customer.profileImageUrl,
-          isActive: customer.isActive,
-          restaurantId: customer.restaurantId,
-          createdBy: customer.createdBy
-        });
-        
-        console.log(`✅ Updated customer ${customer.firstName} ${customer.lastName} with telegram ID: ${sampleTelegramId}`);
+      console.log(`Found ${fakeCustomers.length} customers to check`);
+      
+      // Delete fake customers 
+      for (const customer of fakeCustomers) {
+        if (fakeTelegramIds.includes(customer.telegramUserId || '')) {
+          console.log(`🗑️ Deleting fake customer: ${customer.firstName} ${customer.lastName} (telegram ID: ${customer.telegramUserId})`);
+          // Delete via MongoDB directly (since we don't have a delete method in storage)
+          await storage.deleteUser(customer.id);
+        }
       }
+      
+      // Create a real customer with the actual telegram ID
+      console.log(`🆕 Creating real customer with telegram ID: ${realTelegramUser}`);
+      const realCustomer = await storage.upsertUser({
+        telegramUserId: realTelegramUser,
+        telegramUsername: 'Alemesegedw',
+        firstName: 'Real Customer',
+        lastName: 'Broadcast Test',
+        role: 'customer'
+      });
+      
+      console.log(`✅ Created real customer: ${realCustomer.firstName} ${realCustomer.lastName} with telegram ID: ${realCustomer.telegramUserId}`);
       
       res.json({ 
         success: true, 
-        message: `Updated ${customersWithoutTelegram.length} customers with telegram IDs`,
-        updatedCount: customersWithoutTelegram.length
+        message: `Replaced fake customers with real telegram user`,
+        realCustomer: {
+          id: realCustomer.id,
+          telegramUserId: realCustomer.telegramUserId,
+          name: `${realCustomer.firstName} ${realCustomer.lastName}`
+        }
       });
     } catch (error) {
-      console.error('Error updating customers:', error);
-      res.status(500).json({ error: 'Failed to update customers' });
+      console.error('Error replacing fake customers:', error);
+      res.status(500).json({ error: 'Failed to replace fake customers', details: error.message });
     }
   });
 
@@ -2386,17 +2390,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid session token' });
       }
 
-      // Ensure the customer exists in the system
+      // Ensure the customer exists in the system (this telegram user is real!)
       let customer = await storage.getUserByTelegramId(telegramUserId);
       if (!customer) {
-        console.log(`🔥 Creating customer during order for telegramUserId: ${telegramUserId}`);
+        console.log(`🔥 Creating customer during order for REAL telegramUserId: ${telegramUserId}`);
         customer = await storage.upsertUser({
           telegramUserId,
           role: 'customer',
-          firstName: 'Customer',
-          lastName: telegramUserId
+          firstName: 'Order Customer',
+          lastName: `User_${telegramUserId}`
         });
-        console.log(`✅ Customer created with ID: ${customer.id} and telegramUserId: ${customer.telegramUserId}`);
+        console.log(`✅ Real telegram customer created with ID: ${customer.id} and telegramUserId: ${customer.telegramUserId}`);
+        console.log(`🎯 This customer should now receive broadcast messages!`);
       }
 
       // Create order for real customer

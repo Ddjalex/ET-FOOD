@@ -159,6 +159,16 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await User.findByIdAndDelete(id);
+      console.log(`✅ Deleted user with ID: ${id}`);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
   // Restaurant operations
   async getRestaurants(): Promise<RestaurantType[]> {
     try {

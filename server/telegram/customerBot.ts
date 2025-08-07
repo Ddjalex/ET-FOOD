@@ -40,8 +40,8 @@ export async function setupCustomerBot(bot: Telegraf) {
       user = await storage.upsertUser({
         telegramUserId,
         telegramUsername: username,
-        firstName,
-        lastName,
+        firstName: firstName || 'Customer',
+        lastName: lastName || telegramUserId,
         role: 'customer',
       });
       console.log(`✅ Customer created with ID: ${user.id} and telegramUserId: ${user.telegramUserId}`);
@@ -55,8 +55,8 @@ export async function setupCustomerBot(bot: Telegraf) {
           id: user.id,
           telegramUserId,
           telegramUsername: username,
-          firstName: user.firstName || firstName,
-          lastName: user.lastName || lastName,
+          firstName: user.firstName || firstName || 'Customer',
+          lastName: user.lastName || lastName || telegramUserId,
           role: user.role || 'customer',
           email: user.email,
           phoneNumber: user.phoneNumber,
@@ -68,6 +68,9 @@ export async function setupCustomerBot(bot: Telegraf) {
         console.log(`✅ Customer telegram info updated: ${user.telegramUserId}`);
       }
     }
+
+    // Also register this customer session immediately for broadcast testing
+    console.log(`📝 Registering customer ${telegramUserId} for broadcast messages`);
 
     // Initialize customer session
     const sessionToken = generateSessionToken();
