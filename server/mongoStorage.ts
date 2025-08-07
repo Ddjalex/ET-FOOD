@@ -348,10 +348,23 @@ export class MongoStorage implements IStorage {
   async getAllDrivers(): Promise<any[]> {
     try {
       console.log('🔍 MongoDB getAllDrivers() called');
-      const drivers = await DriverModel.find({}).populate('userId').lean();
+      
+      // First fetch all drivers
+      const drivers = await DriverModel.find({}).lean();
       console.log('📊 Raw driver data from MongoDB:', JSON.stringify(drivers[0], null, 2));
       
-      return drivers.map(d => {
+      const result = [];
+      
+      for (const d of drivers) {
+        // Fetch user data for each driver
+        let userData = null;
+        try {
+          userData = await User.findById(d.userId).lean();
+          console.log('👤 User data for driver:', userData ? userData.email : 'not found');
+        } catch (userError) {
+          console.error('Error fetching user data for driver:', d._id, userError);
+        }
+        
         // Convert MongoDB location object to array format expected by frontend
         let currentLocation = null;
         if (d.currentLocation) {
@@ -362,12 +375,12 @@ export class MongoStorage implements IStorage {
           }
         }
         
-        const result = {
+        const driverResult = {
           id: d._id.toString(),
-          userId: d.userId?._id?.toString() || d.userId,
+          userId: d.userId,
           telegramId: d.telegramId,
-          name: d.name,
-          phoneNumber: d.phoneNumber,
+          name: d.name || "Unknown",
+          phoneNumber: d.phoneNumber || "N/A",
           governmentIdFrontUrl: d.governmentIdFrontUrl,
           governmentIdBackUrl: d.governmentIdBackUrl,
           licenseNumber: d.licenseNumber,
@@ -391,16 +404,21 @@ export class MongoStorage implements IStorage {
           lastOnline: d.lastOnline,
           createdAt: d.createdAt,
           updatedAt: d.updatedAt,
-          user: d.userId
+          user: userData
         };
-        console.log('✅ Mapped driver result:', { 
-          id: result.id,
-          name: result.name, 
-          phoneNumber: result.phoneNumber,
-          currentLocation: result.currentLocation 
+        
+        console.log('✅ Combined driver data:', { 
+          id: driverResult.id,
+          name: driverResult.name, 
+          phoneNumber: driverResult.phoneNumber,
+          userEmail: userData?.email,
+          currentLocation: driverResult.currentLocation 
         });
-        return result;
-      });
+        
+        result.push(driverResult);
+      }
+      
+      return result;
     } catch (error) {
       console.error('❌ Error getting all drivers:', error);
       return [];
