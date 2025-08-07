@@ -20,6 +20,7 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - **Real-Time Communication**: Targeted notifications for order status changes, driver assignments, and delivery updates
 - **WebSocket Enhancement**: Driver-specific rooms and targeted broadcasting for better performance
 - **Navigation Features**: Current location detection, turn-by-turn directions, and multi-platform support
+- **Driver Management Improvements (August 7, 2025)**: Fixed MongoDB aggregation for proper driver data display, removed vehicle information from management panel, enhanced profile picture support, and resolved broadcast functionality errors
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

@@ -378,7 +378,7 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<any[]> {
     try {
-      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION v2');
+      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION v3');
       
       // First fetch all drivers using aggregation to include user data
       const driversWithUsers = await DriverModel.aggregate([
@@ -410,7 +410,10 @@ export class MongoStorage implements IStorage {
       ]);
       
       console.log('📊 Raw driver count:', driversWithUsers.length);
-      console.log('📊 First driver raw:', JSON.stringify(driversWithUsers[0], null, 2));
+      if (driversWithUsers.length > 0) {
+        console.log('📊 First driver raw:', JSON.stringify(driversWithUsers[0], null, 2));
+        console.log('📊 UserInfo in first driver:', JSON.stringify(driversWithUsers[0]?.userInfo, null, 2));
+      }
       
       const result = driversWithUsers.map(d => {
         // Convert MongoDB location object to array format expected by frontend
@@ -435,9 +438,9 @@ export class MongoStorage implements IStorage {
           id: d._id.toString(),
           userId: d.userId?.toString(),
           telegramId: d.telegramId,
-          name: d.name || null,
-          phoneNumber: d.phoneNumber || null,
-          profileImageUrl: d.profileImageUrl,
+          name: d.name || (d.userInfo ? `${d.userInfo.firstName || ''} ${d.userInfo.lastName || ''}`.trim() : null) || 'Driver',
+          phoneNumber: d.phoneNumber || d.userInfo?.phoneNumber || null,
+          profileImageUrl: d.profileImageUrl || d.userInfo?.profileImageUrl,
           governmentIdFrontUrl: d.governmentIdFrontUrl,
           governmentIdBackUrl: d.governmentIdBackUrl,
           licenseNumber: d.licenseNumber,
@@ -1466,34 +1469,7 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async getAllDrivers(): Promise<DriverType[]> {
-    try {
-      const drivers = await DriverModel.find({}).lean();
-      return drivers.map(driver => ({
-        id: driver._id.toString(),
-        userId: driver.userId,
-        licenseNumber: driver.licenseNumber,
-        vehicleType: driver.vehicleType,
-        vehiclePlate: driver.vehiclePlate,
-        currentLocation: driver.currentLocation ? [driver.currentLocation.lat, driver.currentLocation.lng] : null,
-        isOnline: driver.isOnline,
-        isAvailable: driver.isAvailable,
-        isApproved: driver.isApproved,
-        rating: driver.rating ? driver.rating.toString() : '0.00',
-        totalDeliveries: driver.totalDeliveries || 0,
-        totalEarnings: driver.totalEarnings ? driver.totalEarnings.toString() : '0.00',
-        zone: driver.zone || null,
-        licenseImageUrl: driver.licenseImageUrl || null,
-        vehicleImageUrl: driver.vehicleImageUrl || null,
-        idCardImageUrl: driver.idCardImageUrl || null,
-        createdAt: driver.createdAt || null,
-        updatedAt: driver.updatedAt || null,
-      } as DriverType));
-    } catch (error) {
-      console.error('Error getting all drivers:', error);
-      return [];
-    }
-  }
+
 
   async rejectDriver(driverId: string): Promise<void> {
     try {
