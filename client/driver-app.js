@@ -126,14 +126,44 @@ class DriverApp {
     }
 
     autofillRegistrationForm() {
-        // Fill name from Telegram profile
-        if (this.telegramUser?.fullName) {
+        // Check for URL parameters first (from contact sharing)
+        const urlParams = new URLSearchParams(window.location.search);
+        const phoneFromUrl = urlParams.get('phone');
+        const nameFromUrl = urlParams.get('name');
+        
+        // Fill name - prioritize URL parameter, then Telegram profile
+        const fullName = nameFromUrl || this.telegramUser?.fullName;
+        if (fullName) {
             const nameField = document.getElementById('driverName');
             if (nameField) {
-                nameField.value = this.telegramUser.fullName;
+                nameField.value = fullName;
                 nameField.style.backgroundColor = '#f0f9f4';
-                nameField.placeholder = 'Name loaded from Telegram';
+                nameField.placeholder = nameFromUrl ? 'Name from shared contact' : 'Name loaded from Telegram';
             }
+        }
+
+        // Fill phone number from URL parameter (contact sharing)
+        if (phoneFromUrl) {
+            const phoneField = document.getElementById('driverPhone');
+            if (phoneField) {
+                phoneField.value = phoneFromUrl;
+                phoneField.style.backgroundColor = '#f0f9f4';
+                phoneField.placeholder = 'Phone number from shared contact';
+                phoneField.readOnly = true; // Make it read-only since it came from verified contact
+                
+                // Add visual indicator that phone was auto-filled
+                const phoneInfo = document.createElement('div');
+                phoneInfo.style.cssText = 'background: #e8f5e8; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #2d5a27; border: 1px solid #b8d4b8;';
+                phoneInfo.innerHTML = `✅ Phone number auto-filled from your shared contact`;
+                
+                if (phoneField.parentNode && !document.querySelector('[data-phone-info]')) {
+                    phoneInfo.setAttribute('data-phone-info', 'true');
+                    phoneField.parentNode.insertBefore(phoneInfo, phoneField.nextSibling);
+                }
+            }
+        } else {
+            // Setup manual phone number entry if no phone from contact
+            this.setupPhoneNumberRequest();
         }
 
         // Add Telegram ID info display for user confirmation
@@ -148,9 +178,6 @@ class DriverApp {
                 nameField.parentNode.insertBefore(telegramInfo, nameField.nextSibling);
             }
         }
-
-        // Setup manual phone number entry
-        this.setupPhoneNumberRequest();
     }
 
     setupPhoneNumberRequest() {

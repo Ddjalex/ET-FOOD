@@ -28,25 +28,54 @@ export async function setupDriverBot(bot: Telegraf) {
       });
     }
 
-    const welcomeMessage = `🚗 Welcome to BeU Delivery Driver Portal!
+    // Check if driver is already registered
+    const existingDriver = await storage.getDriverByTelegramId(telegramUserId);
+    
+    if (existingDriver) {
+      // Driver exists, show dashboard
+      if (!existingDriver.isApproved) {
+        await ctx.reply('⏳ Your driver application is under review.\n\nStatus: Pending Approval\nWe will notify you once your application is approved.');
+      } else {
+        // Show driver dashboard
+        const statusText = existingDriver.isOnline ? (existingDriver.isAvailable ? '🟢 Online & Available' : '🟡 Online & Busy') : '🔴 Offline';
+        
+        const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+          : 'https://replit.com';
+
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: existingDriver.isOnline ? '🔴 Go Offline' : '🟢 Go Online', callback_data: existingDriver.isOnline ? 'driver_offline' : 'driver_online' }
+            ],
+            [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
+            [
+              { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
+              { text: '💰 Earnings', callback_data: 'driver_earnings' }
+            ]
+          ]
+        };
+
+        await ctx.reply(`🚗 Welcome back, ${existingDriver.name}!\n\nStatus: ${statusText}\nRating: ${existingDriver.rating}⭐ (${existingDriver.totalDeliveries || 0} deliveries)\nZone: ${existingDriver.zone || 'Not assigned'}\n\nChoose an option:`, { reply_markup: keyboard });
+      }
+    } else {
+      // New driver - start with contact sharing
+      const welcomeMessage = `🚗 Welcome to BeU Delivery Driver Portal!
 
 Hello ${firstName}! I'm your driver assistant for managing deliveries.
 
-Ready to start earning with BeU Delivery?`;
+📱 To get started, please share your contact information with us. This will help us auto-fill your registration form.`;
 
-    const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
-      : 'https://replit.com';
+      const keyboard = {
+        keyboard: [
+          [{ text: '📱 Share My Contact', request_contact: true }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      };
 
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '📝 Register as Driver', web_app: { url: driverAppUrl } }],
-        [{ text: '🚗 Driver Dashboard', callback_data: 'driver_dashboard' }],
-        [{ text: '📋 Requirements', callback_data: 'driver_requirements' }]
-      ]
-    };
-
-    await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+      await ctx.reply(welcomeMessage, { reply_markup: keyboard });
+    }
   });
   // Driver command - main driver interface
   bot.command('driver', async (ctx) => {
@@ -273,8 +302,7 @@ Ready to apply? Use the registration form!`);
       // Save driver's live location
       await storage.updateDriverLocation(driver.id, {
         lat: location.latitude,
-        lng: location.longitude,
-        timestamp: new Date().toISOString()
+        lng: location.longitude
       });
 
       // Also update driver status to online if they're sharing location
@@ -290,6 +318,62 @@ Ready to apply? Use the registration form!`);
     } catch (error) {
       console.error('Error saving driver location:', error);
       await ctx.reply('❌ Failed to update location. Please try again.');
+    }
+  });
+
+  // Handle contact sharing
+  bot.on('contact', async (ctx) => {
+    const telegramUserId = ctx.from?.id.toString();
+    const contact = ctx.message.contact;
+    
+    if (!telegramUserId || !contact) return;
+
+    try {
+      // Verify the shared contact is the user's own contact
+      if (contact.user_id?.toString() !== telegramUserId) {
+        await ctx.reply('❌ Please share your own contact information.', {
+          reply_markup: {
+            keyboard: [
+              [{ text: '📱 Share My Contact', request_contact: true }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
+        return;
+      }
+
+      const phoneNumber = contact.phone_number;
+      const firstName = contact.first_name || ctx.from?.first_name || '';
+      const lastName = contact.last_name || ctx.from?.last_name || '';
+      
+      await ctx.reply('✅ Thank you for sharing your contact information!\n\nNow you can proceed with your driver registration. Your phone number will be automatically filled in the form.', {
+        reply_markup: {
+          remove_keyboard: true
+        }
+      });
+
+      // Now show registration button with phone number in URL
+      const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html?phone=${encodeURIComponent(phoneNumber)}&name=${encodeURIComponent(`${firstName} ${lastName}`.trim())}`
+        : `https://replit.com?phone=${encodeURIComponent(phoneNumber)}`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '📝 Complete Driver Registration', web_app: { url: driverAppUrl } }],
+          [{ text: '📋 View Requirements', callback_data: 'driver_requirements' }]
+        ]
+      };
+
+      await ctx.reply('📝 **Complete Your Driver Registration**\n\nClick the button below to open the registration form. Your contact information has been saved and will be auto-filled.', { 
+        reply_markup: keyboard,
+        parse_mode: 'Markdown'
+      });
+      
+      console.log(`Contact shared by driver ${telegramUserId}: ${phoneNumber}`);
+    } catch (error) {
+      console.error('Error handling contact sharing:', error);
+      await ctx.reply('❌ Failed to process contact information. Please try again.');
     }
   });
 }
