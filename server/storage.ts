@@ -807,10 +807,40 @@ class MemoryStorage implements IStorage {
 
   // Driver management methods
   async getAllDrivers(): Promise<any[]> {
-    return Array.from(this.drivers.values()).map(driver => ({
-      ...driver,
-      user: this.users.get(driver.userId)
-    }));
+    return Array.from(this.drivers.values()).map(driver => {
+      const user = this.users.get(driver.userId);
+      return {
+        id: driver.id || driver._id,
+        userId: driver.userId,
+        telegramId: driver.telegramId,
+        phoneNumber: driver.phoneNumber,
+        name: driver.name,
+        governmentIdFrontUrl: driver.governmentIdFrontUrl,
+        governmentIdBackUrl: driver.governmentIdBackUrl,
+        licenseNumber: driver.licenseNumber,
+        vehicleType: driver.vehicleType,
+        vehiclePlate: driver.vehiclePlate,
+        licenseImageUrl: driver.licenseImageUrl,
+        vehicleImageUrl: driver.vehicleImageUrl,
+        idCardImageUrl: driver.idCardImageUrl,
+        currentLocation: driver.currentLocation,
+        status: driver.status,
+        isOnline: driver.isOnline,
+        isAvailable: driver.isAvailable,
+        isApproved: driver.isApproved,
+        isBlocked: driver.isBlocked,
+        rating: driver.rating,
+        totalDeliveries: driver.totalDeliveries,
+        totalEarnings: driver.totalEarnings,
+        todayEarnings: driver.todayEarnings,
+        weeklyEarnings: driver.weeklyEarnings,
+        zone: driver.zone,
+        lastOnline: driver.lastOnline,
+        createdAt: driver.createdAt,
+        updatedAt: driver.updatedAt,
+        user: user
+      };
+    });
   }
 
 
