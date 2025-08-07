@@ -382,7 +382,7 @@ export class MongoStorage implements IStorage {
       
       // First fetch all drivers
       const drivers = await DriverModel.find({}).lean();
-      console.log('📊 Raw driver data from MongoDB:', JSON.stringify(drivers[0], null, 2));
+      console.log('📊 Raw driver count:', drivers.length);
       
       const result = [];
       
@@ -391,7 +391,15 @@ export class MongoStorage implements IStorage {
         let userData = null;
         try {
           userData = await User.findById(d.userId).lean();
-          console.log('👤 User data for driver:', userData ? userData.email : 'not found');
+          console.log('👤 User lookup - Driver ID:', d._id, 'User ID:', d.userId, 'Found:', !!userData);
+          if (userData) {
+            console.log('👤 User details:', {
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              role: userData.role
+            });
+          }
         } catch (userError) {
           console.error('Error fetching user data for driver:', d._id, userError);
         }
@@ -406,12 +414,20 @@ export class MongoStorage implements IStorage {
           }
         }
         
+        // Create user object with proper structure for frontend
+        const userObject = userData ? {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          phoneNumber: userData.phoneNumber
+        } : null;
+        
         const driverResult = {
           id: d._id.toString(),
           userId: d.userId,
           telegramId: d.telegramId,
-          name: d.name || "Unknown",
-          phoneNumber: d.phoneNumber || "N/A",
+          name: d.name || null,
+          phoneNumber: d.phoneNumber || null,
           governmentIdFrontUrl: d.governmentIdFrontUrl,
           governmentIdBackUrl: d.governmentIdBackUrl,
           licenseNumber: d.licenseNumber,
@@ -422,33 +438,35 @@ export class MongoStorage implements IStorage {
           idCardImageUrl: d.idCardImageUrl,
           currentLocation: currentLocation,
           status: d.status,
-          isOnline: d.isOnline,
-          isAvailable: d.isAvailable,
-          isApproved: d.isApproved,
-          isBlocked: d.isBlocked,
+          isOnline: d.isOnline || false,
+          isAvailable: d.isAvailable || false,
+          isApproved: d.isApproved || false,
+          isBlocked: d.isBlocked || false,
           rating: d.rating || "0.00",
           totalDeliveries: d.totalDeliveries || 0,
           totalEarnings: d.totalEarnings || "0.00",
-          todayEarnings: d.todayEarnings,
-          weeklyEarnings: d.weeklyEarnings,
+          todayEarnings: d.todayEarnings || "0.00",
+          weeklyEarnings: d.weeklyEarnings || "0.00",
           zone: d.zone,
           lastOnline: d.lastOnline,
           createdAt: d.createdAt,
           updatedAt: d.updatedAt,
-          user: userData
+          user: userObject
         };
         
-        console.log('✅ Combined driver data:', { 
+        console.log('✅ Driver processed:', { 
           id: driverResult.id,
-          name: driverResult.name, 
-          phoneNumber: driverResult.phoneNumber,
-          userEmail: userData?.email,
-          currentLocation: driverResult.currentLocation 
+          driverName: driverResult.name, 
+          userFirstName: userObject?.firstName,
+          userLastName: userObject?.lastName,
+          userEmail: userObject?.email,
+          phoneNumber: driverResult.phoneNumber
         });
         
         result.push(driverResult);
       }
       
+      console.log('📋 Total drivers returned:', result.length);
       return result;
     } catch (error) {
       console.error('❌ Error getting all drivers:', error);
