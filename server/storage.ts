@@ -927,6 +927,7 @@ class MemoryStorage implements IStorage {
 }
 
 // Initialize storage - MongoDB is already connected, prioritize it
+import { MongoStorage } from './mongoStorage';
 const useMongoStorage = true; // Force MongoDB usage since we connected successfully
 
 class StorageFactory {

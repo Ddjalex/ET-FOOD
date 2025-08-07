@@ -1558,7 +1558,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
+      console.log('🔍 About to call storage.getAllDrivers()');
+      console.log('📊 Storage type:', storage.constructor.name);
       const drivers = await storage.getAllDrivers();
+      console.log('✅ Drivers retrieved from storage:', drivers.length, 'drivers');
+      console.log('📝 First driver data:', drivers[0]);
       res.json(drivers);
     } catch (error) {
       console.error('Failed to fetch drivers:', error);
