@@ -378,7 +378,7 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<any[]> {
     try {
-      console.log('🔍 MongoDB getAllDrivers() called');
+      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION');
       
       // First fetch all drivers
       const drivers = await DriverModel.find({}).lean();
