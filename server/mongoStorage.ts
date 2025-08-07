@@ -347,13 +347,24 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<any[]> {
     try {
+      console.log('🔍 MongoDB getAllDrivers() called');
       const drivers = await DriverModel.find({}).populate('userId').lean();
-      console.log('Raw driver data from MongoDB:', drivers[0]); // Debug log
+      console.log('📊 Raw driver data from MongoDB:', JSON.stringify(drivers[0], null, 2));
       
       return drivers.map(d => {
+        // Convert MongoDB location object to array format expected by frontend
+        let currentLocation = null;
+        if (d.currentLocation) {
+          if (d.currentLocation.lat && d.currentLocation.lng) {
+            currentLocation = [d.currentLocation.lat, d.currentLocation.lng];
+          } else if (Array.isArray(d.currentLocation)) {
+            currentLocation = d.currentLocation;
+          }
+        }
+        
         const result = {
           id: d._id.toString(),
-          userId: d.userId,
+          userId: d.userId?._id?.toString() || d.userId,
           telegramId: d.telegramId,
           name: d.name,
           phoneNumber: d.phoneNumber,
@@ -365,7 +376,7 @@ export class MongoStorage implements IStorage {
           licenseImageUrl: d.licenseImageUrl,
           vehicleImageUrl: d.vehicleImageUrl,
           idCardImageUrl: d.idCardImageUrl,
-          currentLocation: d.currentLocation,
+          currentLocation: currentLocation,
           status: d.status,
           isOnline: d.isOnline,
           isAvailable: d.isAvailable,
@@ -382,11 +393,16 @@ export class MongoStorage implements IStorage {
           updatedAt: d.updatedAt,
           user: d.userId
         };
-        console.log('Mapped driver result:', { name: result.name, phoneNumber: result.phoneNumber }); // Debug log
+        console.log('✅ Mapped driver result:', { 
+          id: result.id,
+          name: result.name, 
+          phoneNumber: result.phoneNumber,
+          currentLocation: result.currentLocation 
+        });
         return result;
       });
     } catch (error) {
-      console.error('Error getting all drivers:', error);
+      console.error('❌ Error getting all drivers:', error);
       return [];
     }
   }
