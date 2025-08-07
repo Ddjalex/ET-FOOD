@@ -348,11 +348,43 @@ export class MongoStorage implements IStorage {
   async getAllDrivers(): Promise<any[]> {
     try {
       const drivers = await DriverModel.find({}).populate('userId').lean();
-      return drivers.map(d => ({
-        ...d,
-        id: d._id.toString(),
-        user: d.userId
-      }));
+      console.log('Raw driver data from MongoDB:', drivers[0]); // Debug log
+      
+      return drivers.map(d => {
+        const result = {
+          id: d._id.toString(),
+          userId: d.userId,
+          telegramId: d.telegramId,
+          name: d.name,
+          phoneNumber: d.phoneNumber,
+          governmentIdFrontUrl: d.governmentIdFrontUrl,
+          governmentIdBackUrl: d.governmentIdBackUrl,
+          licenseNumber: d.licenseNumber,
+          vehicleType: d.vehicleType,
+          vehiclePlate: d.vehiclePlate,
+          licenseImageUrl: d.licenseImageUrl,
+          vehicleImageUrl: d.vehicleImageUrl,
+          idCardImageUrl: d.idCardImageUrl,
+          currentLocation: d.currentLocation,
+          status: d.status,
+          isOnline: d.isOnline,
+          isAvailable: d.isAvailable,
+          isApproved: d.isApproved,
+          isBlocked: d.isBlocked,
+          rating: d.rating || "0.00",
+          totalDeliveries: d.totalDeliveries || 0,
+          totalEarnings: d.totalEarnings || "0.00",
+          todayEarnings: d.todayEarnings,
+          weeklyEarnings: d.weeklyEarnings,
+          zone: d.zone,
+          lastOnline: d.lastOnline,
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+          user: d.userId
+        };
+        console.log('Mapped driver result:', { name: result.name, phoneNumber: result.phoneNumber }); // Debug log
+        return result;
+      });
     } catch (error) {
       console.error('Error getting all drivers:', error);
       return [];
