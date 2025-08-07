@@ -58,14 +58,19 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
 // Role-based authorization middleware
 export const requireRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    console.log('🔍 requireRole - Checking role:', (req.user as any)?.role, 'against required roles:', roles);
+    
     if (!req.user) {
+      console.log('❌ requireRole - No user found');
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
     if (!(req.user as any).role || !roles.includes((req.user as any).role)) {
+      console.log('❌ requireRole - Insufficient permissions. User role:', (req.user as any)?.role);
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
 
+    console.log('✅ requireRole - Permission granted');
     next();
   };
 };
@@ -81,11 +86,15 @@ export const requireKitchenAccess = requireRole([UserRole.SUPERADMIN, UserRole.R
 
 // Session-based auth check
 export const requireSession = (req: Request, res: Response, next: NextFunction) => {
+  console.log('🔍 requireSession - Session check:', req.session?.user);
+  
   if (!req.session?.user) {
+    console.log('❌ requireSession - No session found');
     return res.status(401).json({ message: 'Please log in' });
   }
   
   req.user = req.session.user;
+  console.log('✅ requireSession - User set:', req.user);
   next();
 };
 

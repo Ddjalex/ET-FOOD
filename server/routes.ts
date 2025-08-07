@@ -2434,6 +2434,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Broadcast message to customers via Telegram
   app.post('/api/superadmin/broadcast', requireSession, requireSuperadmin, upload.single('image'), async (req, res) => {
     try {
+      console.log('🔍 Broadcast request received');
+      console.log('🔍 User from session:', req.session?.user);
+      console.log('🔍 User from req.user:', req.user);
+      
       const { title, message, messageType, targetAudience } = req.body;
       const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
