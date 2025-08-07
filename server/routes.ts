@@ -2275,6 +2275,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files statically
   app.use('/uploads', express.static('uploads'));
 
+  // Debug endpoint to manually update customers with telegram IDs (temporary fix)
+  app.post('/api/debug/update-customers', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      console.log('🔧 Debug: Updating existing customers with sample telegram IDs');
+      
+      // Get customers without telegram IDs
+      const customers = await storage.getUsersByRole('customer');
+      const customersWithoutTelegram = customers.filter(c => !c.telegramUserId);
+      
+      console.log(`Found ${customersWithoutTelegram.length} customers without telegram IDs`);
+      
+      // Update them with sample telegram IDs for testing
+      for (let i = 0; i < customersWithoutTelegram.length; i++) {
+        const customer = customersWithoutTelegram[i];
+        const sampleTelegramId = `99999${i + 1}`;
+        
+        await storage.upsertUser({
+          id: customer.id,
+          telegramUserId: sampleTelegramId,
+          telegramUsername: `test_user_${i + 1}`,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          role: customer.role,
+          email: customer.email,
+          phoneNumber: customer.phoneNumber,
+          profileImageUrl: customer.profileImageUrl,
+          isActive: customer.isActive,
+          restaurantId: customer.restaurantId,
+          createdBy: customer.createdBy
+        });
+        
+        console.log(`✅ Updated customer ${customer.firstName} ${customer.lastName} with telegram ID: ${sampleTelegramId}`);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Updated ${customersWithoutTelegram.length} customers with telegram IDs`,
+        updatedCount: customersWithoutTelegram.length
+      });
+    } catch (error) {
+      console.error('Error updating customers:', error);
+      res.status(500).json({ error: 'Failed to update customers' });
+    }
+  });
+
   // Submit order from Telegram Mini Web App (no auth required)
   app.post('/api/telegram/orders', async (req, res) => {
     try {
@@ -2341,9 +2386,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Invalid session token' });
       }
 
+      // Ensure the customer exists in the system
+      let customer = await storage.getUserByTelegramId(telegramUserId);
+      if (!customer) {
+        console.log(`🔥 Creating customer during order for telegramUserId: ${telegramUserId}`);
+        customer = await storage.upsertUser({
+          telegramUserId,
+          role: 'customer',
+          firstName: 'Customer',
+          lastName: telegramUserId
+        });
+        console.log(`✅ Customer created with ID: ${customer.id} and telegramUserId: ${customer.telegramUserId}`);
+      }
+
       // Create order for real customer
       const order = await storage.createOrder({
-        customerId: telegramUserId,
+        customerId: customer.id,
         restaurantId: orderData.restaurantId,
         orderNumber: `ORD-${Date.now()}`,
         items: orderData.items,

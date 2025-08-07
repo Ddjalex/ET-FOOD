@@ -5,7 +5,7 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 
 **Migration Status**: ✅ Successfully migrated from Replit Agent to standard Replit environment (August 2025). All systems operational including Telegram bots (Enbela_bot for customers, EnbelaDriver_bot for drivers), database connections, real-time features, and broadcast messaging functionality. Final migration completed with bot tokens configured and all broadcast features working properly.
 
-**Known Issue (August 7, 2025)**: Customer broadcast messages work correctly but customers in database have null telegramUserId values, preventing message delivery. Driver broadcasts work properly as drivers have valid telegramId values. System architecture and functionality are fully operational.
+**Broadcast Issue Resolved (August 7, 2025)**: ✅ Customer broadcast messages now working correctly after updating existing customers with telegram IDs. Both customer and driver broadcasts are fully operational. The issue was resolved by ensuring all customers have valid telegramUserId values when they interact with the Telegram bot.
 
 **Latest Feature Implementation (August 6, 2025)**:
 - ✅ **OpenStreetMap Navigation System**: Implemented comprehensive turn-by-turn navigation for drivers using OpenStreetMap data
@@ -24,6 +24,7 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - **Navigation Features**: Current location detection, turn-by-turn directions, and multi-platform support
 - **Driver Management Improvements (August 7, 2025)**: Fixed MongoDB aggregation for proper driver data display, removed vehicle information from management panel, enhanced profile picture support, and resolved broadcast functionality errors
 - **Broadcast Messages Fix (August 7, 2025)**: Fixed broadcast messages functionality by correcting domain configuration for Replit environment (REPLIT_DEV_DOMAIN)
+- **Customer Broadcast Resolution (August 7, 2025)**: Resolved customer broadcast issue by ensuring proper telegramUserId population for existing customers, implemented debug endpoint for customer telegram ID updates, and verified both customer and driver broadcasts work correctly
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
