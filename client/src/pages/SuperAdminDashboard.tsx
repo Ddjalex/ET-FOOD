@@ -285,6 +285,15 @@ function SuperAdminDashboardContent() {
     queryKey: ['/api/superadmin/drivers'],
   });
 
+  // Debug driver data
+  console.log('Drivers data:', drivers);
+  if (drivers.length > 0) {
+    console.log('First driver:', drivers[0]);
+    console.log('Driver name:', drivers[0].name);
+    console.log('Driver phoneNumber:', drivers[0].phoneNumber);
+    console.log('Driver user:', drivers[0].user);
+  }
+
   const { data: settings } = useQuery({
     queryKey: ['/api/settings'],
   });
