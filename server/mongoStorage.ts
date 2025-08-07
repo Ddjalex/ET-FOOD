@@ -383,9 +383,14 @@ export class MongoStorage implements IStorage {
       // First fetch all drivers using aggregation to include user data
       const driversWithUsers = await DriverModel.aggregate([
         {
+          $addFields: {
+            userObjectId: { $toObjectId: "$userId" }
+          }
+        },
+        {
           $lookup: {
             from: 'users',
-            localField: 'userId',
+            localField: 'userObjectId',
             foreignField: '_id',
             as: 'userInfo'
           }

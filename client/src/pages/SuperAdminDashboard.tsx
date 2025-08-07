@@ -2108,7 +2108,21 @@ function SuperAdminDashboardContent() {
                       <TableCell>
                         <div className="space-y-2">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {driver.profileImageUrl ? (
+                              <img 
+                                src={driver.profileImageUrl} 
+                                alt={`${driver.name || 'Driver'} profile`}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                onError={(e) => {
+                                  // Fallback to letter avatar if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={`w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold ${driver.profileImageUrl ? 'hidden' : ''}`}
+                            >
                               {driver.name ? driver.name.charAt(0).toUpperCase() : 'D'}
                             </div>
                             <div>
