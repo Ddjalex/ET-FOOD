@@ -661,21 +661,35 @@ class DriverApp {
             console.log('Connected to server');
             
             if (this.driverData) {
+                // Authenticate the socket connection with driver details
+                this.socket.emit('authenticate', { userId: this.driverData.userId || this.driverData.id });
                 this.socket.emit('driver-online', this.driverData.id);
+                console.log('Driver authenticated and marked online:', this.driverData.id);
             }
         });
 
+        this.socket.on('authenticated', (data) => {
+            console.log('Socket authenticated successfully:', data);
+        });
+
+        this.socket.on('authentication_error', (error) => {
+            console.error('Socket authentication failed:', error);
+        });
+
         this.socket.on('new_order_notification', (data) => {
-            console.log('New order notification received:', data);
+            console.log('🚨 New order notification received:', data);
             if (data.driverId === this.driverData?.id) {
                 this.handleNewOrderNotification(data.order);
+                // Show immediate visual notification
+                this.showOrderNotificationPopup(data.order);
             }
         });
 
         this.socket.on('order_ready_for_pickup', (data) => {
-            console.log('Order ready for pickup:', data);
+            console.log('📦 Order ready for pickup:', data);
             if (data.driverId === this.driverData?.id) {
                 this.handleOrderReadyForPickup(data);
+                this.showAlert(`Order #${data.orderNumber} is ready for pickup!`);
             }
         });
 
@@ -725,6 +739,71 @@ class DriverApp {
             this.showRejectedStatus();
             this.showNotification('❌ Your driver application has been rejected. Please contact support.', 'error');
         });
+    }
+
+    showOrderNotificationPopup(order) {
+        // Create a prominent notification popup for new orders
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 90%;
+            text-align: center;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        popup.innerHTML = `
+            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+                🚨 New Order Available!
+            </div>
+            <div style="font-size: 14px; margin-bottom: 5px;">
+                Order #${order.orderNumber}
+            </div>
+            <div style="font-size: 12px; opacity: 0.9;">
+                ${order.restaurantName} • ${order.estimatedEarnings || 50} ETB
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+
+        // Show alert if in Telegram
+        if (this.tg) {
+            this.tg.showAlert(`🚨 New order available: #${order.orderNumber} from ${order.restaurantName}`);
+        }
+
+        // Auto-remove popup after 5 seconds
+        setTimeout(() => {
+            if (popup.parentNode) {
+                popup.remove();
+            }
+        }, 5000);
+
+        // Refresh available orders to show the new order
+        this.loadAvailableOrders();
+    }
+
+    handleNewOrderNotification(order) {
+        console.log('Processing new order notification:', order);
+        
+        // Add to available orders list
+        this.displayAvailableOrder(order);
+        this.updateOrderBadge();
+        
+        // Play notification sound if available
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+            console.log('Could not play notification sound:', e);
+        }
     }
 
     handleNewOrder(order) {

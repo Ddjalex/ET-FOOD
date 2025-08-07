@@ -49,6 +49,31 @@ class DriverService {
     return R * c;
   }
 
+  async findAndAssignDriver(order: any, restaurantLocation: any) {
+    try {
+      console.log(`🔍 Finding driver for order ${order.orderNumber}...`);
+      
+      const nearestDriver = await this.findNearestDriver(restaurantLocation);
+      
+      if (!nearestDriver) {
+        console.log('❌ No available drivers found for order:', order.id);
+        return null;
+      }
+
+      console.log(`✅ Found nearest driver: ${nearestDriver.name || nearestDriver.id}`);
+      
+      // Mark driver as busy (online but not available)
+      await storage.updateDriverStatus(nearestDriver.id, true, false);
+      console.log(`📝 Updated driver ${nearestDriver.id} status to busy`);
+
+      return nearestDriver;
+
+    } catch (error) {
+      console.error('Error finding and assigning driver:', error);
+      return null;
+    }
+  }
+
   async notifyNearbyDrivers(order: any, restaurantLocation: any) {
     try {
       const nearestDriver = await this.findNearestDriver(restaurantLocation);

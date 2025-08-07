@@ -63,7 +63,7 @@ class OrderService {
             const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
             await broadcastToSpecificCustomer(customer.telegramUserId, {
               title: '👨‍🍳 Your Order is Being Prepared!',
-              message: `Great news! Your order ${order.orderNumber} is now being prepared by our kitchen staff. It will be ready soon for pickup.`,
+              message: `Great news! Your order ${order.orderNumber} is now being prepared by our kitchen staff. A driver will be assigned soon.`,
               orderNumber: order.orderNumber,
               status: 'preparing'
             });
@@ -86,14 +86,67 @@ class OrderService {
         lng: restaurant.longitude || restaurant.location?.lng
       };
 
-      // Notify nearby drivers about new order
+      console.log(`🍽️ Restaurant location for ${order.restaurantId}:`, restaurantLocation);
+
+      // Find and assign driver immediately when preparation starts
       const { driverService } = await import('./driverService');
-      const notifiedDriver = await driverService.notifyNearbyDrivers(order, restaurantLocation);
       
-      if (notifiedDriver) {
-        console.log(`Order ${order.id} notification sent to driver ${notifiedDriver.id}`);
+      // Get the best available driver
+      const assignedDriver = await driverService.findAndAssignDriver(order, restaurantLocation);
+      
+      if (assignedDriver) {
+        console.log(`✅ Driver ${assignedDriver.id} assigned to order ${order.id}`);
+        
+        // Update order with assigned driver
+        await storage.assignOrderToDriver(order.id, assignedDriver.id);
+        
+        // Send real-time notification to assigned driver
+        const { notifyDriver } = await import('../websocket');
+        notifyDriver(assignedDriver.id, 'new_order_notification', {
+          driverId: assignedDriver.id,
+          order: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            restaurantName: order.restaurantName || restaurant.name,
+            customerName: order.customerName || 'Customer',
+            totalAmount: order.total || order.totalAmount,
+            deliveryFee: 50,
+            estimatedEarnings: driverService.calculateEarnings(order),
+            distance: restaurantLocation ? driverService.calculateDistance(
+              restaurantLocation.lat,
+              restaurantLocation.lng,
+              assignedDriver.currentLocation?.lat || 0,
+              assignedDriver.currentLocation?.lng || 0
+            ) : 0,
+            restaurantLocation,
+            deliveryAddress: order.deliveryAddress,
+            status: 'assigned'
+          }
+        });
+
+        console.log(`🚨 Real-time notification sent to driver ${assignedDriver.id} for order ${order.orderNumber}`);
+
+        // Notify customer about driver assignment
+        if (order.customerId) {
+          try {
+            const customer = await storage.getUser(order.customerId);
+            if (customer?.telegramUserId) {
+              const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+              await broadcastToSpecificCustomer(customer.telegramUserId, {
+                title: '🚗 Driver Assigned!',
+                message: `Great! Driver ${assignedDriver.name || 'Driver'} has been assigned to your order ${order.orderNumber}. They will pick it up once it's ready.`,
+                orderNumber: order.orderNumber,
+                status: 'driver_assigned',
+                driverName: assignedDriver.name
+              });
+            }
+          } catch (error) {
+            console.error('Error notifying customer of driver assignment:', error);
+          }
+        }
+
       } else {
-        console.log(`No available drivers for order ${order.id}`);
+        console.log(`⚠️ No available drivers for order ${order.id} - will try again when ready`);
       }
 
       // Notify customer that preparation has started
