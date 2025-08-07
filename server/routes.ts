@@ -2692,8 +2692,8 @@ Use the buttons below to get started:`;
       const governmentIdFrontUrl = files.governmentIdFront ? `/uploads/${files.governmentIdFront[0].filename}` : null;
       const governmentIdBackUrl = files.governmentIdBack ? `/uploads/${files.governmentIdBack[0].filename}` : null;
 
-      // Create driver profile
-      const driver = await storage.createDriver({
+      // Create driver profile - ensure no id field is passed
+      const driverData = {
         userId: user.id,
         telegramId,
         phoneNumber,
@@ -2709,7 +2709,10 @@ Use the buttons below to get started:`;
         totalEarnings: '0.00',
         todayEarnings: '0.00',
         weeklyEarnings: '0.00'
-      });
+      };
+      
+      console.log('Creating driver with data:', driverData);
+      const driver = await storage.createDriver(driverData);
 
       // Send real-time notification to SuperAdmin
       broadcast('driverRegistration', {
@@ -2731,6 +2734,24 @@ Use the buttons below to get started:`;
       });
     } catch (error) {
       console.error('Error registering driver:', error);
+      console.error('Full error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        name: (error as Error).name
+      });
+      
+      // Provide specific error messages based on error type
+      if ((error as any).code === 11000) {
+        // MongoDB duplicate key error
+        if ((error as any).keyValue?.telegramId) {
+          return res.status(409).json({ message: 'Driver with this Telegram ID already exists' });
+        }
+        if ((error as any).keyValue?.userId) {
+          return res.status(409).json({ message: 'User already has a driver profile' });
+        }
+        return res.status(409).json({ message: 'Driver registration failed: duplicate data detected' });
+      }
+      
       res.status(500).json({ message: 'Failed to register driver' });
     }
   });

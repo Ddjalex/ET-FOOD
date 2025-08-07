@@ -948,7 +948,12 @@ export class MongoStorage implements IStorage {
   async createDriver(driverData: InsertDriver): Promise<DriverType> {
     try {
       console.log('💾 MongoDB createDriver called with data:', driverData);
-      const driver = new DriverModel(driverData);
+      
+      // Remove any id field that might cause conflicts with MongoDB _id
+      const cleanDriverData = { ...driverData };
+      delete (cleanDriverData as any).id;
+      
+      const driver = new DriverModel(cleanDriverData);
       const savedDriver = await driver.save();
       console.log('✅ Driver saved to MongoDB:', {
         id: savedDriver._id,
