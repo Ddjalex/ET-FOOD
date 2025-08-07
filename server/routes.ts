@@ -1143,20 +1143,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Restaurant admins should only see drivers assigned to orders for their restaurant
+      // Restaurant admins can see all approved drivers
       if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
-        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
-        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
-        
-        if (orderDriverIds.size === 0) {
-          // No drivers assigned to any orders for this restaurant yet
-          res.json([]);
-          return;
-        }
-
         const allDrivers = await storage.getDrivers();
-        const restaurantDrivers = allDrivers.filter(driver => orderDriverIds.has(driver.id));
-        res.json(restaurantDrivers);
+        const approvedDrivers = allDrivers.filter(driver => driver.isApproved && driver.status === 'active');
+        res.json(approvedDrivers);
         return;
       }
 
@@ -1182,20 +1173,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Restaurant admins should only see available drivers assigned to their orders
+      // Restaurant admins can see all available approved drivers
       if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
-        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
-        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
-        
-        if (orderDriverIds.size === 0) {
-          // No drivers assigned to any orders for this restaurant yet
-          res.json([]);
-          return;
-        }
-
-        const allAvailableDrivers = await storage.getAvailableDrivers();
-        const restaurantAvailableDrivers = allAvailableDrivers.filter(driver => orderDriverIds.has(driver.id));
-        res.json(restaurantAvailableDrivers);
+        const availableDrivers = await storage.getAvailableDrivers();
+        const approvedAvailableDrivers = availableDrivers.filter(driver => driver.isApproved && driver.status === 'active');
+        res.json(approvedAvailableDrivers);
         return;
       }
 
@@ -1454,24 +1436,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Restaurant admins should only see nearby drivers assigned to their orders
+      // Restaurant admins can see all approved drivers for order assignment
       if (user.role === UserRole.RESTAURANT_ADMIN && user.restaurantId) {
-        const orders = await storage.getOrdersByRestaurant(user.restaurantId);
-        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
-        
-        if (orderDriverIds.size === 0) {
-          // No drivers assigned to any orders for this restaurant yet
-          res.json([]);
-          return;
-        }
-
         const allDrivers = await storage.getAllDrivers();
-        const nearbyDrivers = allDrivers.filter(driver => 
+        const approvedDrivers = allDrivers.filter(driver => 
           driver.isApproved && 
-          driver.status === 'active' &&
-          orderDriverIds.has(driver.id)
+          driver.status === 'active'
         );
-        res.json(nearbyDrivers);
+        res.json(approvedDrivers);
         return;
       }
 
@@ -1492,32 +1464,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Authentication required' });
       }
 
-      // Superadmin can see all approved drivers
-      if (user.role === UserRole.SUPERADMIN) {
+      // Both superadmin and restaurant admin can see all approved drivers
+      if (user.role === UserRole.SUPERADMIN || user.role === UserRole.RESTAURANT_ADMIN) {
         const allDrivers = await storage.getAllDrivers();
         const approvedDrivers = allDrivers.filter(driver => driver.status === 'active' && driver.isApproved);
         res.json(approvedDrivers);
-        return;
-      }
-
-      // Restaurant admin can only see drivers assigned to orders for their specific restaurant
-      if (user.role === UserRole.RESTAURANT_ADMIN) {
-        const orders = await storage.getOrdersByRestaurant(restaurantId);
-        const orderDriverIds = new Set(orders.map(order => order.driverId).filter(Boolean));
-        
-        if (orderDriverIds.size === 0) {
-          // No drivers assigned to any orders for this restaurant yet
-          res.json([]);
-          return;
-        }
-
-        const allDrivers = await storage.getAllDrivers();
-        const restaurantDrivers = allDrivers.filter(driver => 
-          driver.status === 'active' && 
-          driver.isApproved && 
-          orderDriverIds.has(driver.id)
-        );
-        res.json(restaurantDrivers);
         return;
       }
 
