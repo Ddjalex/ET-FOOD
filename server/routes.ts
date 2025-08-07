@@ -2259,15 +2259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Immediate notification to all nearby drivers about new available order
-      console.log(`📢 Broadcasting new available order to drivers: ${order.orderNumber}`);
-      broadcast('new_available_order', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        restaurantId: order.restaurantId,
-        total: order.total,
-        message: `🆕 New order available for pickup: ${order.orderNumber} ($${order.total})`
-      });
+      // Enhanced notifications are handled by OrderService.handleOrderReady
+      console.log(`📢 Order marked ready - enhanced notifications will be sent by OrderService: ${order.orderNumber}`);
 
       // Trigger automated driver assignment with slight delay
       setTimeout(async () => {
