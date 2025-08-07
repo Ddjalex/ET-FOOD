@@ -359,7 +359,7 @@ export async function broadcastToAllCustomers(broadcastData: {
             // Send with image
             await customerBot.telegram.sendPhoto(
               customer.telegramUserId,
-              { url: `${process.env.REPLIT_DOMAIN || 'http://localhost:5000'}${broadcastData.imageUrl}` },
+              { url: `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}${broadcastData.imageUrl}` },
               { caption: formattedMessage }
             );
           } else {
