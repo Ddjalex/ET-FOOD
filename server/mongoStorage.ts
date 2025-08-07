@@ -378,32 +378,30 @@ export class MongoStorage implements IStorage {
 
   async getAllDrivers(): Promise<any[]> {
     try {
-      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION');
+      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION v2');
       
-      // First fetch all drivers
-      const drivers = await DriverModel.find({}).lean();
-      console.log('📊 Raw driver count:', drivers.length);
-      
-      const result = [];
-      
-      for (const d of drivers) {
-        // Fetch user data for each driver
-        let userData = null;
-        try {
-          userData = await User.findById(d.userId).lean();
-          console.log('👤 User lookup - Driver ID:', d._id, 'User ID:', d.userId, 'Found:', !!userData);
-          if (userData) {
-            console.log('👤 User details:', {
-              email: userData.email,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              role: userData.role
-            });
+      // First fetch all drivers using aggregation to include user data
+      const driversWithUsers = await DriverModel.aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userInfo'
           }
-        } catch (userError) {
-          console.error('Error fetching user data for driver:', d._id, userError);
+        },
+        {
+          $unwind: {
+            path: '$userInfo',
+            preserveNullAndEmptyArrays: true
+          }
         }
-        
+      ]);
+      
+      console.log('📊 Raw driver count:', driversWithUsers.length);
+      console.log('📊 First driver raw:', JSON.stringify(driversWithUsers[0], null, 2));
+      
+      const result = driversWithUsers.map(d => {
         // Convert MongoDB location object to array format expected by frontend
         let currentLocation = null;
         if (d.currentLocation) {
@@ -415,16 +413,16 @@ export class MongoStorage implements IStorage {
         }
         
         // Create user object with proper structure for frontend
-        const userObject = userData ? {
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          phoneNumber: userData.phoneNumber
+        const userObject = d.userInfo ? {
+          firstName: d.userInfo.firstName,
+          lastName: d.userInfo.lastName,
+          email: d.userInfo.email,
+          phoneNumber: d.userInfo.phoneNumber
         } : null;
         
         const driverResult = {
           id: d._id.toString(),
-          userId: d.userId,
+          userId: d.userId?.toString(),
           telegramId: d.telegramId,
           name: d.name || null,
           phoneNumber: d.phoneNumber || null,
@@ -463,8 +461,8 @@ export class MongoStorage implements IStorage {
           phoneNumber: driverResult.phoneNumber
         });
         
-        result.push(driverResult);
-      }
+        return driverResult;
+      });
       
       console.log('📋 Total drivers returned:', result.length);
       return result;
