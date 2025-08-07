@@ -81,15 +81,27 @@ const DriverSchema = new Schema<IDriver>({
   lastOnline: Date,
 }, {
   timestamps: true,
+  id: false, // Disable virtual id field
+  versionKey: false, // Disable __v field
   toJSON: { 
     transform: (doc, ret) => {
-      ret.id = ret._id;
+      ret.id = ret._id.toString();
       delete ret._id;
-      delete ret.__v;
+      return ret;
+    }
+  },
+  toObject: {
+    transform: (doc, ret) => {
+      ret.id = ret._id.toString();
+      delete ret._id;
       return ret;
     }
   }
 });
+
+// Ensure proper unique indexes only
+DriverSchema.index({ telegramId: 1 }, { unique: true });
+DriverSchema.index({ userId: 1 }, { unique: true });
 
 export const Driver = mongoose.model<IDriver>('Driver', DriverSchema);
 export default Driver;

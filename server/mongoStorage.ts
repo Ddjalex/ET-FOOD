@@ -334,6 +334,37 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  // Cleanup method for problematic driver documents
+  private async cleanupProblematicDrivers(): Promise<void> {
+    try {
+      // Remove documents with null or undefined id fields
+      const deleteResult = await mongoose.connection.db.collection('drivers').deleteMany({
+        $or: [
+          { id: null },
+          { id: undefined },
+          { id: { $exists: false } },
+          { id: "" }
+        ]
+      });
+      
+      if (deleteResult.deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${deleteResult.deletedCount} problematic driver documents`);
+      }
+      
+      // Drop problematic id index if it exists
+      try {
+        await mongoose.connection.db.collection('drivers').dropIndex('id_1');
+        console.log('✅ Dropped problematic id_1 index');
+      } catch (indexError: any) {
+        if (indexError.code !== 27) { // 27 = IndexNotFound
+          console.log('⚠️  Could not drop id index:', indexError.message);
+        }
+      }
+    } catch (error) {
+      console.log('⚠️  Cleanup failed:', (error as Error).message);
+    }
+  }
+
   // Driver operations
   async getDrivers(): Promise<DriverType[]> {
     try {
@@ -949,6 +980,13 @@ export class MongoStorage implements IStorage {
     try {
       console.log('💾 MongoDB createDriver called with data:', driverData);
       
+      // First, clean up any problematic documents if they exist
+      try {
+        await this.cleanupProblematicDrivers();
+      } catch (cleanupError) {
+        console.log('⚠️  Cleanup attempt failed, proceeding with creation:', cleanupError.message);
+      }
+      
       // Remove any id field that might cause conflicts with MongoDB _id
       const cleanDriverData = { ...driverData };
       delete (cleanDriverData as any).id;
@@ -964,6 +1002,32 @@ export class MongoStorage implements IStorage {
       return this.convertDriverDocument(savedDriver);
     } catch (error) {
       console.error('❌ Error creating driver in MongoDB:', error);
+      
+      // If it's a duplicate key error on the id field, try cleanup and retry once
+      if ((error as any).code === 11000 && (error as any).keyPattern?.id) {
+        console.log('🔧 Attempting cleanup and retry due to id conflict...');
+        try {
+          await this.cleanupProblematicDrivers();
+          
+          // Retry the creation
+          const cleanDriverData = { ...driverData };
+          delete (cleanDriverData as any).id;
+          
+          const driver = new DriverModel(cleanDriverData);
+          const savedDriver = await driver.save();
+          console.log('✅ Driver saved after cleanup retry:', {
+            id: savedDriver._id,
+            name: savedDriver.name,
+            phoneNumber: savedDriver.phoneNumber,
+            telegramId: savedDriver.telegramId
+          });
+          return this.convertDriverDocument(savedDriver);
+        } catch (retryError) {
+          console.error('❌ Retry after cleanup also failed:', retryError);
+          throw retryError;
+        }
+      }
+      
       throw error;
     }
   }

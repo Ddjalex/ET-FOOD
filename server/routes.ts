@@ -2560,6 +2560,73 @@ Use the buttons below to get started:`;
   // DRIVER API ROUTES
   // ==============================================
 
+  // Database cleanup endpoint (development only)
+  app.post('/api/cleanup-drivers', async (req, res) => {
+    try {
+      console.log('🧹 Starting driver cleanup...');
+      
+      // Get MongoDB connection
+      const { mongoose } = await import('./mongodb');
+      
+      if (!mongoose.connection.readyState) {
+        return res.status(500).json({ message: 'Database not connected' });
+      }
+      
+      // Find and remove documents with null or undefined id fields
+      const brokenDrivers = await mongoose.connection.db.collection('drivers').find({
+        $or: [
+          { id: null },
+          { id: undefined },
+          { id: { $exists: false } }
+        ]
+      }).toArray();
+      
+      console.log(`Found ${brokenDrivers.length} broken driver documents`);
+      
+      if (brokenDrivers.length > 0) {
+        console.log('Broken drivers:', brokenDrivers.map(d => ({
+          _id: d._id,
+          name: d.name,
+          telegramId: d.telegramId,
+          phoneNumber: d.phoneNumber,
+          id: d.id
+        })));
+        
+        // Remove broken documents
+        const result = await mongoose.connection.db.collection('drivers').deleteMany({
+          $or: [
+            { id: null },
+            { id: undefined },
+            { id: { $exists: false } }
+          ]
+        });
+        
+        console.log(`✅ Removed ${result.deletedCount} broken driver documents`);
+      }
+      
+      // Drop the problematic id index if it exists
+      try {
+        await mongoose.connection.db.collection('drivers').dropIndex('id_1');
+        console.log('✅ Dropped problematic id index');
+      } catch (error: any) {
+        if (error.code === 27) {
+          console.log('ℹ️  No id index to drop');
+        } else {
+          console.log('⚠️  Error dropping index:', error.message);
+        }
+      }
+      
+      res.json({
+        message: 'Cleanup completed successfully',
+        removedDocuments: brokenDrivers.length
+      });
+      
+    } catch (error) {
+      console.error('❌ Error during cleanup:', error);
+      res.status(500).json({ message: 'Cleanup failed: ' + (error as Error).message });
+    }
+  });
+
   // Driver registration route (for JSON data without files)
   app.post('/api/drivers/register-basic', async (req, res) => {
     try {
