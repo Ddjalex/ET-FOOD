@@ -251,6 +251,17 @@ class OrderService {
             message: 'Your order is ready! We are finding a driver for you.'
           });
         }
+        
+        // Always broadcast the new available order to all drivers
+        console.log(`📢 Broadcasting new available order to drivers: ${order.orderNumber}`);
+        const { notifyAllDrivers } = await import('../websocket');
+        notifyAllDrivers('new_available_order', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          restaurantId: order.restaurantId,
+          total: order.total || order.totalAmount,
+          message: `🆕 New order available for pickup: ${order.orderNumber} ($${order.total || order.totalAmount})`
+        });
       }
     } catch (error) {
       console.error('Error handling order ready:', error);

@@ -795,7 +795,44 @@ export class MongoStorage implements IStorage {
     }
   }
   async getOrders(): Promise<Order[]> { return []; }
-  async getOrder(id: string): Promise<Order | undefined> { return undefined; }
+  async getOrder(id: string): Promise<Order | undefined> {
+    try {
+      console.log(`🔍 MongoDB getOrder called for ID: ${id}`);
+      const order = await OrderModel.findById(id).lean();
+      if (!order) {
+        console.log(`❌ Order not found in MongoDB: ${id}`);
+        return undefined;
+      }
+      
+      console.log(`✅ Order found: ${order.orderNumber} (${order.status})`);
+      return {
+        id: order._id.toString(),
+        orderNumber: order.orderNumber,
+        customerId: order.customerId?.toString() || null,
+        customerName: order.customerName || null,
+        customerPhone: order.customerPhone || null,
+        restaurantId: order.restaurantId?.toString() || null,
+        restaurantName: order.restaurantName || null,
+        driverId: order.driverId?.toString() || null,
+        items: order.items || [],
+        total: order.total || 0,
+        totalAmount: order.totalAmount || order.total || 0,
+        deliveryFee: order.deliveryFee || 50,
+        subtotal: order.subtotal || 0,
+        tax: order.tax || 0,
+        status: order.status || 'pending',
+        deliveryAddress: order.deliveryAddress || null,
+        specialInstructions: order.specialInstructions || null,
+        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+        actualDeliveryTime: order.actualDeliveryTime || null,
+        createdAt: order.createdAt || null,
+        updatedAt: order.updatedAt || null,
+      } as Order;
+    } catch (error) {
+      console.error('❌ Error getting order from MongoDB:', error);
+      return undefined;
+    }
+  }
   async getOrdersByStatus(status: string): Promise<Order[]> { return []; }
   async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
     try {

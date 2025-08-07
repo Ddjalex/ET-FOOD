@@ -662,9 +662,13 @@ class DriverApp {
             
             if (this.driverData) {
                 // Authenticate the socket connection with driver details
-                this.socket.emit('authenticate', { userId: this.driverData.userId || this.driverData.id });
+                const authUserId = this.driverData.userId || this.driverData.id;
+                console.log(`🔍 Authenticating driver with userId: ${authUserId}, driverData:`, this.driverData);
+                this.socket.emit('authenticate', { userId: authUserId });
                 this.socket.emit('driver-online', this.driverData.id);
                 console.log('Driver authenticated and marked online:', this.driverData.id);
+            } else {
+                console.log('⚠️ No driver data available for authentication');
             }
         });
 
@@ -712,6 +716,11 @@ class DriverApp {
             if (data.driverId === this.driverData?.id) {
                 this.handleOrderAssigned(data);
             }
+        });
+
+        this.socket.on('new_available_order', (data) => {
+            console.log('📢 New available order broadcast received:', data);
+            this.handleNewAvailableOrder(data);
         });
 
         this.socket.on('new-order-available', (order) => {
@@ -798,6 +807,23 @@ class DriverApp {
         this.updateOrderBadge();
         
         // Play notification sound if available
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (e) {
+            console.log('Could not play notification sound:', e);
+        }
+    }
+
+    handleNewAvailableOrder(data) {
+        console.log('Processing new available order broadcast:', data);
+        // Refresh available orders to show the new order
+        this.loadAvailableOrders();
+        
+        // Show notification popup
+        this.showAlert(`🆕 New order available: ${data.orderNumber} ($${data.total})`);
+        
+        // Play notification sound
         try {
             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
             audio.play().catch(e => console.log('Audio play failed:', e));

@@ -30,7 +30,40 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
     // Authentication middleware for socket connections
     socket.on('authenticate', async (data: { userId: string }) => {
       try {
-        const user = await storage.getUser(data.userId);
+        console.log(`🔍 WebSocket authentication attempt for userId: ${data.userId}`);
+        
+        // First try to get user from users table
+        let user = await storage.getUser(data.userId);
+        let isDriver = false;
+        
+        // If not found, or if found user doesn't have driver role, check drivers table
+        if (!user || user.role !== 'driver') {
+          console.log(`🔍 User not found or not driver role, checking drivers table...`);
+          const driver = await storage.getDriver(data.userId);
+          if (driver) {
+            console.log(`✅ Found driver: ${driver.name} (${driver.id})`);
+            // Create a user-like object for driver authentication
+            user = {
+              id: driver.id,
+              role: 'driver',
+              email: null,
+              firstName: driver.name?.split(' ')[0] || null,
+              lastName: driver.name?.split(' ').slice(1).join(' ') || null,
+              profileImageUrl: null,
+              phoneNumber: driver.phoneNumber,
+              telegramUserId: driver.telegramId,
+              telegramUsername: null,
+              password: null,
+              isActive: driver.isApproved,
+              restaurantId: null,
+              createdBy: null,
+              createdAt: driver.createdAt,
+              updatedAt: driver.updatedAt
+            };
+            isDriver = true;
+          }
+        }
+        
         if (user) {
           socket.user = {
             userId: user.id,
@@ -47,17 +80,19 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
           }
           
           // For drivers, join driver-specific room
-          if (user.role === 'driver') {
+          if (user.role === 'driver' || isDriver) {
             socket.join(`driver:${user.id}`);
+            console.log(`🔗 Driver ${user.id} joined driver room`);
           }
           
           socket.emit('authenticated', { success: true, user: socket.user });
-          console.log(`User ${user.id} authenticated with role ${user.role}`);
+          console.log(`✅ User ${user.id} authenticated with role ${user.role}${isDriver ? ' (via drivers table)' : ''}`);
         } else {
+          console.log(`❌ Authentication failed - no user or driver found for ID: ${data.userId}`);
           socket.emit('authentication_error', { message: 'User not found' });
         }
       } catch (error) {
-        console.error('Socket authentication error:', error);
+        console.error('❌ Socket authentication error:', error);
         socket.emit('authentication_error', { message: 'Authentication failed' });
       }
     });
