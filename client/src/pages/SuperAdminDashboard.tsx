@@ -63,15 +63,22 @@ interface AdminUser {
 interface Driver {
   id: string;
   userId: string;
+  name?: string;
+  phoneNumber?: string;
   licenseNumber: string;
   vehicleType: string;
   vehiclePlate: string;
   licenseImageUrl?: string;
   vehicleImageUrl?: string;
   idCardImageUrl?: string;
+  governmentIdFrontUrl?: string;
+  governmentIdBackUrl?: string;
   currentLocation?: {
     lat: number;
     lng: number;
+    latitude?: number;
+    longitude?: number;
+    timestamp?: string;
   };
   isOnline: boolean;
   isAvailable: boolean;
@@ -80,6 +87,8 @@ interface Driver {
   rating: string;
   totalDeliveries: number;
   totalEarnings: string;
+  todayEarnings?: string;
+  weeklyEarnings?: string;
   zone?: string;
   createdAt: string;
   updatedAt: string;
@@ -176,6 +185,8 @@ function SuperAdminDashboardContent() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isDriverInfoDialogOpen, setIsDriverInfoDialogOpen] = useState(false);
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
+  const [isDriverLocationMapOpen, setIsDriverLocationMapOpen] = useState(false);
+  const [driverForLocationMap, setDriverForLocationMap] = useState<Driver | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showProfilePassword, setShowProfilePassword] = useState(false);
@@ -2176,7 +2187,14 @@ function SuperAdminDashboardContent() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-1">
                             {driver.currentLocation ? (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs bg-green-50 text-green-700 cursor-pointer hover:bg-green-100 hover:text-green-800 transition-colors"
+                                onClick={() => {
+                                  setDriverForLocationMap(driver);
+                                  setIsDriverLocationMapOpen(true);
+                                }}
+                              >
                                 📍 Live GPS
                               </Badge>
                             ) : (
@@ -3433,6 +3451,144 @@ function SuperAdminDashboardContent() {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Driver Live GPS Location Map Dialog */}
+      <Dialog open={isDriverLocationMapOpen} onOpenChange={setIsDriverLocationMapOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                📍
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">
+                  Live GPS Location - {driverForLocationMap?.name || `${driverForLocationMap?.user?.firstName} ${driverForLocationMap?.user?.lastName}`}
+                </h3>
+                <p className="text-sm text-gray-500">Real-time driver location on OpenStreetMap</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {driverForLocationMap && driverForLocationMap.currentLocation ? (
+            <div className="space-y-4">
+              {/* Driver Info Summary */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {driverForLocationMap.name ? driverForLocationMap.name.charAt(0).toUpperCase() : 'D'}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-800">
+                        {driverForLocationMap.name || `${driverForLocationMap.user?.firstName} ${driverForLocationMap.user?.lastName}`}
+                      </h4>
+                      <p className="text-sm text-green-600">
+                        📱 {driverForLocationMap.phoneNumber || driverForLocationMap.user?.phoneNumber || 'No phone'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="bg-green-100 text-green-800">
+                        🟢 {driverForLocationMap.isOnline ? 'Online' : 'Offline'}
+                      </Badge>
+                      {driverForLocationMap.isOnline && (
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                          {driverForLocationMap.isAvailable ? 'Available' : 'Busy'}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-green-600 mt-1">
+                      Zone: {driverForLocationMap.zone || 'Not assigned'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* GPS Coordinates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-gray-600">Latitude</p>
+                  <p className="font-mono text-lg">{driverForLocationMap.currentLocation.lat}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium text-gray-600">Longitude</p>
+                  <p className="font-mono text-lg">{driverForLocationMap.currentLocation.lng}</p>
+                </div>
+              </div>
+
+              {/* OpenStreetMap */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-800">Live Location Map</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const lat = driverForLocationMap.currentLocation!.lat;
+                      const lng = driverForLocationMap.currentLocation!.lng;
+                      window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=16`, '_blank');
+                    }}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Map className="w-4 h-4 mr-2" />
+                    Open in OSM
+                  </Button>
+                </div>
+                <DriverLocationMap 
+                  drivers={[driverForLocationMap]} 
+                  height="400px"
+                />
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex gap-4 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDriverLocationMapOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const lat = driverForLocationMap.currentLocation!.lat;
+                    const lng = driverForLocationMap.currentLocation!.lng;
+                    navigator.clipboard.writeText(`${lat}, ${lng}`);
+                    toast({
+                      title: "Copied to clipboard",
+                      description: "GPS coordinates copied successfully",
+                    });
+                  }}
+                  className="text-green-600 border-green-200 hover:bg-green-50"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Coordinates
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setDriverForLocationMap(driverForLocationMap);
+                    setIsDriverLocationMapOpen(false);
+                    setSelectedDriver(driverForLocationMap);
+                    setIsDriverInfoDialogOpen(true);
+                  }}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  View Profile
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">No Location Data</h3>
+              <p className="text-gray-500">This driver's GPS location is not currently available.</p>
             </div>
           )}
         </DialogContent>
