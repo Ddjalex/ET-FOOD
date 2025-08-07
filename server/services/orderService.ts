@@ -286,14 +286,7 @@ class OrderService {
           }
         });
 
-        // Also send legacy event for backward compatibility
-        notifyAllDrivers('new_available_order', {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          restaurantId: order.restaurantId,
-          total: order.total || order.totalAmount,
-          message: `🆕 New order available for pickup: ${order.orderNumber} ($${order.total || order.totalAmount})`
-        });
+        // Remove legacy event - only use enhanced interactive notifications
       }
     } catch (error) {
       console.error('Error handling order ready:', error);

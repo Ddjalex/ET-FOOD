@@ -114,6 +114,15 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
       }
     });
 
+    // Enhanced test handler for interactive modal
+    socket.on('enhanced_notification_test', (data) => {
+      console.log('🚨 Enhanced notification test triggered:', data);
+      
+      // Send the enhanced notification to all drivers
+      io.to('role:driver').emit('new_order_notification', data);
+      console.log('📢 Enhanced interactive notification sent to all drivers');
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
     });
