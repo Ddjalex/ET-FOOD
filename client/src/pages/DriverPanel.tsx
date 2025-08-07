@@ -101,15 +101,36 @@ function DriverPanel() {
   const { data: availableOrders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['/api/drivers/available-orders'],
     enabled: driver?.isApproved && driver?.isOnline,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 10000, // Refresh every 10 seconds for faster updates
   });
 
-  // Fetch assigned orders
+  // Fetch assigned orders - try to get real orders first, fallback to driver-specific
   const { data: assignedOrders = [], isLoading: assignedLoading } = useQuery<Order[]>({
     queryKey: ['/api/drivers/assigned-orders', currentDriverId],
-    queryFn: () => fetch(`/api/drivers/assigned-orders?driverId=${currentDriverId}`).then(res => res.json()),
+    queryFn: async () => {
+      try {
+        // First try to get all assigned orders from the database
+        const response = await fetch('/api/drivers/all-assigned-orders');
+        if (response.ok) {
+          const allAssigned = await response.json();
+          if (allAssigned.length > 0) {
+            console.log('Found real assigned orders:', allAssigned.length);
+            return allAssigned;
+          }
+        }
+        
+        // Fallback to driver-specific assigned orders
+        const driverResponse = await fetch(`/api/drivers/assigned-orders?driverId=${currentDriverId}`);
+        const driverOrders = await driverResponse.json();
+        console.log('Using driver-specific orders:', driverOrders.length);
+        return driverOrders;
+      } catch (error) {
+        console.error('Error fetching assigned orders:', error);
+        return [];
+      }
+    },
     enabled: !!currentDriverId,
-    refetchInterval: 15000, // Refresh every 15 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
   });
 
   // Accept order mutation

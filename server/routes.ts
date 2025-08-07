@@ -1290,11 +1290,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available orders for approved drivers (Public route for Telegram Mini Apps)
   app.get('/api/drivers/available-orders', async (req, res) => {
     try {
-      // Get orders that are ready for pickup and don't have an assigned driver
-      const availableOrders = await storage.getOrdersByStatus('ready_for_pickup');
+      console.log('🔍 Fetching available orders for drivers...');
       
-      // For demo purposes, if no real orders exist, provide sample orders
+      // Get orders that are ready for pickup and don't have an assigned driver
+      const readyOrders = await storage.getOrdersByStatus('ready_for_pickup');
+      const availableOrders = readyOrders.filter(order => !order.driverId);
+      
+      console.log(`Found ${readyOrders.length} ready orders, ${availableOrders.length} available (no driver assigned)`);
+      
+      // Always include real orders if they exist, fallback to samples only if none exist
       if (availableOrders.length === 0) {
+        console.log('No real available orders, providing sample orders for demo');
+        // Check if there are any orders at all in the system
+        const allOrders = await storage.getOrders();
+        console.log(`Total orders in system: ${allOrders.length}`);
+        if (allOrders.length > 0) {
+          console.log('Recent orders:', allOrders.slice(0, 3).map(o => `${o.orderNumber} - ${o.status}`));
+        }
         const sampleOrders = [
           {
             id: '507f1f77bcf86cd799439012',
@@ -1354,28 +1366,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Enrich real orders with restaurant and customer data
       const enrichedOrders = await Promise.all(
-        availableOrders
-          .filter(order => !order.driverId) // Only orders without assigned drivers
-          .map(async (order) => {
-            const restaurant = await storage.getRestaurant(order.restaurantId);
-            const customer = {
-              name: 'Customer Name',
-              phoneNumber: '+251912345678'
-            };
-            
-            return {
-              ...order,
-              restaurant: restaurant ? {
-                name: restaurant.name,
-                address: restaurant.address,
-                phoneNumber: restaurant.phoneNumber,
-                location: restaurant.location
-              } : null,
-              customer
-            };
-          })
+        availableOrders.map(async (order) => {
+          const restaurant = await storage.getRestaurant(order.restaurantId);
+          const customer = {
+            name: 'Customer Name',
+            phoneNumber: '+251912345678'
+          };
+          
+          console.log(`Enriching order ${order.orderNumber} with restaurant data`);
+          
+          return {
+            ...order,
+            restaurant: restaurant ? {
+              name: restaurant.name,
+              address: restaurant.address,
+              phoneNumber: restaurant.phoneNumber,
+              location: restaurant.location
+            } : null,
+            customer
+          };
+        })
       );
       
+      console.log(`Returning ${enrichedOrders.length} enriched available orders`);
       res.json(enrichedOrders);
     } catch (error) {
       console.error("Error fetching available orders:", error);
@@ -1388,8 +1401,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const driverId = req.query.driverId as string;
       
-      if (!driverId || driverId === 'demo-driver-id') {
-        // Return sample assigned orders for demo
+      console.log(`🔍 Fetching assigned orders for driver: ${driverId}`);
+      
+      // Get all orders assigned to this driver (not just demo driver)
+      let driverOrders: any[] = [];
+      
+      if (driverId && driverId !== 'demo-driver-id') {
+        driverOrders = await storage.getOrdersByDriver(driverId);
+        console.log(`Found ${driverOrders.length} real assigned orders for driver ${driverId}`);
+      }
+      
+      // If no real orders found, provide sample for demo purposes
+      if (driverOrders.length === 0) {
+        console.log('No real assigned orders found, providing sample orders for demo');
         const sampleAssignedOrders = [
           {
             id: '507f1f77bcf86cd799439016',
@@ -1422,8 +1446,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(sampleAssignedOrders);
       }
       
-      // Get orders assigned to this driver
-      const assignedOrders = await storage.getOrdersByDriver(driverId);
+      // Enrich orders with restaurant and customer data
+      const enrichedOrders = await Promise.all(
+        driverOrders.map(async (order) => {
+          const restaurant = await storage.getRestaurant(order.restaurantId);
+          const customer = {
+            name: 'Customer Name',
+            phoneNumber: '+251912345678'
+          };
+          
+          return {
+            ...order,
+            restaurant: restaurant ? {
+              name: restaurant.name,
+              address: restaurant.address,
+              phoneNumber: restaurant.phoneNumber,
+              location: restaurant.location
+            } : null,
+            customer
+          };
+        })
+      );
+      
+      console.log(`Returning ${enrichedOrders.length} enriched assigned orders`);
+      res.json(enrichedOrders);
+    } catch (error) {
+      console.error("Error fetching assigned orders:", error);
+      res.status(500).json({ message: "Failed to fetch assigned orders" });
+    }
+  });
+
+  // Get all assigned orders (for driver mini web app to see real orders)
+  app.get('/api/drivers/all-assigned-orders', async (req, res) => {
+    try {
+      console.log('🔍 Fetching all assigned orders from database...');
+      
+      // Get orders that have been assigned to any driver
+      const allOrders = await storage.getOrders();
+      const assignedOrders = allOrders.filter(order => order.driverId && (order.status === 'assigned' || order.status === 'picked_up' || order.status === 'ready_for_pickup'));
+      
+      console.log(`Found ${assignedOrders.length} assigned orders out of ${allOrders.length} total orders`);
       
       // Enrich orders with restaurant and customer data
       const enrichedOrders = await Promise.all(
@@ -1447,10 +1509,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
+      console.log(`Returning ${enrichedOrders.length} enriched assigned orders`);
       res.json(enrichedOrders);
     } catch (error) {
-      console.error("Error fetching assigned orders:", error);
-      res.status(500).json({ message: "Failed to fetch assigned orders" });
+      console.error("Error fetching all assigned orders:", error);
+      res.status(500).json({ message: "Failed to fetch all assigned orders" });
+    }
+  });
+
+  // Create sample orders for testing (temporary endpoint)
+  app.post('/api/admin/create-sample-orders', async (req, res) => {
+    try {
+      console.log('🔄 Creating sample orders and restaurants...');
+      
+      // First create sample restaurants
+      const restaurants = [
+        {
+          name: 'Blue Top Restaurant',
+          description: 'Authentic Ethiopian cuisine',
+          address: 'Mexico Square, Addis Ababa',
+          phoneNumber: '+251911234567',
+          location: { lat: 9.0255, lng: 38.7735 },
+          isActive: true,
+          adminId: '688c844eb154013d32b1b987'
+        },
+        {
+          name: 'Addis Red Sea',
+          description: 'Traditional Ethiopian dishes',  
+          address: 'Kazanchis, Addis Ababa',
+          phoneNumber: '+251933456789',
+          location: { lat: 9.0455, lng: 38.7935 },
+          isActive: true,
+          adminId: '688c844eb154013d32b1b987'
+        },
+        {
+          name: 'Habesha Restaurant',
+          description: 'Ethiopian cultural dining',
+          address: 'Merkato, Addis Ababa', 
+          phoneNumber: '+251955667788',
+          location: { lat: 9.0155, lng: 38.7635 },
+          isActive: true,
+          adminId: '688c844eb154013d32b1b987'
+        }
+      ];
+
+      // Create restaurants
+      const createdRestaurants = await Promise.all(
+        restaurants.map(restaurant => storage.createRestaurant(restaurant))
+      );
+      console.log(`✅ Created ${createdRestaurants.length} restaurants`);
+
+      // Now create sample orders
+      const orders = [
+        {
+          orderNumber: 'ORD-001',
+          customerId: '688c844eb154013d32b1b987',
+          restaurantId: createdRestaurants[0].id,
+          status: 'ready_for_pickup' as any,
+          items: [
+            { name: 'Doro Wat', quantity: 1, price: 180, customizations: ['Extra spicy'] },
+            { name: 'Injera', quantity: 2, price: 35, customizations: [] }
+          ],
+          total: 250,
+          deliveryAddress: 'Bole, Addis Ababa',
+          deliveryLocation: { lat: 9.0155, lng: 38.7635 },
+          customerNotes: 'Please call when you arrive',
+          estimatedDeliveryTime: new Date(Date.now() + 30 * 60000)
+        },
+        {
+          orderNumber: 'ORD-002',
+          customerId: '688c844eb154013d32b1b987',
+          restaurantId: createdRestaurants[1].id,
+          status: 'ready_for_pickup' as any,
+          items: [
+            { name: 'Kitfo', quantity: 1, price: 220, customizations: ['Medium rare'] },
+            { name: 'Salad', quantity: 1, price: 100, customizations: [] }
+          ],
+          total: 320,
+          deliveryAddress: 'CMC, Addis Ababa',
+          deliveryLocation: { lat: 9.0355, lng: 38.7835 },
+          customerNotes: null,
+          estimatedDeliveryTime: new Date(Date.now() + 25 * 60000)
+        },
+        {
+          orderNumber: 'ORD-003',
+          customerId: '688c844eb154013d32b1b987',
+          restaurantId: createdRestaurants[2].id,
+          driverId: '6894917ecb6d9925e5402f1c', // Assign to test driver
+          status: 'driver_assigned' as any,
+          items: [
+            { name: 'Shiro Wat', quantity: 1, price: 120, customizations: [] },
+            { name: 'Bread', quantity: 2, price: 30, customizations: [] }
+          ],
+          total: 180,
+          deliveryAddress: 'Piassa, Addis Ababa',
+          deliveryLocation: { lat: 9.0055, lng: 38.7535 },
+          customerNotes: 'Second floor, blue door',
+          estimatedDeliveryTime: new Date(Date.now() + 15 * 60000)
+        }
+      ];
+
+      // Create orders
+      const createdOrders = await Promise.all(
+        orders.map(order => storage.createOrder(order))
+      );
+      console.log(`✅ Created ${createdOrders.length} orders`);
+
+      res.json({
+        message: 'Sample data created successfully',
+        restaurants: createdRestaurants.length,
+        orders: createdOrders.length,
+        ordersReady: createdOrders.filter(o => o.status === 'ready_for_pickup').length,
+        ordersAssigned: createdOrders.filter(o => o.driverId).length
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating sample data:', error);
+      res.status(500).json({ message: 'Failed to create sample data', error: error.message });
     }
   });
 
