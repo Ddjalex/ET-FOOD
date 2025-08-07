@@ -1978,10 +1978,14 @@ function SuperAdminDashboardContent() {
                           <div className="flex items-center gap-4">
                             <div>
                               <h3 className="font-semibold text-lg">
-                                {driver.user?.firstName} {driver.user?.lastName}
+                                {driver.name || 
+                                 (driver.user?.firstName && driver.user?.lastName 
+                                   ? `${driver.user.firstName} ${driver.user.lastName}`
+                                   : driver.user?.firstName || driver.user?.lastName || 'Unknown Driver')
+                                }
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {driver.user?.email} • {driver.user?.phoneNumber}
+                                {driver.user?.email || driver.user?.telegramUsername || 'N/A'} • {driver.phoneNumber || driver.user?.phoneNumber || 'N/A'}
                               </p>
                             </div>
                           </div>
@@ -2100,7 +2104,11 @@ function SuperAdminDashboardContent() {
                             </div>
                             <div>
                               <p className="font-semibold text-gray-900">
-                                {driver.name || `${driver.user?.firstName} ${driver.user?.lastName}`}
+                                {driver.name || 
+                                 (driver.user?.firstName && driver.user?.lastName 
+                                   ? `${driver.user.firstName} ${driver.user.lastName}`
+                                   : driver.user?.firstName || driver.user?.lastName || 'Unknown Driver')
+                                }
                               </p>
                               <p className="text-xs text-gray-500">
                                 ID: {driver.id.slice(-8)}
@@ -2199,7 +2207,11 @@ function SuperAdminDashboardContent() {
                                     // Highlight the driver on the map
                                     toast({
                                       title: "Driver Location",
-                                      description: `Showing ${driver.name || `${driver.user?.firstName} ${driver.user?.lastName}`} on the Live Driver Locations map`,
+                                      description: `Showing ${driver.name || 
+                                        (driver.user?.firstName && driver.user?.lastName 
+                                          ? `${driver.user.firstName} ${driver.user.lastName}`
+                                          : driver.user?.firstName || driver.user?.lastName || 'Unknown Driver')
+                                      } on the Live Driver Locations map`,
                                     });
                                   }
                                 }}
