@@ -377,3 +377,94 @@ Ready to apply? Use the registration form!`);
     }
   });
 }
+
+// Broadcast message to all drivers
+export async function broadcastToAllDrivers(broadcastData: {
+  title: string;
+  message: string;
+  imageUrl?: string | null;
+  messageType: string;
+  timestamp: Date;
+}) {
+  try {
+    // Get all driver users from storage
+    const drivers = await storage.getUsersByRole('driver');
+    
+    if (drivers.length === 0) {
+      console.log('No drivers found to broadcast to');
+      return;
+    }
+
+    console.log(`Broadcasting to ${drivers.length} drivers`);
+
+    // Get the driver bot instance
+    const { getDriverBot } = await import('./bot');
+    const driverBot = getDriverBot();
+
+    if (!driverBot) {
+      console.error('Driver bot not available for broadcasting');
+      return;
+    }
+
+    // Prepare the message with emoji based on type
+    const typeEmojis = {
+      welcome: '👋',
+      product: '🆕',
+      announcement: '📢',
+      promotion: '🎉'
+    };
+
+    const emoji = typeEmojis[broadcastData.messageType as keyof typeof typeEmojis] || '📢';
+    const formattedMessage = `${emoji} ${broadcastData.title}\n\n${broadcastData.message}`;
+
+    // Broadcast to all drivers
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const driver of drivers) {
+      if (driver.telegramUserId) {
+        try {
+          console.log(`📤 Sending message to driver ${driver.telegramUserId} (${driver.firstName} ${driver.lastName})`);
+          
+          if (broadcastData.imageUrl) {
+            // Send with image
+            const imageUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}${broadcastData.imageUrl}`;
+            console.log(`📷 Sending image: ${imageUrl}`);
+            
+            await driverBot.telegram.sendPhoto(
+              driver.telegramUserId,
+              { url: imageUrl },
+              { caption: formattedMessage }
+            );
+          } else {
+            // Send text only
+            await driverBot.telegram.sendMessage(driver.telegramUserId, formattedMessage);
+          }
+
+          console.log(`✅ Message sent successfully to driver ${driver.telegramUserId}`);
+          successCount++;
+          
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error(`❌ Failed to send message to driver ${driver.telegramUserId}:`, error);
+          console.error(`❌ Error details:`, {
+            code: error.code,
+            message: error.message,
+            description: error.description
+          });
+          errorCount++;
+        }
+      } else {
+        console.log(`⚠️ Driver ${driver.firstName} ${driver.lastName} has no telegramUserId`);
+      }
+    }
+    
+    console.log(`📊 Driver broadcast summary: ${successCount} successful, ${errorCount} failed out of ${drivers.length} drivers`);
+
+    console.log('Driver broadcast completed');
+  } catch (error) {
+    console.error('Error broadcasting to drivers:', error);
+    throw error;
+  }
+}

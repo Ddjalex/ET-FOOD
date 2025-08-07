@@ -2459,6 +2459,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (targetAudience === 'all' || targetAudience === 'customers') {
         await broadcastToAllCustomers(broadcastMessage);
       }
+      
+      if (targetAudience === 'all' || targetAudience === 'drivers') {
+        // Import the driver broadcast function
+        const { broadcastToAllDrivers } = await import('./telegram/driverBot');
+        await broadcastToAllDrivers(broadcastMessage);
+      }
 
       res.json({ 
         success: true, 

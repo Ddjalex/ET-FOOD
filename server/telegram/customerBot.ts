@@ -352,14 +352,22 @@ export async function broadcastToAllCustomers(broadcastData: {
     const formattedMessage = `${emoji} ${broadcastData.title}\n\n${broadcastData.message}`;
 
     // Broadcast to all customers
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (const customer of customers) {
       if (customer.telegramUserId) {
         try {
+          console.log(`📤 Sending message to customer ${customer.telegramUserId} (${customer.firstName} ${customer.lastName})`);
+          
           if (broadcastData.imageUrl) {
             // Send with image
+            const imageUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}${broadcastData.imageUrl}`;
+            console.log(`📷 Sending image: ${imageUrl}`);
+            
             await customerBot.telegram.sendPhoto(
               customer.telegramUserId,
-              { url: `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}${broadcastData.imageUrl}` },
+              { url: imageUrl },
               { caption: formattedMessage }
             );
           } else {
@@ -367,13 +375,26 @@ export async function broadcastToAllCustomers(broadcastData: {
             await customerBot.telegram.sendMessage(customer.telegramUserId, formattedMessage);
           }
 
+          console.log(`✅ Message sent successfully to ${customer.telegramUserId}`);
+          successCount++;
+          
           // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
-          console.error(`Failed to send message to customer ${customer.telegramUserId}:`, error);
+          console.error(`❌ Failed to send message to customer ${customer.telegramUserId}:`, error);
+          console.error(`❌ Error details:`, {
+            code: error.code,
+            message: error.message,
+            description: error.description
+          });
+          errorCount++;
         }
+      } else {
+        console.log(`⚠️ Customer ${customer.firstName} ${customer.lastName} has no telegramUserId`);
       }
     }
+    
+    console.log(`📊 Broadcast summary: ${successCount} successful, ${errorCount} failed out of ${customers.length} customers`);
 
     console.log('Broadcast completed');
   } catch (error) {
