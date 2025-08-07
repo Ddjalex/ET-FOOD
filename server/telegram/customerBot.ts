@@ -36,6 +36,7 @@ export async function setupCustomerBot(bot: Telegraf) {
     let user = await storage.getUserByTelegramId(telegramUserId);
 
     if (!user) {
+      console.log(`🔥 Creating new customer with telegramUserId: ${telegramUserId}`);
       user = await storage.upsertUser({
         telegramUserId,
         telegramUsername: username,
@@ -43,6 +44,9 @@ export async function setupCustomerBot(bot: Telegraf) {
         lastName,
         role: 'customer',
       });
+      console.log(`✅ Customer created with ID: ${user.id} and telegramUserId: ${user.telegramUserId}`);
+    } else {
+      console.log(`👤 Existing customer found: ${user.firstName} ${user.lastName} (telegramUserId: ${user.telegramUserId})`);
     }
 
     // Initialize customer session
