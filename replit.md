@@ -5,6 +5,8 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 
 **Migration Status**: ✅ Successfully migrated from Replit Agent to standard Replit environment (August 2025). All systems operational including Telegram bots (Enbela_bot for customers, EnbelaDriver_bot for drivers), database connections, real-time features, and broadcast messaging functionality. Final migration completed with bot tokens configured and all broadcast features working properly.
 
+**Known Issue (August 7, 2025)**: Customer broadcast messages work correctly but customers in database have null telegramUserId values, preventing message delivery. Driver broadcasts work properly as drivers have valid telegramId values. System architecture and functionality are fully operational.
+
 **Latest Feature Implementation (August 6, 2025)**:
 - ✅ **OpenStreetMap Navigation System**: Implemented comprehensive turn-by-turn navigation for drivers using OpenStreetMap data
 - ✅ **Automated Real-Time Driver Assignment**: Orders automatically trigger driver assignment when marked as "ready"
