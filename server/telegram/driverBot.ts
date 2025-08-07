@@ -272,8 +272,8 @@ Ready to apply? Use the registration form!`);
 
       // Save driver's live location
       await storage.updateDriverLocation(driver.id, {
-        latitude: location.latitude,
-        longitude: location.longitude,
+        lat: location.latitude,
+        lng: location.longitude,
         timestamp: new Date().toISOString()
       });
 

@@ -74,6 +74,15 @@ export async function setupTelegramBot() {
   return setupTelegramBots();
 }
 
+// Export functions to get bot instances
+export function getCustomerBot() {
+  return customerBot;
+}
+
+export function getDriverBot() {
+  return driverBot;
+}
+
 // Graceful shutdown
 export function stopTelegramBots() {
   try {
