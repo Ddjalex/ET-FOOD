@@ -1246,14 +1246,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Driver Panel API Routes
+  // Driver Panel API Routes (Public routes for Telegram Mini Apps)
   // Get driver profile
   app.get('/api/drivers/profile', async (req, res) => {
     try {
-      // For now, return a mock driver profile
-      // In production, this would be based on authenticated user
-      const driverId = req.query.driverId || 'mock-driver-id';
-      const driver = await storage.getDriverById(driverId as string);
+      const driverId = req.query.driverId as string;
+      
+      if (!driverId || driverId === 'demo-driver-id') {
+        // Return a mock driver for demo purposes
+        const mockDriver = {
+          id: '507f1f77bcf86cd799439011',
+          name: 'Demo Driver',
+          phoneNumber: '+251911234567',
+          vehicleType: 'Motorcycle',
+          vehiclePlate: 'AA-001-001',
+          currentLocation: { lat: 9.0155, lng: 38.7635 },
+          status: 'active',
+          isOnline: true,
+          isAvailable: true,
+          isApproved: true,
+          rating: 4.5,
+          totalDeliveries: 25,
+          totalEarnings: 1250.00,
+          todayEarnings: 85.00,
+          weeklyEarnings: 420.00
+        };
+        return res.json(mockDriver);
+      }
+      
+      const driver = await storage.getDriverById(driverId);
       
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
@@ -1266,19 +1287,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get available orders for approved drivers
+  // Get available orders for approved drivers (Public route for Telegram Mini Apps)
   app.get('/api/drivers/available-orders', async (req, res) => {
     try {
       // Get orders that are ready for pickup and don't have an assigned driver
       const availableOrders = await storage.getOrdersByStatus('ready_for_pickup');
       
-      // Enrich orders with restaurant and customer data
+      // For demo purposes, if no real orders exist, provide sample orders
+      if (availableOrders.length === 0) {
+        const sampleOrders = [
+          {
+            id: '507f1f77bcf86cd799439012',
+            orderNumber: 'ORD-001',
+            restaurantId: '507f1f77bcf86cd799439013',
+            status: 'ready_for_pickup',
+            total: 250.00,
+            deliveryAddress: 'Bole, Addis Ababa',
+            deliveryLocation: { lat: 9.0155, lng: 38.7635 },
+            items: [
+              { name: 'Doro Wat', quantity: 1, price: 180.00 },
+              { name: 'Injera', quantity: 2, price: 35.00 }
+            ],
+            estimatedDeliveryTime: new Date(Date.now() + 30 * 60000).toISOString(),
+            customerNotes: 'Please call when you arrive',
+            createdAt: new Date().toISOString(),
+            restaurant: {
+              name: 'Blue Top Restaurant',
+              address: 'Mexico Square, Addis Ababa',
+              phoneNumber: '+251911234567',
+              location: { lat: 9.0255, lng: 38.7735 }
+            },
+            customer: {
+              name: 'Almaz Bekele',
+              phoneNumber: '+251922345678'
+            }
+          },
+          {
+            id: '507f1f77bcf86cd799439014',
+            orderNumber: 'ORD-002',
+            restaurantId: '507f1f77bcf86cd799439015',
+            status: 'ready_for_pickup',
+            total: 320.00,
+            deliveryAddress: 'CMC, Addis Ababa',
+            deliveryLocation: { lat: 9.0355, lng: 38.7835 },
+            items: [
+              { name: 'Kitfo', quantity: 1, price: 220.00 },
+              { name: 'Salad', quantity: 1, price: 100.00 }
+            ],
+            estimatedDeliveryTime: new Date(Date.now() + 25 * 60000).toISOString(),
+            customerNotes: null,
+            createdAt: new Date().toISOString(),
+            restaurant: {
+              name: 'Addis Red Sea',
+              address: 'Kazanchis, Addis Ababa',
+              phoneNumber: '+251933456789',
+              location: { lat: 9.0455, lng: 38.7935 }
+            },
+            customer: {
+              name: 'Dawit Mekonnen',
+              phoneNumber: '+251944567890'
+            }
+          }
+        ];
+        return res.json(sampleOrders);
+      }
+      
+      // Enrich real orders with restaurant and customer data
       const enrichedOrders = await Promise.all(
         availableOrders
           .filter(order => !order.driverId) // Only orders without assigned drivers
           .map(async (order) => {
             const restaurant = await storage.getRestaurant(order.restaurantId);
-            // For customer data, we'll use mock data since we don't have customer table
             const customer = {
               name: 'Customer Name',
               phoneNumber: '+251912345678'
@@ -1304,13 +1383,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get assigned orders for a driver
+  // Get assigned orders for a driver (Public route for Telegram Mini Apps)
   app.get('/api/drivers/assigned-orders', async (req, res) => {
     try {
-      const driverId = req.query.driverId || 'mock-driver-id';
+      const driverId = req.query.driverId as string;
+      
+      if (!driverId || driverId === 'demo-driver-id') {
+        // Return sample assigned orders for demo
+        const sampleAssignedOrders = [
+          {
+            id: '507f1f77bcf86cd799439016',
+            orderNumber: 'ORD-003',
+            restaurantId: '507f1f77bcf86cd799439017',
+            driverId: '507f1f77bcf86cd799439011',
+            status: 'picked_up',
+            total: 180.00,
+            deliveryAddress: 'Piassa, Addis Ababa',
+            deliveryLocation: { lat: 9.0055, lng: 38.7535 },
+            items: [
+              { name: 'Shiro Wat', quantity: 1, price: 120.00 },
+              { name: 'Bread', quantity: 2, price: 30.00 }
+            ],
+            estimatedDeliveryTime: new Date(Date.now() + 15 * 60000).toISOString(),
+            customerNotes: 'Second floor, blue door',
+            createdAt: new Date().toISOString(),
+            restaurant: {
+              name: 'Habesha Restaurant',
+              address: 'Merkato, Addis Ababa',
+              phoneNumber: '+251955667788',
+              location: { lat: 9.0155, lng: 38.7635 }
+            },
+            customer: {
+              name: 'Selamawit Tadesse',
+              phoneNumber: '+251966778899'
+            }
+          }
+        ];
+        return res.json(sampleAssignedOrders);
+      }
       
       // Get orders assigned to this driver
-      const assignedOrders = await storage.getOrdersByDriver(driverId as string);
+      const assignedOrders = await storage.getOrdersByDriver(driverId);
       
       // Enrich orders with restaurant and customer data
       const enrichedOrders = await Promise.all(
