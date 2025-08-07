@@ -934,8 +934,9 @@ class StorageFactory {
   
   get storage(): IStorage {
     if (!this._storage) {
-      this._storage = useMongoStorage ? new MongoStorage() : new MemoryStorage();
-      console.log(`Initialized ${useMongoStorage ? 'MongoDB' : 'in-memory'} storage`);
+      // Always use MongoDB storage - the connection is established
+      this._storage = new MongoStorage();
+      console.log('🔄 Initialized MongoDB storage (forced)');
     }
     return this._storage!;
   }
