@@ -2220,6 +2220,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use orderService for proper status handling
       const order = await orderService.updateOrderStatus(orderId, 'preparing');
 
+      console.log(`👨‍🍳 Kitchen staff started preparing order: ${order.orderNumber}`);
+
       // Notify restaurant admin that preparation has started
       notifyRestaurantAdmin(restaurantId, 'order_preparation_started', {
         orderId: order.id,
@@ -2229,6 +2231,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'Kitchen started preparing order',
         timestamp: new Date()
       });
+
+      // Send real-time notification to customer via Telegram
+      if (order.customerId) {
+        try {
+          const customer = await storage.getUser(order.customerId);
+          if (customer?.telegramUserId) {
+            const { broadcastToSpecificCustomer } = require('./telegram/customerBot');
+            await broadcastToSpecificCustomer(customer.telegramUserId, {
+              title: '👨‍🍳 Order Update',
+              message: `Your order ${order.orderNumber} is now being prepared! It will be ready soon.`,
+              orderNumber: order.orderNumber,
+              status: 'preparing'
+            });
+          }
+        } catch (error) {
+          console.error('Error notifying customer of preparation start:', error);
+        }
+      }
 
       res.json(order);
     } catch (error) {
@@ -2255,10 +2275,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Trigger automated driver assignment
+      // Immediate notification to all nearby drivers about new available order
+      console.log(`📢 Broadcasting new available order to drivers: ${order.orderNumber}`);
+      broadcast('new_available_order', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        restaurantId: order.restaurantId,
+        total: order.total,
+        message: `🆕 New order available for pickup: ${order.orderNumber} ($${order.total})`
+      });
+
+      // Trigger automated driver assignment with slight delay
       setTimeout(async () => {
         try {
-          console.log(`Triggering automated driver assignment for order ${orderId}`);
+          console.log(`🤖 Triggering automated driver assignment for order ${orderId}`);
           await orderService.triggerAutomatedDriverAssignment(orderId);
         } catch (error) {
           console.error('Error in automated driver assignment:', error);

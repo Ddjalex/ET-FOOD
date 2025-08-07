@@ -25,6 +25,7 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - **Driver Management Improvements (August 7, 2025)**: Fixed MongoDB aggregation for proper driver data display, removed vehicle information from management panel, enhanced profile picture support, and resolved broadcast functionality errors
 - **Broadcast Messages Fix (August 7, 2025)**: Fixed broadcast messages functionality by correcting domain configuration for Replit environment (REPLIT_DEV_DOMAIN)
 - **Customer Broadcast Resolution (August 7, 2025)**: Resolved customer broadcast issue by replacing fake customers with real telegram users, implemented comprehensive fake customer replacement system, added `deleteUser` method to storage interface, and verified both customer and driver broadcasts work correctly with real telegram user (383870190)
+- **Kitchen Staff Dashboard Fix (August 7, 2025)**: Fixed "Start Prepare" button functionality by correcting order status logic - button now appears for 'confirmed' orders instead of 'preparing' orders, enhanced real-time notifications for both customers and drivers when orders are prepared and ready for pickup
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

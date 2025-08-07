@@ -521,9 +521,12 @@ export function KitchenDashboard() {
       if (!response.ok) throw new Error('Failed to start preparation');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] });
-      toast({ title: 'Order preparation started' });
+      toast({ 
+        title: 'Order preparation started', 
+        description: `Order ${data.orderNumber} is now being prepared` 
+      });
     },
     onError: (error: any) => {
       toast({ title: 'Failed to start preparation', description: error.message, variant: 'destructive' });
@@ -539,9 +542,12 @@ export function KitchenDashboard() {
       if (!response.ok) throw new Error('Failed to mark order ready');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/restaurants', typedUser?.restaurantId, 'orders'] });
-      toast({ title: 'Order marked as ready for pickup' });
+      toast({ 
+        title: 'Order ready for pickup!', 
+        description: `Order ${data.orderNumber} is ready and drivers are being notified automatically` 
+      });
     },
     onError: (error: any) => {
       toast({ title: 'Failed to mark order ready', description: error.message, variant: 'destructive' });
@@ -716,7 +722,7 @@ export function KitchenDashboard() {
             )}
             
             {/* Orders ready for preparation */}
-            {order.status === 'preparing' && (
+            {order.status === 'confirmed' && (
               <Button
                 onClick={() => startPrepareMutation.mutate(order.id)}
                 disabled={startPrepareMutation.isPending}
@@ -729,7 +735,7 @@ export function KitchenDashboard() {
             )}
             
             {/* Orders currently being prepared */}
-            {order.status === 'in_preparation' && (
+            {order.status === 'preparing' && (
               <Button
                 onClick={() => readyForPickupMutation.mutate(order.id)}
                 disabled={readyForPickupMutation.isPending}
