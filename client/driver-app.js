@@ -680,11 +680,12 @@ class DriverApp {
             console.error('Socket authentication failed:', error);
         });
 
-        this.socket.on('new_order_notification', (data) => {
-            console.log('🚨 New order notification received:', data);
+        // Legacy notification handler - for direct driver assignments
+        this.socket.on('driver_order_notification', (data) => {
+            console.log('🚨 Direct driver order notification received:', data);
             if (data.driverId === this.driverData?.id) {
                 this.handleNewOrderNotification(data.order);
-                // Show enhanced interactive modal instead of simple popup
+                // Show enhanced interactive modal for assigned orders
                 this.showInteractiveOrderModal(data.order);
             }
         });
@@ -721,6 +722,16 @@ class DriverApp {
         this.socket.on('new_available_order', (data) => {
             console.log('📢 New available order broadcast received:', data);
             this.handleNewAvailableOrder(data);
+        });
+
+        // Enhanced notification for interactive modal
+        this.socket.on('new_order_notification', (data) => {
+            console.log('🚨 Enhanced order notification received:', data);
+            if (data.driverId === 'all' || data.driverId === this.driverData?.id) {
+                this.handleNewOrderNotification(data.order);
+                // Show enhanced interactive modal
+                this.showInteractiveOrderModal(data.order);
+            }
         });
 
         this.socket.on('new-order-available', (order) => {

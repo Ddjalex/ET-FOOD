@@ -103,6 +103,17 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
       socket.join(`driver:${driverId}`);
     });
 
+    // Test handler for manual trigger of enhanced order notifications
+    socket.on('trigger_test_order', (data) => {
+      console.log('🧪 Triggering test order notification:', data);
+      
+      if (data.type === 'new_order_notification') {
+        // Broadcast to all drivers
+        io.to('role:driver').emit('new_order_notification', data.data);
+        console.log('📢 Broadcasted test order notification to all drivers');
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
     });

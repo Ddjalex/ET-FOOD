@@ -252,9 +252,41 @@ class OrderService {
           });
         }
         
-        // Always broadcast the new available order to all drivers
-        console.log(`📢 Broadcasting new available order to drivers: ${order.orderNumber}`);
+        // Always broadcast the new available order to all drivers using enhanced notification
+        console.log(`📢 Broadcasting enhanced order notification to drivers: ${order.orderNumber}`);
         const { notifyAllDrivers } = await import('../websocket');
+        
+        // Get restaurant details for enhanced notification
+        const restaurantDetails = await storage.getRestaurant(order.restaurantId);
+        
+        // Send enhanced notification for interactive modal
+        notifyAllDrivers('new_order_notification', {
+          driverId: 'all', // Target all available drivers
+          order: {
+            id: order.id,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            restaurantId: order.restaurantId,
+            restaurantName: restaurantDetails?.name || order.restaurantName || 'Restaurant',
+            restaurantLocation: {
+              lat: restaurantDetails?.latitude || restaurantDetails?.location?.lat || 9.005,
+              lng: restaurantDetails?.longitude || restaurantDetails?.location?.lng || 38.7639,
+              address: restaurantDetails?.address || 'Restaurant Address'
+            },
+            customerName: order.customerName || 'Customer',
+            deliveryAddress: order.deliveryAddress || 'Delivery Address',
+            deliveryLocation: {
+              lat: order.customerLat || order.deliveryLocation?.lat || 9.015,
+              lng: order.customerLng || order.deliveryLocation?.lng || 38.7739
+            },
+            total: order.total || order.totalAmount,
+            estimatedEarnings: Math.max((order.total || order.totalAmount || 0) * 0.15, 50),
+            items: order.items || [],
+            status: order.status
+          }
+        });
+
+        // Also send legacy event for backward compatibility
         notifyAllDrivers('new_available_order', {
           orderId: order.id,
           orderNumber: order.orderNumber,
