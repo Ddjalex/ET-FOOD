@@ -8,6 +8,10 @@ export interface IRestaurant extends Document {
   email?: string;
   description?: string;
   imageUrl?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
   isActive: boolean;
   isApproved: boolean;
   rating: string;
@@ -23,6 +27,10 @@ const RestaurantSchema = new Schema<IRestaurant>({
   email: String,
   description: String,
   imageUrl: String,
+  location: {
+    latitude: { type: Number },
+    longitude: { type: Number }
+  },
   isActive: { type: Boolean, default: true },
   isApproved: { type: Boolean, default: false },
   rating: { type: String, default: '0.00' },

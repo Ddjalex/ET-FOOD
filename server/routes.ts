@@ -566,14 +566,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new restaurant with admin
   app.post('/api/superadmin/restaurants', requireSession, requireSuperadmin, async (req, res) => {
     try {
-      const { name, address, phoneNumber, email, description, imageUrl, adminData } = req.body;
+      const { name, address, phoneNumber, email, description, imageUrl, latitude, longitude, adminData } = req.body;
 
       if (!name || !address || !phoneNumber) {
         return res.status(400).json({ message: 'Name, address, and phone number are required' });
       }
 
-      // Create restaurant first
-      const restaurant = await storage.createRestaurant({
+      // Create restaurant with location data
+      const restaurantData: any = {
         name,
         address,
         phoneNumber,
@@ -582,7 +582,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: imageUrl || null,
         isActive: true,
         isApproved: true
-      });
+      };
+
+      // Add location if provided
+      if (latitude !== undefined && longitude !== undefined) {
+        restaurantData.location = {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude)
+        };
+      }
+
+      const restaurant = await storage.createRestaurant(restaurantData);
 
       // Create restaurant admin if adminData is provided
       if (adminData) {
@@ -730,7 +740,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/superadmin/restaurants/:id', requireSession, requireSuperadmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const updatedRestaurant = await storage.updateRestaurant(id, req.body);
+      const { latitude, longitude, ...otherData } = req.body;
+      
+      // Prepare update data with location handling
+      const updateData: any = { ...otherData };
+      
+      // Add location if provided
+      if (latitude !== undefined && longitude !== undefined) {
+        updateData.location = {
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude)
+        };
+      }
+      
+      const updatedRestaurant = await storage.updateRestaurant(id, updateData);
       res.json(updatedRestaurant);
     } catch (error) {
       console.error('Error updating restaurant:', error);

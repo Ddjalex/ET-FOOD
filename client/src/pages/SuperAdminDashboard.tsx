@@ -39,6 +39,10 @@ interface Restaurant {
   email?: string;
   description?: string;
   imageUrl?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
   isActive: boolean;
   isApproved: boolean;
   rating: string;
@@ -107,7 +111,9 @@ const restaurantFormSchema = z.object({
   phoneNumber: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
   description: z.string().optional(),
-  imageUrl: z.string().url().optional().or(z.literal(''))
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional()
 });
 
 const adminFormSchema = z.object({
@@ -1273,6 +1279,46 @@ function SuperAdminDashboardContent() {
                         </FormItem>
                       )}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={restaurantForm.control}
+                        name="latitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitude (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                step="any"
+                                placeholder="e.g., 9.0476"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={restaurantForm.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                step="any"
+                                placeholder="e.g., 38.7411"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <div className="flex justify-end space-x-2">
                       <Button type="button" variant="outline" onClick={() => setIsRestaurantDialogOpen(false)}>
                         Cancel
@@ -1312,6 +1358,12 @@ function SuperAdminDashboardContent() {
                         <div>
                           <p className="font-medium">{restaurant.name}</p>
                           <p className="text-sm text-muted-foreground">{restaurant.address}</p>
+                          {restaurant.location?.latitude && restaurant.location?.longitude && (
+                            <p className="text-xs text-blue-600 flex items-center mt-1">
+                              <MapPin className="w-3 h-3 mr-1" />
+                              {restaurant.location.latitude.toFixed(4)}, {restaurant.location.longitude.toFixed(4)}
+                            </p>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1343,7 +1395,9 @@ function SuperAdminDashboardContent() {
                                 phoneNumber: restaurant.phoneNumber,
                                 email: restaurant.email || '',
                                 description: restaurant.description || '',
-                                imageUrl: restaurant.imageUrl || ''
+                                imageUrl: restaurant.imageUrl || '',
+                                latitude: restaurant.location?.latitude,
+                                longitude: restaurant.location?.longitude
                               });
                             }}
                           >
@@ -1459,6 +1513,46 @@ function SuperAdminDashboardContent() {
                         </FormItem>
                       )}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={restaurantForm.control}
+                        name="latitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitude (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                step="any"
+                                placeholder="e.g., 9.0476"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={restaurantForm.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude (Optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                step="any"
+                                placeholder="e.g., 38.7411"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <div className="flex justify-end space-x-2">
                       <Button type="button" variant="outline" onClick={() => setEditingRestaurant(null)}>
                         Cancel
