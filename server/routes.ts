@@ -2547,7 +2547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { restaurantId, orderId } = req.params;
 
       // Use orderService for proper status handling
-      const order = await orderService.updateOrderStatus(orderId, 'preparing');
+      const order = await orderService.updateOrderStatus(orderId, 'in_preparation');
 
       console.log(`👨‍🍳 Kitchen staff started preparing order: ${order.orderNumber}`);
 

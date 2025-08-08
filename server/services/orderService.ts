@@ -29,6 +29,9 @@ class OrderService {
       case 'preparing':
         await this.handleOrderPreparing(order);
         break;
+      case 'in_preparation':
+        await this.handleOrderInPreparation(order);
+        break;
       case 'ready':
         await this.handleOrderReady(order);
         break;
@@ -159,6 +162,42 @@ class OrderService {
 
     } catch (error) {
       console.error('Error handling order preparation:', error);
+    }
+  }
+
+  async handleOrderInPreparation(order: any) {
+    try {
+      console.log(`👨‍🍳 Order actively being prepared: ${order.orderNumber}`);
+      
+      // Send notification to customer that order is actively being prepared
+      if (order.customerId) {
+        try {
+          const customer = await storage.getUser(order.customerId);
+          if (customer?.telegramUserId) {
+            const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+            await broadcastToSpecificCustomer(customer.telegramUserId, {
+              title: '👨‍🍳 Order Actively Being Prepared!',
+              message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
+              orderNumber: order.orderNumber,
+              status: 'in_preparation'
+            });
+            console.log(`📱 Notified customer ${customer.telegramUserId} about active preparation`);
+          }
+        } catch (error) {
+          console.error('Error notifying customer of active preparation:', error);
+        }
+      }
+
+      // Broadcast to restaurant staff that order is actively being prepared
+      const { broadcast } = await import('../websocket');
+      broadcast('order_status_updated', {
+        orderId: order.id,
+        status: 'in_preparation',
+        message: 'Order is actively being prepared in the kitchen'
+      });
+
+    } catch (error) {
+      console.error('Error handling order in preparation:', error);
     }
   }
 

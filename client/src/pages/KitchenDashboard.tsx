@@ -645,8 +645,8 @@ export function KitchenDashboard() {
     const statusConfig = {
       pending: { variant: 'secondary', label: 'Pending', icon: Clock },
       confirmed: { variant: 'default', label: 'Confirmed', icon: CheckCircle },
-      preparing: { variant: 'default', label: 'Ready to Prepare', icon: ChefHat },
-      in_preparation: { variant: 'default', label: 'In Preparation', icon: Timer },
+      preparing: { variant: 'default', label: 'Checked Available', icon: ChefHat },
+      in_preparation: { variant: 'default', label: 'Being Prepared', icon: Timer },
       ready_for_pickup: { variant: 'default', label: 'Ready for Pickup', icon: Package },
       awaiting_admin_intervention: { variant: 'destructive', label: 'Needs Admin', icon: AlertCircle },
     } as const;
@@ -721,8 +721,8 @@ export function KitchenDashboard() {
               </Button>
             )}
             
-            {/* Orders ready for preparation */}
-            {order.status === 'confirmed' && (
+            {/* Orders ready for preparation - after check availability */}
+            {order.status === 'preparing' && (
               <Button
                 onClick={() => startPrepareMutation.mutate(order.id)}
                 disabled={startPrepareMutation.isPending}
@@ -734,8 +734,8 @@ export function KitchenDashboard() {
               </Button>
             )}
             
-            {/* Orders currently being prepared */}
-            {order.status === 'preparing' && (
+            {/* Orders currently being prepared - after start preparation */}
+            {order.status === 'in_preparation' && (
               <Button
                 onClick={() => readyForPickupMutation.mutate(order.id)}
                 disabled={readyForPickupMutation.isPending}
