@@ -77,7 +77,46 @@ class OrderService {
         }
       }
 
-      // Get restaurant location for nearby driver detection
+      // Driver assignment will happen when kitchen staff click "Start Preparing" (in_preparation status)
+      console.log(`🍳 Order ${order.orderNumber} ready for kitchen staff to start preparation`);
+
+      // Notify customer that preparation has started
+      const { broadcast } = await import('../websocket');
+      broadcast('order_status_updated', {
+        orderId: order.id,
+        status: 'preparing',
+        message: 'Your order preparation has started!'
+      });
+
+    } catch (error) {
+      console.error('Error handling order preparation:', error);
+    }
+  }
+
+  async handleOrderInPreparation(order: any) {
+    try {
+      console.log(`👨‍🍳 Order actively being prepared: ${order.orderNumber}`);
+      
+      // Send notification to customer that order is actively being prepared
+      if (order.customerId) {
+        try {
+          const customer = await storage.getUser(order.customerId);
+          if (customer?.telegramUserId) {
+            const { broadcastToSpecificCustomer } = await import('../telegram/customerBot');
+            await broadcastToSpecificCustomer(customer.telegramUserId, {
+              title: '👨‍🍳 Order Actively Being Prepared!',
+              message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
+              orderNumber: order.orderNumber,
+              status: 'in_preparation'
+            });
+            console.log(`📱 Notified customer ${customer.telegramUserId} about active preparation`);
+          }
+        } catch (error) {
+          console.error('Error notifying customer of active preparation:', error);
+        }
+      }
+
+      // Get restaurant location for driver assignment
       const restaurant = await storage.getRestaurant(order.restaurantId);
       if (!restaurant) {
         console.error('Restaurant not found for order:', order.id);
@@ -91,7 +130,7 @@ class OrderService {
 
       console.log(`🍽️ Restaurant location for ${order.restaurantId}:`, restaurantLocation);
 
-      // Find and assign driver immediately when preparation starts
+      // Find and assign driver when kitchen staff start preparing
       const { driverService } = await import('./driverService');
       
       // Get the best available driver
@@ -150,42 +189,6 @@ class OrderService {
 
       } else {
         console.log(`⚠️ No available drivers for order ${order.id} - will try again when ready`);
-      }
-
-      // Notify customer that preparation has started
-      const { broadcast } = await import('../websocket');
-      broadcast('order_status_updated', {
-        orderId: order.id,
-        status: 'preparing',
-        message: 'Your order preparation has started!'
-      });
-
-    } catch (error) {
-      console.error('Error handling order preparation:', error);
-    }
-  }
-
-  async handleOrderInPreparation(order: any) {
-    try {
-      console.log(`👨‍🍳 Order actively being prepared: ${order.orderNumber}`);
-      
-      // Send notification to customer that order is actively being prepared
-      if (order.customerId) {
-        try {
-          const customer = await storage.getUser(order.customerId);
-          if (customer?.telegramUserId) {
-            const { broadcastToSpecificCustomer } = await import('../telegram/customerBot');
-            await broadcastToSpecificCustomer(customer.telegramUserId, {
-              title: '👨‍🍳 Order Actively Being Prepared!',
-              message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
-              orderNumber: order.orderNumber,
-              status: 'in_preparation'
-            });
-            console.log(`📱 Notified customer ${customer.telegramUserId} about active preparation`);
-          }
-        } catch (error) {
-          console.error('Error notifying customer of active preparation:', error);
-        }
       }
 
       // Broadcast to restaurant staff that order is actively being prepared

@@ -1415,6 +1415,26 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  private convertOrderDocument(order: any): any {
+    return {
+      id: order._id.toString(),
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      restaurantId: order.restaurantId,
+      driverId: order.driverId,
+      items: order.items || [],
+      totalAmount: order.totalAmount || order.total,
+      deliveryAddress: order.deliveryAddress,
+      customerName: order.customerName,
+      restaurantName: order.restaurantName,
+      status: order.status,
+      orderTime: order.orderTime || order.createdAt,
+      estimatedDeliveryTime: order.estimatedDeliveryTime,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
+    };
+  }
+
   private convertDriverDocument(driver: any): DriverType {
     return {
       id: driver._id.toString(),
