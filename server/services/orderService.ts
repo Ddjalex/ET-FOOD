@@ -63,7 +63,7 @@ class OrderService {
         try {
           const customer = await storage.getUser(order.customerId);
           if (customer?.telegramUserId) {
-            const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+            const { broadcastToSpecificCustomer } = await import('../telegram/customerBot');
             await broadcastToSpecificCustomer(customer.telegramUserId, {
               title: '👨‍🍳 Your Order is Being Prepared!',
               message: `Great news! Your order ${order.orderNumber} is now being prepared by our kitchen staff. A driver will be assigned soon.`,
@@ -134,7 +134,7 @@ class OrderService {
           try {
             const customer = await storage.getUser(order.customerId);
             if (customer?.telegramUserId) {
-              const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+              const { broadcastToSpecificCustomer } = await import('../telegram/customerBot');
               await broadcastToSpecificCustomer(customer.telegramUserId, {
                 title: '🚗 Driver Assigned!',
                 message: `Great! Driver ${assignedDriver.name || 'Driver'} has been assigned to your order ${order.orderNumber}. They will pick it up once it's ready.`,
@@ -174,7 +174,7 @@ class OrderService {
         try {
           const customer = await storage.getUser(order.customerId);
           if (customer?.telegramUserId) {
-            const { broadcastToSpecificCustomer } = require('../telegram/customerBot');
+            const { broadcastToSpecificCustomer } = await import('../telegram/customerBot');
             await broadcastToSpecificCustomer(customer.telegramUserId, {
               title: '👨‍🍳 Order Actively Being Prepared!',
               message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
