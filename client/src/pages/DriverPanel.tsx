@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { 
   MapPin, 
   Clock, 
@@ -69,6 +71,7 @@ interface Driver {
 
 function DriverPanel() {
   const [currentDriverId, setCurrentDriverId] = useState<string>('demo-driver-id');
+  const [socket, setSocket] = useState<Socket | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -89,6 +92,65 @@ function DriverPanel() {
       window.location.href = '/driver-login';
     }
   }, []);
+
+  // Setup Socket.IO connection for real-time notifications
+  useEffect(() => {
+    if (currentDriverId && currentDriverId !== 'demo-driver-id') {
+      console.log('Setting up Socket.IO connection for driver:', currentDriverId);
+      
+      const newSocket = io();
+      
+      newSocket.on('connect', () => {
+        console.log('Socket.IO connected:', newSocket.id);
+        // Authenticate the socket connection with driver ID
+        newSocket.emit('authenticate', { userId: currentDriverId });
+        newSocket.emit('driver-online', currentDriverId);
+        console.log('Driver authenticated and marked online:', currentDriverId);
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('Socket authenticated successfully:', data);
+      });
+
+      // Listen for new order notifications
+      newSocket.on('new_order_notification', (data) => {
+        console.log('🚨 New order notification received:', data);
+        if (data.driverId === 'all' || data.driverId === currentDriverId) {
+          // Show toast notification
+          toast({
+            title: "New Order Available!",
+            description: `Order #${data.order.orderNumber} from ${data.order.restaurantName}`,
+            duration: 5000,
+          });
+          
+          // Refresh orders list
+          queryClient.invalidateQueries({ queryKey: ['/api/drivers/available-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/drivers/assigned-orders'] });
+        }
+      });
+
+      // Listen for order updates
+      newSocket.on('order_update', (data) => {
+        console.log('Order update received:', data);
+        toast({
+          title: "Order Update",
+          description: `Order #${data.orderNumber} status: ${data.status}`,
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/drivers/assigned-orders'] });
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('Socket.IO disconnected');
+      });
+
+      setSocket(newSocket);
+
+      // Cleanup on unmount
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [currentDriverId, toast, queryClient]);
 
   // Fetch driver profile
   const { data: driver, isLoading: driverLoading } = useQuery<Driver>({

@@ -18,12 +18,12 @@ class DriverService {
     let shortestDistance = Infinity;
 
     for (const driver of availableDrivers) {
-      if (driver.currentLocation && driver.currentLocation.lat && driver.currentLocation.lng) {
+      if (driver.currentLocation && Array.isArray(driver.currentLocation) && driver.currentLocation.length >= 2) {
         const distance = this.calculateDistance(
           restaurantLocation.lat,
           restaurantLocation.lng,
-          driver.currentLocation.lat,
-          driver.currentLocation.lng
+          driver.currentLocation[0],
+          driver.currentLocation[1]
         );
         
         if (distance < shortestDistance) {
@@ -92,11 +92,11 @@ class DriverService {
         totalAmount: order.totalAmount,
         deliveryFee: order.deliveryFee || 50,
         estimatedEarnings: this.calculateEarnings(order),
-        distance: restaurantLocation ? this.calculateDistance(
+        distance: restaurantLocation && nearestDriver.currentLocation && Array.isArray(nearestDriver.currentLocation) ? this.calculateDistance(
           restaurantLocation.lat,
           restaurantLocation.lng,
-          nearestDriver.currentLocation?.lat || 0,
-          nearestDriver.currentLocation?.lng || 0
+          nearestDriver.currentLocation[0] || 0,
+          nearestDriver.currentLocation[1] || 0
         ) : 0,
         restaurantLocation,
         deliveryAddress: order.deliveryAddress
@@ -144,14 +144,14 @@ class DriverService {
       console.log(`✅ Found order ${order.orderNumber} and driver ${driver.name || driver.id}`);
 
       // Update order with driver
-      await storage.updateOrder(orderId, { driverId, status: 'assigned' });
+      await storage.updateOrder(orderId, { driverId, status: 'driver_assigned' });
       console.log(`📝 Updated order ${orderId} with driver assignment`);
 
       // Create delivery record
       const delivery = await storage.createDelivery({
         orderId,
         driverId,
-        status: 'assigned',
+        status: 'picked_up',
       });
       console.log(`📋 Created delivery record for order ${orderId}`);
 
@@ -181,7 +181,7 @@ class DriverService {
     }
   }
 
-  async updateDeliveryStatus(deliveryId: string, status: string) {
+  async updateDeliveryStatus(deliveryId: string, status: 'picked_up' | 'delivered' | 'failed' | 'assigned' | 'in_transit') {
     const delivery = await storage.updateDelivery(deliveryId, { status });
     const order = await storage.getOrder(delivery.orderId);
 
@@ -205,7 +205,9 @@ class DriverService {
         break;
     }
 
-    await storage.updateOrderStatus(order.id, orderStatus);
+    if (order.id && orderStatus) {
+      await storage.updateOrderStatus(order.id, orderStatus);
+    }
 
     // Notify customer of status change
     await storage.createNotification({

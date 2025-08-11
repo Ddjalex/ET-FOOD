@@ -3408,5 +3408,45 @@ Use the buttons below to get started:`;
     res.sendFile(path.join(__dirname, '../client/driver-app.js'));
   });
 
+  // Test endpoint to trigger driver notification
+  app.post('/api/test/driver-notification', async (req, res) => {
+    try {
+      const { driverId, message } = req.body;
+      
+      // Create a test order to trigger notification
+      const testOrder = {
+        id: 'test-order-' + Date.now(),
+        orderNumber: 'TEST-' + Date.now(),
+        customerId: '688c844eb154013d32b1b987',
+        customerName: 'Test Customer',
+        restaurantId: 'test-restaurant',
+        restaurantName: 'Test Restaurant',
+        items: [{ name: 'Test Item', price: 100, quantity: 1 }],
+        totalAmount: 100,
+        deliveryFee: 50,
+        status: 'confirmed',
+        customerLocation: { lat: 9.03, lng: 38.74 },
+        restaurantLocation: { lat: 9.04, lng: 38.75 }
+      };
+
+      // Trigger driver notification
+      console.log('🧪 Triggering test driver notification for:', driverId);
+      
+      // Emit notification to specific driver
+      io.to(`driver_${driverId}`).emit('new_order_available', {
+        order: testOrder,
+        estimatedEarnings: 75,
+        distance: 2.5,
+        type: 'order_notification'
+      });
+      
+      console.log('✅ Test notification sent to driver:', driverId);
+      res.json({ success: true, message: 'Test notification sent' });
+    } catch (error) {
+      console.error('❌ Test notification failed:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   return httpServer;
 }
