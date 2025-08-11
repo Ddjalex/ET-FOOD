@@ -3,6 +3,7 @@ class DriverApp {
         this.tg = window.Telegram.WebApp;
         this.currentOrder = null;
         this.tripState = 'waiting'; // waiting, incoming, active, navigating
+        this.isOnline = false;
         this.map = null;
         this.driverLocation = null;
         this.socket = null;
@@ -128,6 +129,11 @@ class DriverApp {
         // Primary action button (dynamic based on trip state)
         document.getElementById('primaryActionBtn').addEventListener('click', () => {
             this.handlePrimaryAction();
+        });
+        
+        // Online/Offline toggle button
+        document.getElementById('onlineToggleBtn').addEventListener('click', () => {
+            this.toggleOnlineStatus();
         });
     }
     
@@ -587,6 +593,68 @@ class DriverApp {
         const badge = document.getElementById('statusBadge');
         badge.className = `status-badge ${status}`;
         badge.textContent = text;
+        
+        // Update toggle button to match status
+        const toggleBtn = document.getElementById('onlineToggleBtn');
+        if (status === 'online') {
+            toggleBtn.className = 'online-toggle online';
+            toggleBtn.textContent = 'Go Offline';
+            this.isOnline = true;
+        } else {
+            toggleBtn.className = 'online-toggle offline';
+            toggleBtn.textContent = 'Go Online';
+            this.isOnline = false;
+        }
+    }
+    
+    async toggleOnlineStatus() {
+        const toggleBtn = document.getElementById('onlineToggleBtn');
+        
+        // Show loading state
+        toggleBtn.disabled = true;
+        toggleBtn.textContent = this.isOnline ? 'Going Offline...' : 'Going Online...';
+        
+        try {
+            const newStatus = !this.isOnline;
+            
+            // Update driver online status via API
+            const response = await fetch('/api/drivers/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    driverId: this.driverId,
+                    isOnline: newStatus,
+                    isAvailable: newStatus
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                console.log(`✅ Driver status updated to: ${newStatus ? 'online' : 'offline'}`);
+                
+                if (newStatus) {
+                    this.updateStatusBadge('online', 'Online & Ready');
+                    this.showNotification('You\'re Online!', 'Ready to receive delivery orders', 'success');
+                    // Get current location when going online
+                    this.getCurrentLocation();
+                } else {
+                    this.updateStatusBadge('offline', 'Offline');
+                    this.showNotification('You\'re Offline', 'You won\'t receive new orders', 'info');
+                }
+            } else {
+                console.error('❌ Failed to update driver status:', result);
+                this.showNotification('Status Update Failed', result.message || 'Could not update status', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error updating driver status:', error);
+            this.showNotification('Network Error', 'Could not connect to server', 'error');
+        } finally {
+            // Reset button state
+            toggleBtn.disabled = false;
+        }
     }
     
     showNotification(title, message, type = 'info') {

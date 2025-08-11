@@ -137,6 +137,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver status toggle endpoint (POST method for mini app compatibility)
+  app.post('/api/drivers/status', async (req, res) => {
+    try {
+      const { driverId, isOnline, isAvailable } = req.body;
+      
+      if (!driverId) {
+        return res.status(400).json({ message: 'Driver ID is required' });
+      }
+      
+      const driver = await storage.updateDriverStatus(driverId, isOnline, isAvailable);
+      broadcast('driver_status_updated', {
+        driverId: driver.id,
+        isOnline,
+        isAvailable,
+        status: isOnline ? 'online' : 'offline',
+        driver: driver
+      });
+      
+      res.json({ 
+        success: true,
+        message: `Driver ${isOnline ? 'online' : 'offline'} status updated`,
+        driver 
+      });
+    } catch (error) {
+      console.error('Error updating driver status:', error);
+      res.status(500).json({ message: 'Failed to update driver status' });
+    }
+  });
+
   // Auth middleware
   await setupAuth(app);
 
