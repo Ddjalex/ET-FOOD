@@ -1,0 +1,45 @@
+The existing system is failing to notify drivers of new orders, and the driver mini-app is too basic for a professional delivery service. This requires a complete overhaul of the communication and app logic.
+
+1. Fix the Core Notification Bug
+First, the agent must fix the bug where the "Start Preparing" button doesn't trigger a notification. The entire data flow must be verified and debugged:
+
+Action: Add extensive logging to the backend endpoint that handles the "Start Preparing" button click.
+
+Log the order ID and the assigned driver's ID.
+
+Log the exact payload that is being sent via WebSocket.
+
+Log whether the WebSocket broadcast was successful.
+
+Action: Add extensive logging to the driver mini-app's WebSocket listener.
+
+Log all incoming messages to confirm they are being received.
+
+Log any errors that occur when the app tries to process the incoming data.
+
+This will pinpoint exactly where the communication is failing, allowing the agent to fix the issue.
+
+2. Implement an Advanced, State-Based Driver App
+Once the notification bug is resolved, the agent must transform the driver mini-app into a full-featured delivery management tool with the following features:
+
+A. Dynamic UI Based on Order Status
+The app's interface should change automatically as the order progresses.
+
+Pending: A new, incoming order will appear on the screen as an interactive card. This card will contain "Accept" and "Reject" buttons.
+
+Accepted: Once the driver accepts, the card will disappear and be replaced with a single, active trip screen. This screen will show the order details and the customer's live GPS location on an OpenStreetMap.
+
+En Route to Restaurant: The active trip screen will display a prominent "Navigate to Restaurant" button.
+
+Picked Up: After the driver clicks a "Picked Up" button (which replaces the "Navigate to Restaurant" button), the app will then show a "Navigate to Customer" button.
+
+Delivered: Once the driver reaches the customer, they will click a "Delivered" button to complete the trip.
+
+B. OpenStreetMap Integration with Navigation
+The new app must use OpenStreetMap to show live locations and provide navigation.
+
+Live Map: The active trip screen will have an embedded OpenStreetMap that shows the driver's current location relative to the restaurant and customer.
+
+Navigation: When the driver clicks the "Navigate" button, the app will open the correct navigation route (to the restaurant, then to the customer) using the OpenStreetMap API.
+
+This approach will create a professional, intuitive, and highly functional delivery system that is on par with the best delivery services in Ethiopia.

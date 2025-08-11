@@ -16,6 +16,13 @@ declare module 'socket.io' {
 
 let io: SocketIOServer;
 
+export const getIO = () => {
+  if (!io) {
+    throw new Error('WebSocket server not initialized');
+  }
+  return io;
+};
+
 export const initWebSocket = (server: HTTPServer): SocketIOServer => {
   io = new SocketIOServer(server, {
     cors: {

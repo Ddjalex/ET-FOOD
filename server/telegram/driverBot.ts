@@ -1,6 +1,45 @@
 import { Telegraf, Context } from 'telegraf';
 import { storage } from '../storage';
 
+// Driver notification function
+export async function notifyDriverNewOrder(telegramId: string, orderData: any) {
+  try {
+    console.log(`📱 Sending order notification to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const message = `🚨 NEW DELIVERY ORDER!
+
+📦 Order: ${orderData.orderNumber}
+🏪 Restaurant: ${orderData.restaurantName}  
+👤 Customer: ${orderData.customerName}
+💰 Estimated Earnings: ${orderData.estimatedEarnings} ETB
+📍 Distance: ${orderData.distance} km
+
+Open your driver app to accept this order!`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: '🚗 Open Driver App', web_app: { 
+            url: process.env.REPLIT_DEV_DOMAIN 
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+              : 'https://replit.com'
+          }}
+        ]]
+      }
+    });
+
+    console.log(`✅ Order notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending order notification to driver:', error);
+  }
+}
+
 export async function setupDriverBot(bot: Telegraf) {
   console.log('Setting up Driver Bot (EnbelaDriver_bot) commands...');
 

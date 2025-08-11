@@ -1,2309 +1,639 @@
-// Driver App JavaScript
 class DriverApp {
     constructor() {
-        this.tg = window.Telegram?.WebApp;
-        this.socket = null;
-        this.driverData = null;
+        this.tg = window.Telegram.WebApp;
         this.currentOrder = null;
-        this.isOnline = false;
+        this.tripState = 'waiting'; // waiting, incoming, active, navigating
+        this.map = null;
+        this.driverLocation = null;
+        this.socket = null;
+        this.driverId = null;
         
         this.init();
     }
-
-    init() {
-        // Wait for Telegram Web App to be ready
-        if (window.Telegram && window.Telegram.WebApp) {
-            this.tg = window.Telegram.WebApp;
-            this.tg.ready();
-            this.tg.expand();
-            this.tg.enableClosingConfirmation();
-            
-            console.log('Telegram Web App initialized');
-            console.log('Available Telegram methods:', Object.keys(this.tg));
-            console.log('Contact sharing support:', typeof this.tg.requestContact === 'function');
-            console.log('Telegram user data:', this.tg.initDataUnsafe?.user);
-        } else {
-            console.warn('Telegram Web App not available');
-        }
-
+    
+    async init() {
+        console.log('🚗 Initializing BeU Driver App...');
+        
+        // Initialize Telegram WebApp
+        this.tg.ready();
+        this.tg.expand();
+        
+        // Get driver session and ID
+        await this.initializeDriverSession();
+        
+        // Setup WebSocket connection
+        this.setupWebSocket();
+        
+        // Setup event listeners
         this.setupEventListeners();
-        this.loadDriverData();
-        this.initializeSocketConnection();
-    }
-
-    setupEventListeners() {
-        // File upload previews
-        document.getElementById('profileImage').addEventListener('change', (e) => {
-            this.handleFilePreview(e, 'profileImagePreview');
-        });
-
-        document.getElementById('govIdFront').addEventListener('change', (e) => {
-            this.handleFilePreview(e, 'govIdFrontPreview');
-        });
-
-        document.getElementById('govIdBack').addEventListener('change', (e) => {
-            this.handleFilePreview(e, 'govIdBackPreview');
-        });
-    }
-
-    handleFilePreview(event, previewId) {
-        const file = event.target.files[0];
-        const preview = document.getElementById(previewId);
-        const uploadArea = event.target.closest('.file-upload');
-
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-                uploadArea.classList.add('has-file');
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    async loadDriverData() {
-        try {
-            // Get Telegram user data
-            const initData = this.tg?.initDataUnsafe;
-            
-            if (initData?.user) {
-                const { first_name, last_name, username, id } = initData.user;
-                const fullName = `${first_name} ${last_name || ''}`.trim();
-                
-                // Store Telegram user data for registration
-                this.telegramUser = {
-                    id: id.toString(),
-                    first_name,
-                    last_name,
-                    username,
-                    fullName
-                };
-                
-                // Pre-fill registration form
-                this.autofillRegistrationForm();
-                
-                // Check if driver exists
-                const response = await fetch(`/api/drivers/telegram/${id}`);
-                
-                if (response.ok) {
-                    this.driverData = await response.json();
-                    console.log('Driver data loaded:', this.driverData);
-                    console.log('Driver status:', this.driverData.status);
-                    console.log('Driver ID:', this.driverData.id);
-                    console.log('Driver isApproved:', this.driverData.isApproved);
-                    this.showDashboard();
-                } else if (response.status === 404) {
-                    console.log('Driver not found, showing registration form');
-                    this.showRegistrationForm();
-                } else {
-                    console.error('Error loading driver data:', response.status);
-                    this.showRegistrationForm();
-                }
-            } else {
-                console.warn('No Telegram user data available');
-                console.log('⚠️ No driver data available for authentication');
-                
-                // Enable test mode for demonstration
-                console.log('🧪 Enabling test mode for driver interface');
-                this.enableTestMode();
-            }
-        } catch (error) {
-            console.error('Error loading driver data:', error);
-            this.showRegistrationForm();
-        }
-    }
-
-    async refreshDriverData() {
-        console.log('Refreshing driver data...');
-        if (this.telegramUser?.id) {
-            try {
-                const response = await fetch(`/api/drivers/telegram/${this.telegramUser.id}`);
-                if (response.ok) {
-                    this.driverData = await response.json();
-                    console.log('Driver data refreshed:', this.driverData);
-                    return this.driverData;
-                } else {
-                    console.error('Failed to refresh driver data:', response.status);
-                }
-            } catch (error) {
-                console.error('Error refreshing driver data:', error);
-            }
-        }
-        return this.driverData;
-    }
-
-    autofillRegistrationForm() {
-        // Check for URL parameters first (from contact sharing)
-        const urlParams = new URLSearchParams(window.location.search);
-        const phoneFromUrl = urlParams.get('phone');
-        const nameFromUrl = urlParams.get('name');
         
-        // Fill name - prioritize URL parameter, then Telegram profile
-        const fullName = nameFromUrl || this.telegramUser?.fullName;
-        if (fullName) {
-            const nameField = document.getElementById('driverName');
-            if (nameField) {
-                nameField.value = fullName;
-                nameField.style.backgroundColor = '#f0f9f4';
-                nameField.placeholder = nameFromUrl ? 'Name from shared contact' : 'Name loaded from Telegram';
-            }
-        }
-
-        // Fill phone number from URL parameter (contact sharing)
-        if (phoneFromUrl) {
-            const phoneField = document.getElementById('driverPhone');
-            if (phoneField) {
-                phoneField.value = phoneFromUrl;
-                phoneField.style.backgroundColor = '#f0f9f4';
-                phoneField.placeholder = 'Phone number from shared contact';
-                phoneField.readOnly = true; // Make it read-only since it came from verified contact
-                
-                // Add visual indicator that phone was auto-filled
-                const phoneInfo = document.createElement('div');
-                phoneInfo.style.cssText = 'background: #e8f5e8; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #2d5a27; border: 1px solid #b8d4b8;';
-                phoneInfo.innerHTML = `✅ Phone number auto-filled from your shared contact`;
-                
-                if (phoneField.parentNode && !document.querySelector('[data-phone-info]')) {
-                    phoneInfo.setAttribute('data-phone-info', 'true');
-                    phoneField.parentNode.insertBefore(phoneInfo, phoneField.nextSibling);
-                }
-            }
-        } else {
-            // Setup manual phone number entry if no phone from contact
-            this.setupPhoneNumberRequest();
-        }
-
-        // Add Telegram ID info display for user confirmation
-        if (this.telegramUser?.id) {
-            const telegramInfo = document.createElement('div');
-            telegramInfo.style.cssText = 'background: #e6f3ff; padding: 8px; margin: 8px 0; border-radius: 4px; font-size: 12px; color: #0066cc; border: 1px solid #b3d9ff;';
-            telegramInfo.innerHTML = `📱 Telegram ID: ${this.telegramUser.id} ${this.telegramUser.username ? `(@${this.telegramUser.username})` : ''}`;
-            
-            const nameField = document.getElementById('driverName');
-            if (nameField && nameField.parentNode && !document.querySelector('[data-telegram-info]')) {
-                telegramInfo.setAttribute('data-telegram-info', 'true');
-                nameField.parentNode.insertBefore(telegramInfo, nameField.nextSibling);
-            }
-        }
-    }
-
-    setupPhoneNumberRequest() {
-        const phoneField = document.getElementById('driverPhone');
-        if (phoneField) {
-            console.log('Setting up manual phone number entry');
-            
-            // Set up the phone field for manual entry only
-            phoneField.placeholder = 'Enter your phone number (e.g., +251912345678)';
-            phoneField.readOnly = false;
-            phoneField.style.backgroundColor = '#ffffff';
-            phoneField.style.cursor = 'text';
-            phoneField.required = true;
-            
-            // Remove any existing contact sharing buttons
-            const existingButtons = phoneField.parentNode.querySelectorAll('button');
-            existingButtons.forEach(btn => {
-                if (btn.textContent.includes('Share Contact') || btn.textContent.includes('📱')) {
-                    btn.remove();
-                }
-            });
-        }
-    }
-
-
-
-    showRegistrationForm() {
-        document.getElementById('registrationForm').classList.remove('hidden');
-        document.getElementById('pendingApproval').classList.add('hidden');
-        document.getElementById('driverDashboard').classList.add('hidden');
-
-        // Ensure form is autofilled when shown
-        this.autofillRegistrationForm();
-    }
-
-    showPendingApproval() {
-        document.getElementById('registrationForm').classList.add('hidden');
-        document.getElementById('pendingApproval').classList.remove('hidden');
-        document.getElementById('driverDashboard').classList.add('hidden');
-    }
-
-    showDashboard() {
-        document.getElementById('registrationForm').classList.add('hidden');
-        document.getElementById('pendingApproval').classList.add('hidden');
-        document.getElementById('driverDashboard').classList.remove('hidden');
-
-        if (this.driverData) {
-            if (this.driverData.status === 'pending_approval') {
-                this.showPendingApproval();
-                return;
-            }
-
-            this.updateDashboardData();
-            this.loadAvailableOrders();
-            this.loadDeliveryHistory();
-
-            // Show location prompt if not shared
-            if (!this.driverData.currentLocation) {
-                document.getElementById('locationPrompt').classList.remove('hidden');
-            }
-        }
-    }
-
-    updateDashboardData() {
-        if (!this.driverData) return;
-
-        // Update status
-        this.isOnline = this.driverData.isOnline;
-        document.getElementById('onlineToggle').checked = this.isOnline;
-        this.updateStatusIndicator();
-
-        // Update earnings
-        document.getElementById('todayEarnings').textContent = `${this.driverData.todayEarnings || '0.00'} ETB`;
-        document.getElementById('weeklyEarnings').textContent = `${this.driverData.weeklyEarnings || '0.00'} ETB`;
-        document.getElementById('totalEarnings').textContent = `${this.driverData.totalEarnings || '0.00'} ETB`;
-        document.getElementById('totalDeliveries').textContent = this.driverData.totalDeliveries || '0';
-        document.getElementById('driverRating').textContent = this.driverData.rating || '0.0';
-
-        // Update debug info
-        this.updateDebugStatus();
-    }
-
-    updateDebugStatus() {
-        const statusEl = document.getElementById('debugStatus');
-        const idEl = document.getElementById('debugId');
+        // Get current location
+        this.getCurrentLocation();
         
-        if (statusEl && this.driverData) {
-            statusEl.textContent = this.driverData.status || 'unknown';
-        }
-        if (idEl && this.driverData) {
-            idEl.textContent = this.driverData.id || 'unknown';
-        }
+        // Set initial UI state
+        this.showWaitingScreen();
     }
-
-    updateStatusIndicator() {
-        const indicator = document.getElementById('statusIndicator');
-        const dot = document.getElementById('statusDot');
-        const text = document.getElementById('statusText');
-
-        if (this.isOnline) {
-            indicator.classList.add('online');
-            indicator.classList.remove('offline');
-            dot.classList.add('online');
-            dot.classList.remove('offline');
-            text.textContent = 'Online - Ready for Orders';
-        } else {
-            indicator.classList.add('offline');
-            indicator.classList.remove('online');
-            dot.classList.add('offline');
-            dot.classList.remove('online');
-            text.textContent = 'Offline';
-        }
-    }
-
-    async submitRegistration() {
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submitting...';
-
+    
+    async initializeDriverSession() {
         try {
-            if (!this.telegramUser) {
-                throw new Error('Telegram user data not available');
-            }
-
-            // Validate required fields
-            const driverName = document.getElementById('driverName').value.trim();
-            const driverPhone = document.getElementById('driverPhone').value.trim();
-            
-            if (!driverName) {
-                throw new Error('Full name is required');
-            }
-            
-            if (!driverPhone) {
-                throw new Error('Phone number is required');
-            }
-
-            if (!this.telegramUser.id) {
-                throw new Error('Telegram ID is required');
-            }
-
-            const formData = new FormData();
-            formData.append('telegramId', this.telegramUser.id);
-            formData.append('name', driverName);
-            formData.append('phoneNumber', driverPhone);
-
-            const profileImage = document.getElementById('profileImage').files[0];
-            const govIdFront = document.getElementById('govIdFront').files[0];
-            const govIdBack = document.getElementById('govIdBack').files[0];
-
-            let response;
-            
-            // If any files are provided, use the multipart endpoint
-            if (profileImage || govIdFront || govIdBack) {
-                if (profileImage) {
-                    formData.append('profileImage', profileImage);
-                }
-                if (govIdFront) {
-                    formData.append('governmentIdFront', govIdFront);
-                }
-                if (govIdBack) {
-                    formData.append('governmentIdBack', govIdBack);
-                }
-
-                response = await fetch('/api/drivers/register', {
-                    method: 'POST',
-                    body: formData
-                });
-            } else {
-                // Use basic registration endpoint for JSON data
-                response = await fetch('/api/drivers/register-basic', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        telegramId: this.telegramUser.id,
-                        name: driverName,
-                        phoneNumber: driverPhone
-                    })
-                });
-            }
-
+            const response = await fetch('/api/telegram/session');
             const data = await response.json();
-
-            if (response.ok) {
-                this.driverData = data.driver;
-                this.showPendingApproval();
-                
-                if (this.tg) {
-                    this.tg.showAlert('Registration submitted successfully! You will be notified once approved.');
-                }
+            
+            if (data.userId) {
+                this.driverId = data.userId;
+                console.log('✅ Driver session initialized:', this.driverId);
+                this.updateStatusBadge('online', 'Online & Ready');
             } else {
-                throw new Error(data.message || 'Registration failed');
+                console.error('❌ Failed to get driver session');
+                this.updateStatusBadge('offline', 'Offline');
             }
         } catch (error) {
-            console.error('Registration error:', error);
-            const errorMessage = error.message || 'Registration failed. Please try again.';
-            
-            if (this.tg && typeof this.tg.showAlert === 'function') {
-                this.tg.showAlert(errorMessage);
-            } else if (this.tg && typeof this.tg.showPopup === 'function') {
-                this.tg.showPopup({
-                    title: 'Registration Error',
-                    message: errorMessage,
-                    buttons: [{ type: 'ok' }]
-                });
-            } else {
-                alert(errorMessage);
-            }
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Registration';
+            console.error('❌ Error initializing driver session:', error);
+            this.updateStatusBadge('offline', 'Connection Error');
         }
     }
-
-    async toggleOnlineStatus() {
-        const isChecked = document.getElementById('onlineToggle').checked;
+    
+    setupWebSocket() {
+        console.log('🔌 Setting up WebSocket connection...');
         
         try {
-            // Make sure we have driver data and ID
-            if (!this.driverData || !this.driverData.id) {
-                throw new Error('Driver data not available');
-            }
-
-            const response = await fetch(`/api/drivers/${this.driverData.id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    isOnline: isChecked, 
-                    isAvailable: isChecked 
-                })
-            });
-
-            if (response.ok) {
-                this.isOnline = isChecked;
-                this.updateStatusIndicator();
+            this.socket = io();
+            
+            this.socket.on('connect', () => {
+                console.log('✅ WebSocket connected');
+                this.updateStatusBadge('online', 'Online & Ready');
                 
-                if (isChecked && !this.driverData.currentLocation) {
-                    document.getElementById('locationPrompt').classList.remove('hidden');
-                }
-            } else {
-                // Revert toggle if request failed
-                document.getElementById('onlineToggle').checked = !isChecked;
-                throw new Error('Failed to update status');
-            }
-        } catch (error) {
-            console.error('Error updating status:', error);
-            if (this.tg) {
-                this.tg.showAlert('Failed to update status');
-            }
-        }
-    }
-
-    async requestLocation() {
-        if (this.tg) {
-            this.tg.requestLocation((location) => {
-                if (location) {
-                    this.updateLocation(location.latitude, location.longitude);
+                // Authenticate with driver ID
+                if (this.driverId) {
+                    this.socket.emit('authenticate', { userId: this.driverId });
                 }
             });
-        } else {
-            // Fallback for web browser
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        this.updateLocation(position.coords.latitude, position.coords.longitude);
-                    },
-                    (error) => {
-                        console.error('Location error:', error);
-                        alert('Please enable location access to receive orders');
-                    }
-                );
-            }
-        }
-    }
-
-    requestLiveLocation() {
-        console.log('Requesting live location...');
-        console.log('Driver data available:', !!this.driverData);
-        console.log('Driver ID:', this.driverData?.id);
-        
-        // Check if driver is registered and approved
-        if (!this.driverData || !this.driverData.id) {
-            const errorMsg = 'Please complete registration first before sharing location.';
-            console.log('Driver data issue - driverData:', this.driverData);
-            if (this.tg) {
-                this.tg.showAlert(errorMsg);
-            } else {
-                alert(errorMsg);
-            }
-            return;
-        }
-        
-        console.log('Driver status check:', this.driverData.status);
-        if (this.driverData.status !== 'approved' && this.driverData.status !== 'active') {
-            const errorMsg = 'Please wait for approval before sharing location.';
-            console.log('Driver not approved yet, status:', this.driverData.status);
-            if (this.tg) {
-                this.tg.showAlert(errorMsg);
-            } else {
-                alert(errorMsg);
-            }
-            return;
-        }
-        
-        if (this.tg && this.tg.requestLocation) {
-            console.log('Using Telegram location API');
-            this.tg.requestLocation((location) => {
-                if (location) {
-                    console.log('Location received from Telegram:', location);
-                    this.updateLocation(location.latitude, location.longitude);
-                    this.saveLiveLocation(location.latitude, location.longitude);
-                }
-            });
-        } else {
-            console.log('Using browser geolocation API');
-            // Fallback for regular geolocation
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        console.log('Location received from browser:', lat, lng);
-                        this.updateLocation(lat, lng);
-                        this.saveLiveLocation(lat, lng);
-                    },
-                    (error) => {
-                        console.error('Location error:', error);
-                        const errorMessage = this.getLocationErrorMessage(error);
-                        if (this.tg) {
-                            this.tg.showAlert(errorMessage);
-                        } else {
-                            alert(errorMessage);
-                        }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 60000
-                    }
-                );
-            } else {
-                const errorMsg = 'Geolocation is not supported by this device';
-                if (this.tg) {
-                    this.tg.showAlert(errorMsg);
-                } else {
-                    alert(errorMsg);
-                }
-            }
-        }
-    }
-
-    getLocationErrorMessage(error) {
-        switch(error.code) {
-            case error.PERMISSION_DENIED:
-                return "Location access denied. Please enable location permissions and try again.";
-            case error.POSITION_UNAVAILABLE:
-                return "Location information is unavailable. Please check your GPS settings.";
-            case error.TIMEOUT:
-                return "Location request timed out. Please try again.";
-            default:
-                return "An unknown error occurred while retrieving location.";
-        }
-    }
-
-    async saveLiveLocation(latitude, longitude) {
-        try {
-            // Ensure we have driver data
-            if (!this.driverData || !this.driverData.id) {
-                console.error('Driver data not available, cannot save live location');
-                return;
-            }
             
-            const response = await fetch(`/api/drivers/${this.driverData.id}/live-location`, {
+            this.socket.on('disconnect', () => {
+                console.log('❌ WebSocket disconnected');
+                this.updateStatusBadge('offline', 'Connection Lost');
+            });
+            
+            // Listen for new order assignments (specific to this driver)
+            this.socket.on('new_order_assigned', (orderData) => {
+                console.log('🚨 NEW ORDER ASSIGNED:', orderData);
+                this.showIncomingOrder(orderData);
+                this.playNotificationSound();
+                this.showNotification('New Order!', 'You have a new delivery request', 'success');
+            });
+            
+            // Listen for broadcast orders (available to all drivers)
+            this.socket.on('new_available_order', (orderData) => {
+                console.log('📢 NEW AVAILABLE ORDER:', orderData);
+                this.showIncomingOrder(orderData);
+                this.playNotificationSound();
+                this.showNotification('Order Available!', 'A new order is available in your area', 'info');
+            });
+            
+            // Listen for order status updates
+            this.socket.on('order_ready_for_pickup', (data) => {
+                console.log('📦 Order ready for pickup:', data);
+                if (this.currentOrder && this.currentOrder.orderId === data.orderId) {
+                    this.updateTripProgress('pickedUp');
+                    this.updatePrimaryAction('Navigate to Customer', '🧭');
+                    this.showNotification('Order Ready!', 'Order is ready for pickup at restaurant', 'success');
+                }
+            });
+            
+            // Listen for order updates
+            this.socket.on('order_status_updated', (data) => {
+                console.log('📋 Order status updated:', data);
+                if (this.currentOrder && this.currentOrder.orderId === data.orderId) {
+                    this.handleOrderStatusUpdate(data);
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ WebSocket setup failed:', error);
+            this.updateStatusBadge('offline', 'Connection Error');
+        }
+    }
+    
+    setupEventListeners() {
+        // Accept order button
+        document.getElementById('acceptOrderBtn').addEventListener('click', () => {
+            this.acceptOrder();
+        });
+        
+        // Reject order button
+        document.getElementById('rejectOrderBtn').addEventListener('click', () => {
+            this.rejectOrder();
+        });
+        
+        // Primary action button (dynamic based on trip state)
+        document.getElementById('primaryActionBtn').addEventListener('click', () => {
+            this.handlePrimaryAction();
+        });
+    }
+    
+    showWaitingScreen() {
+        console.log('📱 Showing waiting screen');
+        this.tripState = 'waiting';
+        
+        document.getElementById('waitingScreen').classList.remove('hidden');
+        document.getElementById('incomingOrderScreen').classList.add('hidden');
+        document.getElementById('activeTripScreen').classList.add('hidden');
+    }
+    
+    showIncomingOrder(orderData) {
+        console.log('🔔 Displaying incoming order:', orderData);
+        this.tripState = 'incoming';
+        this.currentOrder = orderData;
+        
+        // Populate order details
+        document.getElementById('incomingOrderNumber').textContent = orderData.orderNumber || 'New Order';
+        document.getElementById('incomingEarnings').textContent = `+${(orderData.estimatedEarnings || 50).toFixed(0)} ETB`;
+        document.getElementById('incomingRestaurantName').textContent = orderData.restaurantName || 'Restaurant';
+        document.getElementById('incomingRestaurantAddress').textContent = orderData.restaurantAddress || 'Restaurant Address';
+        document.getElementById('incomingCustomerName').textContent = orderData.customerName || 'Customer';
+        document.getElementById('incomingCustomerAddress').textContent = orderData.customerAddress || 'Delivery Address';
+        document.getElementById('incomingDistance').textContent = `${orderData.distance || 2.3} km`;
+        
+        // Show incoming order screen
+        document.getElementById('waitingScreen').classList.add('hidden');
+        document.getElementById('incomingOrderScreen').classList.remove('hidden');
+        document.getElementById('activeTripScreen').classList.add('hidden');
+        
+        // Add fade-in animation
+        document.getElementById('incomingOrderCard').classList.add('fade-in');
+        
+        // Auto-reject after 30 seconds if no action taken
+        setTimeout(() => {
+            if (this.tripState === 'incoming') {
+                console.log('⏰ Auto-rejecting order due to timeout');
+                this.rejectOrder();
+            }
+        }, 30000);
+    }
+    
+    async acceptOrder() {
+        if (!this.currentOrder) return;
+        
+        console.log('✅ Accepting order:', this.currentOrder.orderId);
+        
+        // Show loading state
+        const acceptBtn = document.getElementById('acceptOrderBtn');
+        acceptBtn.classList.add('loading');
+        acceptBtn.textContent = 'Accepting...';
+        
+        try {
+            const response = await fetch(`/api/drivers/orders/${this.currentOrder.orderId}/accept`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    latitude,
-                    longitude,
-                    timestamp: new Date().toISOString()
+                    driverId: this.driverId
                 })
             });
-
+            
+            const result = await response.json();
+            
             if (response.ok) {
-                console.log('Live location saved successfully');
+                console.log('✅ Order accepted successfully');
+                this.showActiveTripScreen();
+                this.showNotification('Order Accepted!', 'Navigate to restaurant to pick up the order', 'success');
             } else {
-                console.error('Failed to save live location:', response.status);
+                console.error('❌ Failed to accept order:', result);
+                this.showNotification('Accept Failed', result.message || 'Could not accept order', 'error');
+                acceptBtn.classList.remove('loading');
+                acceptBtn.textContent = '✅ Accept';
             }
         } catch (error) {
-            console.error('Error saving live location:', error);
+            console.error('❌ Error accepting order:', error);
+            this.showNotification('Network Error', 'Could not connect to server', 'error');
+            acceptBtn.classList.remove('loading');
+            acceptBtn.textContent = '✅ Accept';
         }
     }
-
-    async updateLocation(latitude, longitude) {
+    
+    async rejectOrder() {
+        if (!this.currentOrder) return;
+        
+        console.log('❌ Rejecting order:', this.currentOrder.orderId);
+        
         try {
-            console.log('Updating location in backend:', latitude, longitude);
-            
-            // Ensure we have driver data
-            if (!this.driverData || !this.driverData.id) {
-                console.error('Driver data not available, cannot update location');
-                throw new Error('Driver data not available. Please refresh and try again.');
-            }
-            
-            console.log('Driver ID:', this.driverData.id);
-            
-            const response = await fetch(`/api/drivers/${this.driverData.id}/location`, {
-                method: 'PUT',
+            const response = await fetch(`/api/drivers/orders/${this.currentOrder.orderId}/reject`, {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    latitude,
-                    longitude
+                    driverId: this.driverId
                 })
             });
-
-            if (response.ok) {
-                console.log('Location updated successfully in backend');
-                this.driverData.currentLocation = { lat: latitude, lng: longitude };
-                
-                // Update UI to show location is shared
-                this.updateLocationStatus(true);
-                
-                if (this.tg) {
-                    this.tg.showAlert('Location updated successfully! You can now receive orders.');
-                } else {
-                    alert('Location updated successfully! You can now receive orders.');
-                }
-            } else {
-                const errorData = await response.text();
-                console.error('Failed to update location:', response.status, errorData);
-                
-                let errorMessage = 'Failed to update location';
-                if (response.status === 500) {
-                    errorMessage = 'Server error. Please try refreshing your data first.';
-                } else if (response.status === 404) {
-                    errorMessage = 'Driver not found. Please refresh your data.';
-                } else if (response.status === 400) {
-                    errorMessage = 'Invalid location data. Please try again.';
-                }
-                throw new Error(errorMessage);
-            }
-        } catch (error) {
-            console.error('Error updating location:', error);
-            const errorMessage = error.message || 'Failed to update location. Please try again.';
-            if (this.tg) {
-                this.tg.showAlert(errorMessage);
-            } else {
-                alert(errorMessage);
-            }
-        }
-    }
-
-    updateLocationStatus(isShared) {
-        const locationPrompt = document.getElementById('locationPrompt');
-        if (isShared) {
-            locationPrompt.classList.add('hidden');
-            // Add a location indicator to the status
-            const statusIndicator = document.getElementById('statusIndicator');
-            if (statusIndicator && !statusIndicator.querySelector('.location-indicator')) {
-                const locationIndicator = document.createElement('div');
-                locationIndicator.className = 'location-indicator';
-                locationIndicator.innerHTML = '📍 Location Shared';
-                locationIndicator.style.cssText = 'font-size: 12px; color: #22c55e; margin-top: 4px;';
-                statusIndicator.appendChild(locationIndicator);
-            }
-        } else {
-            locationPrompt.classList.remove('hidden');
-            // Remove location indicator
-            const locationIndicator = document.querySelector('.location-indicator');
-            if (locationIndicator) {
-                locationIndicator.remove();
-            }
-        }
-    }
-
-    initializeSocketConnection() {
-        this.socket = io();
-        
-        this.socket.on('connect', () => {
-            console.log('Connected to server');
-            
-            if (this.driverData) {
-                // Authenticate the socket connection with driver details
-                const authUserId = this.driverData.userId || this.driverData.id;
-                console.log(`🔍 Authenticating driver with userId: ${authUserId}, driverData:`, this.driverData);
-                this.socket.emit('authenticate', { userId: authUserId });
-                this.socket.emit('driver-online', this.driverData.id);
-                console.log('Driver authenticated and marked online:', this.driverData.id);
-            } else {
-                console.log('⚠️ No driver data available for authentication');
-            }
-        });
-
-        this.socket.on('authenticated', (data) => {
-            console.log('Socket authenticated successfully:', data);
-        });
-
-        this.socket.on('authentication_error', (error) => {
-            console.error('Socket authentication failed:', error);
-        });
-
-        // Legacy notification handler - for direct driver assignments
-        this.socket.on('driver_order_notification', (data) => {
-            console.log('🚨 Direct driver order notification received:', data);
-            if (data.driverId === this.driverData?.id) {
-                this.handleNewOrderNotification(data.order);
-                // Show enhanced interactive modal for assigned orders
-                this.showInteractiveOrderModal(data.order);
-            }
-        });
-
-        this.socket.on('order_ready_for_pickup', (data) => {
-            console.log('📦 Order ready for pickup:', data);
-            if (data.driverId === this.driverData?.id) {
-                this.handleOrderReadyForPickup(data);
-                this.showAlert(`Order #${data.orderNumber} is ready for pickup!`);
-            }
-        });
-
-        this.socket.on('order_pickup_confirmed', (data) => {
-            console.log('Order pickup confirmed:', data);
-            if (data.driverId === this.driverData?.id) {
-                this.showAlert(`Order #${data.orderNumber} pickup confirmed!`);
-            }
-        });
-
-        this.socket.on('delivery_completed', (data) => {
-            console.log('Delivery completed:', data);
-            if (data.driverId === this.driverData?.id) {
-                this.handleDeliveryCompleted(data);
-            }
-        });
-
-        this.socket.on('order_driver_assigned', (data) => {
-            console.log('Order driver assigned:', data);
-            if (data.driverId === this.driverData?.id) {
-                this.handleOrderAssigned(data);
-            }
-        });
-
-        this.socket.on('new_available_order', (data) => {
-            console.log('📢 New available order broadcast received:', data);
-            this.handleNewAvailableOrder(data);
-        });
-
-        // Enhanced ride-style notification
-        this.socket.on('new_order_notification', (data) => {
-            console.log('🚨 Enhanced ride-style order notification received:', data);
-            if (data.driverId === 'all' || data.driverId === this.driverData?.id) {
-                this.handleNewOrderNotification(data.order);
-                // Show ride-style delivery notification
-                this.createRideStyleNotification(data.order);
-            }
-        });
-
-        this.socket.on('new-order-available', (order) => {
-            this.handleNewOrder(order);
-        });
-
-        this.socket.on('order-cancelled', (orderId) => {
-            this.removeOrderFromAvailable(orderId);
-        });
-
-        this.socket.on('driver-approved', (driverData) => {
-            console.log('Driver approved event received:', driverData);
-            // Force refresh driver data from server to ensure we have the latest status
-            this.refreshDriverData().then((updatedData) => {
-                if (updatedData) {
-                    this.driverData = updatedData;
-                    this.showDashboard();
-                    this.showNotification('🎉 Congratulations! Your driver application has been approved. You can now start accepting orders.', 'success');
-                }
-            });
-        });
-
-        this.socket.on('driver-rejected', (data) => {
-            console.log('Driver rejected event received:', data);
-            this.showRejectedStatus();
-            this.showNotification('❌ Your driver application has been rejected. Please contact support.', 'error');
-        });
-    }
-
-    showOrderNotificationPopup(order) {
-        // Create ride-sharing style delivery notification
-        this.createRideStyleNotification(order);
-        
-        // Show compact alert if in Telegram
-        if (this.tg && this.tg.showAlert) {
-            try {
-                this.tg.showAlert(`New delivery: ${order.restaurantName} → ${order.customerName}`);
-            } catch (e) {
-                console.log('Telegram alert not supported');
-            }
-        }
-
-        // Vibrate device for attention
-        this.vibrateDevice();
-    }
-
-    createRideStyleNotification(order) {
-        // Remove any existing notification
-        const existing = document.getElementById('rideStyleNotification');
-        if (existing) existing.remove();
-
-        const notification = document.createElement('div');
-        notification.id = 'rideStyleNotification';
-        notification.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 15000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease-out;
-        `;
-
-        const card = document.createElement('div');
-        card.style.cssText = `
-            background: white;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 400px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.4s ease-out;
-            position: relative;
-        `;
-
-        const earnBadge = order.estimatedEarnings || 50;
-        const distance = order.distance || 2.3;
-        const estimatedTime = Math.round(distance * 3 + 5); // Rough time estimate
-
-        card.innerHTML = `
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white; text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">🚗 New Delivery Request</div>
-                <div style="font-size: 16px; opacity: 0.9;">Earn ${earnBadge} ETB • ${distance} km</div>
-            </div>
-
-            <div style="padding: 24px;">
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                        <div style="width: 12px; height: 12px; background: #4CAF50; border-radius: 50%; margin-right: 12px;"></div>
-                        <div>
-                            <div style="font-weight: bold; color: #333; font-size: 16px;">${order.restaurantName}</div>
-                            <div style="color: #666; font-size: 14px;">${order.restaurantLocation?.address || 'Restaurant location'}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="border-left: 2px dashed #ddd; margin-left: 5px; height: 20px;"></div>
-                    
-                    <div style="display: flex; align-items: center;">
-                        <div style="width: 12px; height: 12px; background: #FF5722; border-radius: 50%; margin-right: 12px;"></div>
-                        <div>
-                            <div style="font-weight: bold; color: #333; font-size: 16px;">${order.customerName}</div>
-                            <div style="color: #666; font-size: 14px;">${order.customerLocation?.address || 'Customer location'}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: #666;">Order Total</span>
-                        <span style="font-weight: bold; color: #333;">${order.total || order.totalAmount} ETB</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: #666;">Items</span>
-                        <span style="color: #333;">${order.items?.length || 1} items</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: #666;">Estimated Time</span>
-                        <span style="color: #333;">${estimatedTime} min</span>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px;">
-                    <button id="rejectRideOrder" style="
-                        flex: 1;
-                        padding: 16px;
-                        border: 2px solid #e0e0e0;
-                        background: white;
-                        color: #666;
-                        border-radius: 12px;
-                        font-size: 16px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                    ">Decline</button>
-                    
-                    <button id="acceptRideOrder" style="
-                        flex: 2;
-                        padding: 16px;
-                        border: none;
-                        background: linear-gradient(135deg, #4CAF50, #45a049);
-                        color: white;
-                        border-radius: 12px;
-                        font-size: 16px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                    ">Accept Delivery</button>
-                </div>
-            </div>
-
-            <div id="timerBar" style="
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                height: 4px;
-                background: linear-gradient(90deg, #FF5722, #FF9800);
-                width: 100%;
-                animation: timerCountdown 30s linear;
-            "></div>
-        `;
-
-        notification.appendChild(card);
-        document.body.appendChild(notification);
-
-        // Add CSS animations
-        this.addRideStyleAnimations();
-
-        // Auto-timeout after 30 seconds
-        const timeout = setTimeout(() => {
-            this.closeRideNotification();
-        }, 30000);
-
-        // Handle button clicks
-        document.getElementById('acceptRideOrder').onclick = () => {
-            clearTimeout(timeout);
-            this.acceptRideOrder(order);
-        };
-
-        document.getElementById('rejectRideOrder').onclick = () => {
-            clearTimeout(timeout);
-            this.rejectRideOrder(order);
-        };
-
-        // Close on backdrop click
-        notification.onclick = (e) => {
-            if (e.target === notification) {
-                clearTimeout(timeout);
-                this.closeRideNotification();
-            }
-        };
-    }
-
-    addRideStyleAnimations() {
-        if (document.getElementById('rideStyleAnimations')) return;
-
-        const style = document.createElement('style');
-        style.id = 'rideStyleAnimations';
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            
-            @keyframes slideUp {
-                from { 
-                    opacity: 0;
-                    transform: translateY(100px) scale(0.9); 
-                }
-                to { 
-                    opacity: 1;
-                    transform: translateY(0) scale(1); 
-                }
-            }
-            
-            @keyframes timerCountdown {
-                from { width: 100%; }
-                to { width: 0%; }
-            }
-            
-            @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-            
-            @keyframes slideInRight {
-                from { 
-                    opacity: 0;
-                    transform: translateX(100px); 
-                }
-                to { 
-                    opacity: 1;
-                    transform: translateX(0); 
-                }
-            }
-            
-            @keyframes slideOutRight {
-                from { 
-                    opacity: 1;
-                    transform: translateX(0); 
-                }
-                to { 
-                    opacity: 0;
-                    transform: translateX(100px); 
-                }
-            }
-            
-            #acceptRideOrder:hover {
-                background: linear-gradient(135deg, #45a049, #3d8b40) !important;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-            }
-            
-            #rejectRideOrder:hover {
-                background: #f5f5f5 !important;
-                border-color: #ccc !important;
-                transform: translateY(-2px);
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    async acceptRideOrder(order) {
-        const button = document.getElementById('acceptRideOrder');
-        button.innerHTML = '⏳ Accepting...';
-        button.disabled = true;
-
-        try {
-            await this.acceptOrder(order.id);
-            this.showSuccessMessage('🎉 Delivery accepted! Navigating to restaurant...');
-            this.closeRideNotification();
-        } catch (error) {
-            button.innerHTML = 'Accept Delivery';
-            button.disabled = false;
-            this.showErrorMessage('Failed to accept order. Please try again.');
-        }
-    }
-
-    async rejectRideOrder(order) {
-        try {
-            await this.rejectOrder(order.id);
-            this.closeRideNotification();
-        } catch (error) {
-            this.showErrorMessage('Failed to reject order.');
-        }
-    }
-
-    closeRideNotification() {
-        const notification = document.getElementById('rideStyleNotification');
-        if (notification) {
-            notification.style.animation = 'fadeOut 0.3s ease-out forwards';
-            setTimeout(() => notification.remove(), 300);
-        }
-    }
-
-    showSuccessMessage(message) {
-        this.showToast(message, 'success');
-    }
-
-    showErrorMessage(message) {
-        this.showToast(message, 'error');
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 16px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            z-index: 20000;
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-            ${type === 'success' ? 'background: #4CAF50;' : 
-              type === 'error' ? 'background: #f44336;' : 'background: #2196F3;'}
-        `;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.animation = 'slideOutRight 0.3s ease-out forwards';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    handleNewOrderNotification(order) {
-        console.log('Processing new order notification:', order);
-        
-        // Add to available orders list
-        this.displayAvailableOrder(order);
-        this.updateOrderBadge();
-        
-        // Play notification sound if available
-        try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
-            audio.play().catch(e => console.log('Audio play failed:', e));
-        } catch (e) {
-            console.log('Could not play notification sound:', e);
-        }
-    }
-
-    handleNewAvailableOrder(data) {
-        console.log('Processing new available order broadcast:', data);
-        
-        // Direct display the order in Available Orders section
-        this.displayAvailableOrder(data);
-        this.updateOrderBadge();
-        
-        // Show ride-style notification for immediate driver attention
-        this.createRideStyleNotification(data);
-        
-        // Play notification sound
-        this.playNotificationSound();
-    }
-
-    playNotificationSound() {
-        try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
-            audio.play().catch(e => console.log('Audio play failed:', e));
-        } catch (e) {
-            console.log('Could not play notification sound:', e);
-        }
-    }
-
-    handleNewOrder(order) {
-        this.displayAvailableOrder(order);
-        this.updateOrderBadge();
-        
-        if (this.tg) {
-            this.tg.showAlert('New order available!');
-        }
-    }
-
-    displayAvailableOrder(order) {
-        const ordersContainer = document.getElementById('availableOrders');
-        
-        if (!ordersContainer) {
-            console.error('Available orders container not found');
-            return;
-        }
-        
-        // Remove "no orders" message
-        if (ordersContainer.innerHTML.includes('No orders available') || ordersContainer.innerHTML.includes('no orders')) {
-            ordersContainer.innerHTML = '';
-        }
-
-        // Check if order already exists
-        const existingOrder = document.getElementById(`order-${order.id}`);
-        if (existingOrder) {
-            existingOrder.remove();
-        }
-
-        const orderCard = this.createOrderCard(order, true);
-        ordersContainer.appendChild(orderCard);
-        
-        console.log('✅ Order card added to Available Orders section:', order.orderNumber);
-    }
-
-    createOrderCard(order, isAvailable = false) {
-        const card = document.createElement('div');
-        card.className = 'order-card';
-        card.id = `order-${order.id}`;
-
-        const estimatedEarnings = this.calculateEarnings(order);
-        const distance = this.calculateDistance(order);
-
-        card.innerHTML = `
-            <div class="order-header">
-                <div class="order-id">Order #${order.orderNumber}</div>
-                <div class="order-status ${isAvailable ? 'new' : order.status.toLowerCase()}">${isAvailable ? 'New' : order.status}</div>
-            </div>
-            <div class="order-details">
-                <div class="order-detail-item">
-                    <span>Restaurant:</span>
-                    <span class="order-detail-value">${order.restaurantName}</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Customer:</span>
-                    <span class="order-detail-value">${order.customerName}</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Distance:</span>
-                    <span class="order-detail-value">${distance}</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Estimated Earnings:</span>
-                    <span class="order-detail-value">${order.estimatedEarnings || estimatedEarnings} ETB</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Items:</span>
-                    <span class="order-detail-value">${order.items.length} items</span>
-                </div>
-            </div>
-            ${this.createOrderActions(order, isAvailable)}
-        `;
-
-        return card;
-    }
-
-    createOrderActions(order, isAvailable) {
-        if (isAvailable) {
-            return `
-                <div class="order-actions">
-                    <button class="btn btn-success btn-sm" onclick="driverApp.acceptOrder('${order.id}')">
-                        Accept Order
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="driverApp.rejectOrder('${order.id}')">
-                        Reject
-                    </button>
-                </div>
-            `;
-        } else {
-            const actions = [];
-            
-            if (order.status === 'driver_assigned') {
-                actions.push(`
-                    <button class="btn btn-primary btn-sm" onclick="driverApp.markPickedUp('${order.id}')">
-                        Mark as Picked Up
-                    </button>
-                `);
-            }
-            
-            if (order.status === 'picked_up') {
-                actions.push(`
-                    <button class="btn btn-success btn-sm" onclick="driverApp.markDelivered('${order.id}')">
-                        Mark as Delivered
-                    </button>
-                `);
-            }
-            
-            // Navigation buttons
-            actions.push(`
-                <div class="navigation-buttons">
-                    <button class="btn btn-outline btn-sm" onclick="driverApp.navigateToRestaurant('${order.id}')">
-                        📍 Navigate to Restaurant
-                    </button>
-                    <button class="btn btn-outline btn-sm" onclick="driverApp.navigateToCustomer('${order.id}')">
-                        📍 Navigate to Customer
-                    </button>
-                </div>
-            `);
-            
-            return `<div class="order-actions">${actions.join('')}</div>`;
-        }
-    }
-
-    async acceptOrder(orderId) {
-        try {
-            const response = await fetch(`/api/orders/${orderId}/assign-driver`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ driverId: this.driverData.id })
-            });
-
-            if (response.ok) {
-                const orderData = await response.json();
-                this.currentOrder = orderData.order;
-                this.removeOrderFromAvailable(orderId);
-                this.displayActiveOrder(orderData.order);
-                this.updateOrderBadge();
-                
-                if (this.tg) {
-                    this.tg.showAlert('Order accepted successfully!');
-                }
-            } else {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to accept order');
-            }
-        } catch (error) {
-            console.error('Error accepting order:', error);
-            if (this.tg) {
-                this.tg.showAlert(error.message);
-            }
-        }
-    }
-
-    async rejectOrder(orderId) {
-        this.removeOrderFromAvailable(orderId);
-        this.updateOrderBadge();
-    }
-
-    removeOrderFromAvailable(orderId) {
-        const orderCard = document.getElementById(`order-${orderId}`);
-        if (orderCard) {
-            orderCard.remove();
-        }
-
-        // Show "no orders" message if empty
-        const ordersContainer = document.getElementById('availableOrders');
-        if (ordersContainer.children.length === 0) {
-            ordersContainer.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No orders available at the moment</p>';
-        }
-    }
-
-    displayActiveOrder(order) {
-        const activeSection = document.getElementById('activeOrderSection');
-        const activeCard = document.getElementById('activeOrderCard');
-        
-        activeCard.innerHTML = '';
-        activeCard.appendChild(this.createOrderCard(order, false));
-        activeSection.classList.remove('hidden');
-    }
-
-    async markPickedUp(orderId) {
-        await this.updateOrderStatus(orderId, 'picked_up');
-    }
-
-    async markDelivered(orderId) {
-        await this.updateOrderStatus(orderId, 'delivered');
-    }
-
-    async updateOrderStatus(orderId, status) {
-        try {
-            const response = await fetch(`/api/orders/${orderId}/driver-status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ status, driverId: this.driverData.id })
-            });
-
-            if (response.ok) {
-                if (status === 'delivered') {
-                    this.currentOrder = null;
-                    document.getElementById('activeOrderSection').classList.add('hidden');
-                    this.loadDeliveryHistory();
-                    this.updateDashboardData(); // Refresh earnings
-                }
-                
-                if (this.tg) {
-                    this.tg.showAlert(`Order ${status.replace('_', ' ')} successfully!`);
-                }
-            } else {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to update order status');
-            }
-        } catch (error) {
-            console.error('Error updating order status:', error);
-            if (this.tg) {
-                this.tg.showAlert(error.message);
-            }
-        }
-    }
-
-    async navigateToRestaurant(orderId) {
-        try {
-            // Get current order or fetch order details
-            let order = this.currentOrder;
-            if (!order || order.id !== orderId) {
-                const response = await fetch(`/api/orders/${orderId}`);
-                if (response.ok) {
-                    order = await response.json();
-                } else {
-                    throw new Error('Order not found');
-                }
-            }
-
-            // Get driver's current location
-            const driverLocation = await this.getCurrentLocation();
-            if (!driverLocation) {
-                throw new Error('Cannot get current location');
-            }
-
-            // Get restaurant coordinates
-            const restaurantLat = order.restaurant?.location?.lat || order.restaurantLat;
-            const restaurantLng = order.restaurant?.location?.lng || order.restaurantLng;
-            
-            if (!restaurantLat || !restaurantLng) {
-                throw new Error('Restaurant location not available');
-            }
-
-            // Launch OpenStreetMap navigation
-            this.openOpenStreetMapNavigation(
-                driverLocation.lat, 
-                driverLocation.lng,
-                restaurantLat, 
-                restaurantLng,
-                `Restaurant: ${order.restaurantName || 'Pickup Location'}`
-            );
-
-        } catch (error) {
-            console.error('Navigation error:', error);
-            if (this.tg) {
-                this.tg.showAlert('Unable to start navigation: ' + error.message);
-            } else {
-                alert('Unable to start navigation: ' + error.message);
-            }
-        }
-    }
-
-    async navigateToCustomer(orderId) {
-        try {
-            // Get current order or fetch order details
-            let order = this.currentOrder;
-            if (!order || order.id !== orderId) {
-                const response = await fetch(`/api/orders/${orderId}`);
-                if (response.ok) {
-                    order = await response.json();
-                } else {
-                    throw new Error('Order not found');
-                }
-            }
-
-            // Get restaurant location (current driver position after pickup)
-            const restaurantLat = order.restaurant?.location?.lat || order.restaurantLat;
-            const restaurantLng = order.restaurant?.location?.lng || order.restaurantLng;
-            
-            if (!restaurantLat || !restaurantLng) {
-                throw new Error('Restaurant location not available');
-            }
-
-            // Get customer coordinates
-            const customerLat = order.deliveryLocation?.lat || order.customerLat;
-            const customerLng = order.deliveryLocation?.lng || order.customerLng;
-            
-            if (!customerLat || !customerLng) {
-                throw new Error('Customer location not available');
-            }
-
-            // Launch OpenStreetMap navigation from restaurant to customer
-            this.openOpenStreetMapNavigation(
-                restaurantLat, 
-                restaurantLng,
-                customerLat, 
-                customerLng,
-                `Customer: ${order.customerName || 'Delivery Address'}`
-            );
-
-        } catch (error) {
-            console.error('Navigation error:', error);
-            if (this.tg) {
-                this.tg.showAlert('Unable to start navigation: ' + error.message);
-            } else {
-                alert('Unable to start navigation: ' + error.message);
-            }
-        }
-    }
-
-    async getCurrentLocation() {
-        return new Promise((resolve, reject) => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        reject(error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 30000
-                    }
-                );
-            } else {
-                reject(new Error('Geolocation not supported'));
-            }
-        });
-    }
-
-    openOpenStreetMapNavigation(fromLat, fromLng, toLat, toLng, destination) {
-        // Create OpenStreetMap navigation URL
-        // Using OpenRouteService or similar routing service with OpenStreetMap data
-        const osmUrl = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${fromLat}%2C${fromLng}%3B${toLat}%2C${toLng}`;
-        
-        // Alternative: Use Maps.me mobile app if available (better for mobile navigation)
-        const mapsmeUrl = `maps://route?saddr=${fromLat},${fromLng}&daddr=${toLat},${toLng}&dirflg=d`;
-        
-        // Try mobile app first, fallback to web version
-        if (this.tg && this.tg.platform === 'android' || this.tg.platform === 'ios') {
-            // Try to open in mobile map app
-            const tempLink = document.createElement('a');
-            tempLink.href = mapsmeUrl;
-            tempLink.target = '_blank';
-            tempLink.click();
-            
-            // Fallback to OSM web version after a delay
-            setTimeout(() => {
-                window.open(osmUrl, '_blank');
-            }, 1000);
-        } else {
-            // Open in web browser
-            window.open(osmUrl, '_blank');
-        }
-
-        // Show confirmation message
-        if (this.tg) {
-            this.tg.showAlert(`Navigation started to ${destination}`);
-        } else {
-            alert(`Navigation started to ${destination}`);
-        }
-    }
-
-    calculateEarnings(order) {
-        // Simple earnings calculation based on order total
-        const baseEarnings = parseFloat(order.total) * 0.15; // 15% of order total
-        const minEarnings = 2.50; // Minimum earnings per delivery
-        return Math.max(baseEarnings, minEarnings).toFixed(2);
-    }
-
-    calculateDistance(order) {
-        if (!this.driverData.currentLocation || !order.restaurantLocation) {
-            return 'Unknown';
-        }
-
-        const distance = this.getDistanceBetweenPoints(
-            this.driverData.currentLocation.lat,
-            this.driverData.currentLocation.lng,
-            order.restaurantLocation.lat,
-            order.restaurantLocation.lng
-        );
-
-        return `${distance.toFixed(1)} km`;
-    }
-
-    getDistanceBetweenPoints(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Radius of the Earth in kilometers
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
-    updateOrderBadge() {
-        const badge = document.getElementById('orderBadge');
-        const availableCount = document.querySelectorAll('#availableOrders .order-card').length;
-        
-        if (availableCount > 0) {
-            badge.textContent = availableCount.toString();
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-    }
-
-    async loadAvailableOrders() {
-        try {
-            const response = await fetch(`/api/drivers/${this.driverData.id}/orders/available`);
             
             if (response.ok) {
-                const data = await response.json();
-                const ordersContainer = document.getElementById('availableOrders');
-                ordersContainer.innerHTML = '';
-                
-                if (data.orders.length > 0) {
-                    data.orders.forEach(order => {
-                        this.displayAvailableOrder(order);
-                    });
-                } else {
-                    ordersContainer.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No orders available at the moment</p>';
-                }
-                
-                this.updateOrderBadge();
+                console.log('✅ Order rejected successfully');
+                this.showNotification('Order Rejected', 'Looking for more orders...', 'info');
+            } else {
+                console.error('❌ Failed to reject order');
             }
         } catch (error) {
-            console.error('Error loading available orders:', error);
-        }
-    }
-
-    async loadDeliveryHistory() {
-        try {
-            const response = await fetch(`/api/drivers/${this.driverData.id}/deliveries`);
-            
-            if (response.ok) {
-                const data = await response.json();
-                const historyContainer = document.getElementById('deliveryHistory');
-                historyContainer.innerHTML = '';
-                
-                if (data.deliveries.length > 0) {
-                    data.deliveries.slice(0, 5).forEach(delivery => { // Show last 5
-                        const historyItem = this.createDeliveryHistoryItem(delivery);
-                        historyContainer.appendChild(historyItem);
-                    });
-                } else {
-                    historyContainer.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No delivery history yet</p>';
-                }
-            }
-        } catch (error) {
-            console.error('Error loading delivery history:', error);
-        }
-    }
-
-    createDeliveryHistoryItem(delivery) {
-        const item = document.createElement('div');
-        item.className = 'order-card';
-        
-        const date = new Date(delivery.deliveryTime).toLocaleDateString();
-        const time = new Date(delivery.deliveryTime).toLocaleTimeString();
-        
-        item.innerHTML = `
-            <div class="order-details">
-                <div class="order-detail-item">
-                    <span>Order #${delivery.orderNumber}</span>
-                    <span class="order-detail-value">$${delivery.earnings}</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Date:</span>
-                    <span class="order-detail-value">${date} ${time}</span>
-                </div>
-                <div class="order-detail-item">
-                    <span>Distance:</span>
-                    <span class="order-detail-value">${delivery.distance} km</span>
-                </div>
-            </div>
-        `;
-        
-        return item;
-    }
-
-    showNotification(message, type = 'info') {
-        // Create and show notification
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#3b82f6'};
-            color: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            max-width: 300px;
-            font-size: 14px;
-            line-height: 1.4;
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 5000);
-    }
-
-    handleNewOrderNotification(order) {
-        // Add order to available orders list
-        this.addAvailableOrder(order);
-        
-        // Show notification
-        this.showAlert(`New order available! #${order.orderNumber} - ${order.estimatedEarnings} ETB`);
-        
-        // Play notification sound if available
-        this.playNotificationSound();
-    }
-
-    handleOrderReadyForPickup(data) {
-        this.showAlert(`Order #${data.orderNumber} is ready for pickup at ${data.restaurantName}!`);
-        this.refreshDriverData();
-    }
-
-    handleOrderAssigned(data) {
-        this.showAlert(`You've been assigned to Order #${data.orderNumber}!`);
-        this.refreshDriverData();
-    }
-
-    handleDeliveryCompleted(data) {
-        this.showAlert(`Delivery completed! You earned ${data.earnings} ETB`);
-        this.refreshDriverData();
-        this.updateDashboardData();
-    }
-
-    addAvailableOrder(order) {
-        const ordersContainer = document.getElementById('availableOrders');
-        
-        // Remove "no orders" message if it exists
-        const noOrdersMsg = ordersContainer.querySelector('p');
-        if (noOrdersMsg) {
-            ordersContainer.innerHTML = '';
+            console.error('❌ Error rejecting order:', error);
         }
         
-        // Create and add order card
-        const orderCard = this.createOrderCard(order, true);
-        ordersContainer.appendChild(orderCard);
-        
-        // Update badge
-        this.updateOrderBadge();
+        // Return to waiting screen
+        this.currentOrder = null;
+        this.showWaitingScreen();
     }
-
-    playNotificationSound() {
-        // Try to play notification sound if available
-        try {
-            const audio = new Audio('data:audio/wav;base64,UklGRvIGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+H31XMyBiZ+0PLbhzoIGGK36eGjTgwOUarm8bRpHwU2jdX0yXksBS6Fzu/bfC8FLIHo7qFFEw1Qp+ruu2QeByp/0fHYdywFLYDW7+CSUAcXXrTp66hVFG1gdrq8bCIFNYnL8L2AKAaLpOL0yn0iBS2A0en7zy0EjqXe65w=');
-            audio.volume = 0.2;
-            audio.play().catch(() => {
-                // Silent fail for audio
-                console.log('Could not play notification sound');
-            });
-        } catch (error) {
-            // Silent fail for audio
-            console.log('Could not play notification sound');
-        }
-    }
-
-    showAlert(message) {
-        if (this.tg) {
-            this.tg.showAlert(message);
-        } else {
-            // Show custom notification
-            this.showNotification(message, 'info');
-        }
-    }
-
-    showRejectedStatus() {
-        document.getElementById('registrationForm').classList.add('hidden');
-        document.getElementById('pendingApproval').classList.add('hidden');
-        document.getElementById('driverDashboard').classList.add('hidden');
+    
+    showActiveTripScreen() {
+        console.log('📱 Showing active trip screen');
+        this.tripState = 'active';
         
-        // Create rejected status screen if it doesn't exist
-        let rejectedScreen = document.getElementById('rejectedStatus');
-        if (!rejectedScreen) {
-            rejectedScreen = document.createElement('div');
-            rejectedScreen.id = 'rejectedStatus';
-            rejectedScreen.innerHTML = `
-                <div class="pending-approval">
-                    <div class="pending-icon">❌</div>
-                    <div class="pending-title">Application Rejected</div>
-                    <div class="pending-message">
-                        Unfortunately, your driver application has been rejected. Please contact our support team for more information or to reapply.
-                    </div>
-                    <button class="btn btn-primary" onclick="window.location.reload()">Try Again</button>
-                </div>
-            `;
-            document.querySelector('.container').appendChild(rejectedScreen);
-        }
+        if (!this.currentOrder) return;
         
-        rejectedScreen.classList.remove('hidden');
-    }
-
-    // Enhanced Interactive Order Modal Methods
-    showInteractiveOrderModal(order) {
-        console.log('Showing interactive order modal for:', order);
+        // Populate active trip details
+        document.getElementById('activeOrderNumber').textContent = this.currentOrder.orderNumber || 'Order';
+        document.getElementById('activeEarnings').textContent = `+${(this.currentOrder.estimatedEarnings || 50).toFixed(0)} ETB`;
+        document.getElementById('activeRestaurantName').textContent = this.currentOrder.restaurantName || 'Restaurant';
+        document.getElementById('activeRestaurantAddress').textContent = this.currentOrder.restaurantAddress || 'Restaurant Address';
+        document.getElementById('activeCustomerName').textContent = this.currentOrder.customerName || 'Customer';
+        document.getElementById('activeCustomerAddress').textContent = this.currentOrder.customerAddress || 'Customer Address';
         
-        // Store current pending order
-        this.pendingOrder = order;
+        // Initialize trip progress
+        this.updateTripProgress('toRestaurant');
         
-        // Populate modal with order details
-        document.getElementById('modalOrderNumber').textContent = order.orderNumber;
-        document.getElementById('modalCustomerName').textContent = order.customerName || 'Unknown Customer';
-        document.getElementById('modalRestaurantName').textContent = order.restaurantName || 'Unknown Restaurant';
+        // Set initial primary action
+        this.updatePrimaryAction('Navigate to Restaurant', '🧭');
         
-        // Set up addresses with fallback
-        document.getElementById('modalRestaurantAddress').textContent = order.restaurantLocation?.address || 'Restaurant Address';
-        document.getElementById('modalCustomerAddress').textContent = order.deliveryAddress || 'Customer Address';
+        // Show active trip screen
+        document.getElementById('waitingScreen').classList.add('hidden');
+        document.getElementById('incomingOrderScreen').classList.add('hidden');
+        document.getElementById('activeTripScreen').classList.remove('hidden');
         
         // Initialize map
-        this.initializeOrderMap(order);
-        
-        // Calculate and display distance
-        this.calculateOrderDistance(order);
-        
-        // Set up action buttons
-        this.setupModalActionButtons(order);
-        
-        // Show modal with animation
-        const overlay = document.getElementById('orderNotificationOverlay');
-        overlay.style.display = 'block';
-        
-        // Play notification sound and vibrate if available
-        this.playNotificationSound();
-        this.vibrateDevice();
-        
-        // Auto-dismiss after 30 seconds if no action
-        this.modalTimeout = setTimeout(() => {
-            this.closeOrderModal();
-        }, 30000);
+        this.initializeMap();
     }
-
-    initializeOrderMap(order) {
-        // Clear existing map if present
-        const mapContainer = document.getElementById('orderMap');
-        mapContainer.innerHTML = '';
+    
+    initializeMap() {
+        if (!this.currentOrder) return;
+        
+        console.log('🗺️ Initializing OpenStreetMap');
         
         try {
-            // Use order location data with fallbacks
-            const restaurantLat = order.restaurantLocation?.lat || order.restaurantLat || 9.005;
-            const restaurantLng = order.restaurantLocation?.lng || order.restaurantLng || 38.7639;
-            const customerLat = order.deliveryLocation?.lat || order.customerLat || 9.015;
-            const customerLng = order.deliveryLocation?.lng || order.customerLng || 38.7739;
+            // Default to Addis Ababa coordinates if no location data
+            const restaurantLat = this.currentOrder.restaurantLocation?.latitude || 9.03;
+            const restaurantLng = this.currentOrder.restaurantLocation?.longitude || 38.74;
+            const customerLat = this.currentOrder.customerLocation?.latitude || 9.02;
+            const customerLng = this.currentOrder.customerLocation?.longitude || 38.75;
             
-            // Initialize Leaflet map
-            const map = L.map('orderMap').setView([restaurantLat, restaurantLng], 13);
+            // Initialize map centered between restaurant and customer
+            const centerLat = (restaurantLat + customerLat) / 2;
+            const centerLng = (restaurantLng + customerLng) / 2;
+            
+            this.map = L.map('map').setView([centerLat, centerLng], 13);
             
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.map);
             
-            // Add restaurant marker (orange)
-            const restaurantMarker = L.marker([restaurantLat, restaurantLng], {
-                icon: L.divIcon({
-                    html: '🏪',
-                    iconSize: [30, 30],
-                    className: 'custom-marker restaurant-marker'
-                })
-            }).addTo(map);
-            restaurantMarker.bindPopup(`Restaurant: ${order.restaurantName}`);
+            // Add restaurant marker
+            const restaurantIcon = L.divIcon({
+                html: '<div style="background: #F59E0B; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🍽️</div>',
+                iconSize: [30, 30],
+                className: 'custom-div-icon'
+            });
             
-            // Add customer marker (blue)
-            const customerMarker = L.marker([customerLat, customerLng], {
-                icon: L.divIcon({
-                    html: '📍',
-                    iconSize: [30, 30],
-                    className: 'custom-marker customer-marker'
-                })
-            }).addTo(map);
-            customerMarker.bindPopup(`Customer: ${order.customerName}`);
+            this.restaurantMarker = L.marker([restaurantLat, restaurantLng], { icon: restaurantIcon })
+                .addTo(this.map)
+                .bindPopup(`<b>${this.currentOrder.restaurantName}</b><br>${this.currentOrder.restaurantAddress}`);
+            
+            // Add customer marker
+            const customerIcon = L.divIcon({
+                html: '<div style="background: #3B82F6; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🏠</div>',
+                iconSize: [30, 30],
+                className: 'custom-div-icon'
+            });
+            
+            this.customerMarker = L.marker([customerLat, customerLng], { icon: customerIcon })
+                .addTo(this.map)
+                .bindPopup(`<b>${this.currentOrder.customerName}</b><br>${this.currentOrder.customerAddress}`);
             
             // Add driver location if available
-            if (this.driverData?.currentLocation) {
-                const driverMarker = L.marker([this.driverData.currentLocation.lat, this.driverData.currentLocation.lng], {
-                    icon: L.divIcon({
-                        html: '🚗',
-                        iconSize: [30, 30],
-                        className: 'custom-marker driver-marker'
-                    })
-                }).addTo(map);
-                driverMarker.bindPopup('Your Location');
+            if (this.driverLocation) {
+                this.addDriverMarker();
             }
             
             // Fit map to show all markers
-            const group = new L.featureGroup([restaurantMarker, customerMarker]);
-            if (this.driverData?.currentLocation) {
-                // Include driver location in bounds
-                const bounds = L.latLngBounds([
-                    [restaurantLat, restaurantLng],
-                    [customerLat, customerLng],
-                    [this.driverData.currentLocation.lat, this.driverData.currentLocation.lng]
-                ]);
-                map.fitBounds(bounds, { padding: [10, 10] });
-            } else {
-                map.fitBounds(group.getBounds(), { padding: [10, 10] });
-            }
+            const group = new L.featureGroup([this.restaurantMarker, this.customerMarker]);
+            this.map.fitBounds(group.getBounds().pad(0.1));
             
-            // Store map reference
-            this.orderMap = map;
+            console.log('✅ Map initialized successfully');
             
         } catch (error) {
-            console.error('Error initializing order map:', error);
-            // Fallback: show simple text
-            mapContainer.innerHTML = `
-                <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; background: #f8f9fa; color: #6b7280;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">🗺️</div>
-                    <div>Map unavailable</div>
-                    <div style="font-size: 12px;">Restaurant → Customer</div>
-                </div>
-            `;
+            console.error('❌ Error initializing map:', error);
         }
     }
-
-    calculateOrderDistance(order) {
-        const distanceElement = document.getElementById('modalDistance');
+    
+    addDriverMarker() {
+        if (!this.map || !this.driverLocation) return;
         
-        try {
-            if (!this.driverData?.currentLocation) {
-                distanceElement.textContent = 'Location needed';
-                return;
-            }
-            
-            const restaurantLat = order.restaurantLocation?.lat || order.restaurantLat;
-            const restaurantLng = order.restaurantLocation?.lng || order.restaurantLng;
-            
-            if (!restaurantLat || !restaurantLng) {
-                distanceElement.textContent = 'Unknown';
-                return;
-            }
-            
-            const distance = this.getDistanceBetweenPoints(
-                this.driverData.currentLocation.lat,
-                this.driverData.currentLocation.lng,
-                restaurantLat,
-                restaurantLng
-            );
-            
-            distanceElement.textContent = `${distance.toFixed(1)} km`;
-            
-        } catch (error) {
-            console.error('Error calculating distance:', error);
-            distanceElement.textContent = 'Unknown';
-        }
-    }
-
-    setupModalActionButtons(order) {
-        const acceptBtn = document.getElementById('acceptOrderBtn');
-        const rejectBtn = document.getElementById('rejectOrderBtn');
+        const driverIcon = L.divIcon({
+            html: '<div style="background: #10B981; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">🚗</div>',
+            iconSize: [32, 32],
+            className: 'custom-div-icon'
+        });
         
-        // Clear existing event listeners
-        acceptBtn.onclick = null;
-        rejectBtn.onclick = null;
-        
-        // Set up accept button
-        acceptBtn.onclick = () => {
-            this.acceptOrderFromModal(order.orderId || order.id);
-        };
-        
-        // Set up reject button
-        rejectBtn.onclick = () => {
-            this.rejectOrderFromModal();
-        };
-        
-        // Enable buttons
-        acceptBtn.disabled = false;
-        rejectBtn.disabled = false;
-        acceptBtn.classList.remove('btn-disabled');
-        rejectBtn.classList.remove('btn-disabled');
-    }
-
-    async acceptOrderFromModal(orderId) {
-        console.log('Accepting order from modal:', orderId);
-        
-        try {
-            // Disable buttons to prevent double-clicking
-            this.disableModalButtons();
-            
-            // Call the enhanced accept order API
-            const response = await fetch(`/api/drivers/accept-order/${orderId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    driverId: this.driverData.id 
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Order accepted successfully:', result);
-                
-                // Close modal
-                this.closeOrderModal();
-                
-                // Show success message
-                this.showAlert('Order accepted successfully! 🎉');
-                
-                // Update driver status to busy
-                await this.updateDriverStatus(true, false);
-                
-                // Refresh dashboard to show new active order
-                this.refreshDriverData();
-                this.loadActiveOrders();
-                
-            } else {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to accept order');
-            }
-            
-        } catch (error) {
-            console.error('Error accepting order:', error);
-            this.showAlert(`Failed to accept order: ${error.message}`);
-            
-            // Re-enable buttons
-            this.enableModalButtons();
-        }
-    }
-
-    async rejectOrderFromModal() {
-        console.log('Rejecting order from modal');
-        
-        if (!this.pendingOrder) {
-            this.closeOrderModal();
-            return;
+        if (this.driverMarker) {
+            this.map.removeLayer(this.driverMarker);
         }
         
-        try {
-            // Make API call to reject the order
-            const response = await fetch(`/api/drivers/reject-order/${this.pendingOrder.orderId || this.pendingOrder.id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    driverId: this.driverData.id 
-                })
-            });
-
-            if (response.ok) {
-                console.log('Order rejected successfully');
-                this.showAlert('Order declined');
-            } else {
-                console.warn('Failed to send rejection to server, but continuing');
-                this.showAlert('Order declined');
-            }
-        } catch (error) {
-            console.error('Error rejecting order:', error);
-            this.showAlert('Order declined');
-        }
-        
-        // Close modal
-        this.closeOrderModal();
+        this.driverMarker = L.marker([this.driverLocation.latitude, this.driverLocation.longitude], { icon: driverIcon })
+            .addTo(this.map)
+            .bindPopup('<b>Your Location</b>');
     }
-
-    closeOrderModal() {
-        const overlay = document.getElementById('orderNotificationOverlay');
-        overlay.style.display = 'none';
+    
+    updateTripProgress(stage) {
+        // Reset all progress steps
+        document.querySelectorAll('.progress-step').forEach(step => {
+            step.classList.remove('active', 'completed');
+        });
         
-        // Clear timeout
-        if (this.modalTimeout) {
-            clearTimeout(this.modalTimeout);
-            this.modalTimeout = null;
-        }
+        const steps = ['stepAccepted', 'stepToRestaurant', 'stepPickedUp', 'stepDelivered'];
         
-        // Cleanup map
-        if (this.orderMap) {
-            this.orderMap.remove();
-            this.orderMap = null;
-        }
-        
-        // Clear pending order
-        this.pendingOrder = null;
-    }
-
-    disableModalButtons() {
-        const acceptBtn = document.getElementById('acceptOrderBtn');
-        const rejectBtn = document.getElementById('rejectOrderBtn');
-        
-        acceptBtn.disabled = true;
-        rejectBtn.disabled = true;
-        acceptBtn.classList.add('btn-disabled');
-        rejectBtn.classList.add('btn-disabled');
-        
-        acceptBtn.textContent = 'Processing...';
-    }
-
-    enableModalButtons() {
-        const acceptBtn = document.getElementById('acceptOrderBtn');
-        const rejectBtn = document.getElementById('rejectOrderBtn');
-        
-        acceptBtn.disabled = false;
-        rejectBtn.disabled = false;
-        acceptBtn.classList.remove('btn-disabled');
-        rejectBtn.classList.remove('btn-disabled');
-        
-        acceptBtn.textContent = '✅ Accept Order';
-    }
-
-    async updateDriverStatus(isOnline, isAvailable) {
-        try {
-            const response = await fetch(`/api/drivers/${this.driverData.id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    isOnline, 
-                    isAvailable 
-                })
-            });
-
-            if (response.ok) {
-                console.log('Driver status updated successfully');
-            } else {
-                console.error('Failed to update driver status');
-            }
-        } catch (error) {
-            console.error('Error updating driver status:', error);
+        switch (stage) {
+            case 'accepted':
+                document.getElementById('stepAccepted').classList.add('completed');
+                break;
+            case 'toRestaurant':
+                document.getElementById('stepAccepted').classList.add('completed');
+                document.getElementById('stepToRestaurant').classList.add('active');
+                break;
+            case 'pickedUp':
+                document.getElementById('stepAccepted').classList.add('completed');
+                document.getElementById('stepToRestaurant').classList.add('completed');
+                document.getElementById('stepPickedUp').classList.add('active');
+                break;
+            case 'delivered':
+                steps.forEach(stepId => {
+                    document.getElementById(stepId).classList.add('completed');
+                });
+                break;
         }
     }
-
-    async loadActiveOrders() {
-        try {
-            const response = await fetch(`/api/drivers/${this.driverData.id}/orders/assigned`);
-            
-            if (response.ok) {
-                const orders = await response.json();
-                
-                if (orders.length > 0) {
-                    // Show active order section
-                    const activeSection = document.getElementById('activeOrderSection');
-                    const activeCard = document.getElementById('activeOrderCard');
-                    
-                    activeCard.innerHTML = '';
-                    orders.forEach(order => {
-                        const orderCard = this.createActiveOrderCard(order);
-                        activeCard.appendChild(orderCard);
-                    });
-                    
-                    activeSection.classList.remove('hidden');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading active orders:', error);
+    
+    updatePrimaryAction(text, icon) {
+        const btn = document.getElementById('primaryActionBtn');
+        btn.innerHTML = `${icon} ${text}`;
+        btn.setAttribute('data-action', text.toLowerCase().replace(/ /g, '_'));
+    }
+    
+    async handlePrimaryAction() {
+        const btn = document.getElementById('primaryActionBtn');
+        const action = btn.getAttribute('data-action');
+        
+        console.log('🎯 Primary action triggered:', action);
+        
+        switch (action) {
+            case 'navigate_to_restaurant':
+                this.navigateToRestaurant();
+                break;
+            case 'arrived_at_restaurant':
+                this.markArrivedAtRestaurant();
+                break;
+            case 'picked_up_order':
+                this.markOrderPickedUp();
+                break;
+            case 'navigate_to_customer':
+                this.navigateToCustomer();
+                break;
+            case 'mark_delivered':
+                this.markOrderDelivered();
+                break;
         }
     }
-
-    createActiveOrderCard(order) {
-        const card = document.createElement('div');
-        card.className = 'order-card';
+    
+    navigateToRestaurant() {
+        if (!this.currentOrder) return;
         
-        const phase = this.getDeliveryPhase(order.status);
-        const navigationActions = this.createNavigationActions(order);
+        const lat = this.currentOrder.restaurantLocation?.latitude || 9.03;
+        const lng = this.currentOrder.restaurantLocation?.longitude || 38.74;
+        const name = this.currentOrder.restaurantName || 'Restaurant';
         
-        card.innerHTML = `
-            <div class="order-phase ${phase.class}">
-                ${phase.text}
-            </div>
-            
-            <div class="order-header">
-                <div class="order-id">Order #${order.orderNumber}</div>
-                <div class="order-status ${order.status}">${order.status}</div>
-            </div>
-            
-            <div class="address-info">
-                <div class="address-label">Restaurant</div>
-                <div class="address-text">${order.restaurantName}</div>
-            </div>
-            
-            <div class="address-info">
-                <div class="address-label">Customer</div>
-                <div class="address-text">${order.deliveryAddress || 'Customer Address'}</div>
-            </div>
-            
-            ${navigationActions}
-        `;
+        this.openNavigation(lat, lng, name);
         
-        return card;
+        // Update button to "Arrived at Restaurant"
+        this.updatePrimaryAction('Arrived at Restaurant', '📍');
     }
-
-    getDeliveryPhase(status) {
-        if (status === 'assigned' || status === 'driver_assigned') {
-            return { class: 'phase-pickup', text: 'Phase 1: Go to Restaurant' };
-        } else if (status === 'picked_up') {
-            return { class: 'phase-delivery', text: 'Phase 2: Deliver to Customer' };
+    
+    navigateToCustomer() {
+        if (!this.currentOrder) return;
+        
+        const lat = this.currentOrder.customerLocation?.latitude || 9.02;
+        const lng = this.currentOrder.customerLocation?.longitude || 38.75;
+        const name = this.currentOrder.customerName || 'Customer';
+        
+        this.openNavigation(lat, lng, name);
+        
+        // Update button to "Mark as Delivered"
+        this.updatePrimaryAction('Mark Delivered', '✅');
+    }
+    
+    openNavigation(lat, lng, name) {
+        // Try to open in native map apps first (mobile-first approach)
+        const userAgent = navigator.userAgent.toLowerCase();
+        let navigationUrl = '';
+        
+        if (userAgent.includes('android')) {
+            // Try Google Maps first on Android
+            navigationUrl = `google.navigation:q=${lat},${lng}&mode=d`;
+            window.location.href = navigationUrl;
+            
+            // Fallback to Maps.me after a short delay
+            setTimeout(() => {
+                navigationUrl = `mapsme://route?sll=${lat},${lng}&saddr=Current%20Location&daddr=${name}`;
+                window.location.href = navigationUrl;
+            }, 500);
+            
+        } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+            // Try Apple Maps on iOS
+            navigationUrl = `maps://saddr=Current%20Location&daddr=${lat},${lng}`;
+            window.location.href = navigationUrl;
+            
         } else {
-            return { class: 'phase-pickup', text: 'Active Order' };
-        }
-    }
-
-    createNavigationActions(order) {
-        const actions = [];
-        
-        if (order.status === 'assigned' || order.status === 'driver_assigned') {
-            actions.push(`
-                <div class="navigation-buttons">
-                    <button class="btn btn-navigation" onclick="driverApp.navigateToRestaurant('${order.id}')">
-                        🧭 Navigate to Restaurant
-                    </button>
-                    <button class="btn btn-primary" onclick="driverApp.markOrderPickedUp('${order.id}')">
-                        ✅ Mark as Picked Up
-                    </button>
-                </div>
-            `);
-        } else if (order.status === 'picked_up') {
-            actions.push(`
-                <div class="navigation-buttons">
-                    <button class="btn btn-navigation" onclick="driverApp.navigateToCustomer('${order.id}')">
-                        🧭 Navigate to Customer
-                    </button>
-                    <button class="btn btn-success" onclick="driverApp.markOrderDelivered('${order.id}')">
-                        ✅ Mark as Delivered
-                    </button>
-                </div>
-            `);
+            // Web fallback - open OpenStreetMap with directions
+            navigationUrl = `https://www.openstreetmap.org/directions?from=&to=${lat}%2C${lng}`;
+            window.open(navigationUrl, '_blank');
         }
         
-        return actions.join('');
+        console.log('🧭 Opening navigation to:', name, 'at', lat, lng);
+        this.showNotification('Navigation Opened', `Navigating to ${name}`, 'info');
     }
-
-    async markOrderPickedUp(orderId) {
-        await this.updateOrderStatus(orderId, 'picked_up');
+    
+    async markArrivedAtRestaurant() {
+        console.log('📍 Driver arrived at restaurant');
+        this.updatePrimaryAction('Picked Up Order', '📦');
+        this.showNotification('Arrived!', 'Mark as picked up when you get the order', 'info');
     }
-
-    async markOrderDelivered(orderId) {
-        await this.updateOrderStatus(orderId, 'delivered');
-    }
-
-    vibrateDevice() {
-        // Vibrate device if supported
-        if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);
-        }
+    
+    async markOrderPickedUp() {
+        if (!this.currentOrder) return;
         
-        // Telegram haptic feedback if available
-        if (this.tg && this.tg.HapticFeedback) {
-            this.tg.HapticFeedback.impactOccurred('heavy');
-        }
-    }
-
-    getDistanceBetweenPoints(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Radius of the Earth in kilometers
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
-    enableTestMode() {
-        // Set up test driver data for demonstration
-        this.telegramUser = {
-            id: '383870190',
-            first_name: 'Test',
-            last_name: 'Driver',
-            username: 'testdriver',
-            fullName: 'Test Driver'
-        };
+        console.log('📦 Marking order as picked up');
         
-        this.driverData = {
-            id: '6894917ecb6d9925e5402f1c',
-            userId: '688c844eb154013d32b1b987',
-            telegramId: '383870190',
-            name: 'Test Driver',
-            phoneNumber: '251974408281',
-            status: 'active',
-            isOnline: true,
-            isAvailable: true,
-            isApproved: true,
-            rating: '4.8',
-            totalDeliveries: 15,
-            totalEarnings: '2500.00',
-            todayEarnings: '350.00',
-            weeklyEarnings: '1200.00'
-        };
-        
-        console.log('✅ Test mode enabled - showing driver dashboard');
-        this.showDashboard();
-        this.setupTestNotifications();
-    }
-
-    setupTestNotifications() {
-        // Add test notification button
-        setTimeout(() => {
-            const container = document.querySelector('.container');
-            if (container) {
-                const testButton = document.createElement('button');
-                testButton.innerHTML = '🧪 Test Notification';
-                testButton.className = 'btn btn-primary';
-                testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000;';
-                testButton.onclick = () => this.triggerTestNotification();
-                container.appendChild(testButton);
-            }
-        }, 1000);
-    }
-
-    async triggerTestNotification() {
         try {
-            const response = await fetch('/api/test/driver-notification', {
+            const response = await fetch(`/api/drivers/orders/${this.currentOrder.orderId}/pickup`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    driverId: this.driverData.id,
-                    message: 'Test real-time customer order notification'
-                })
+                    'Content-Type': 'application/json'
+                }
             });
             
             if (response.ok) {
-                console.log('✅ Test notification triggered successfully');
-                this.showAlert('🧪 Test order notification sent! Check Available Orders section.');
+                this.updateTripProgress('pickedUp');
+                this.updatePrimaryAction('Navigate to Customer', '🧭');
+                this.showNotification('Order Picked Up!', 'Now navigate to customer', 'success');
             } else {
-                console.error('❌ Failed to trigger test notification');
+                this.showNotification('Error', 'Could not mark as picked up', 'error');
             }
         } catch (error) {
-            console.error('Error triggering test notification:', error);
+            console.error('❌ Error marking pickup:', error);
+            this.showNotification('Network Error', 'Could not update status', 'error');
         }
     }
-
-    showAlert(message) {
-        // Create a simple alert notification
-        const alert = document.createElement('div');
-        alert.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 10000;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        alert.textContent = message;
-        document.body.appendChild(alert);
-
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.remove();
+    
+    async markOrderDelivered() {
+        if (!this.currentOrder) return;
+        
+        console.log('✅ Marking order as delivered');
+        
+        try {
+            const response = await fetch(`/api/drivers/orders/${this.currentOrder.orderId}/deliver`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                this.updateTripProgress('delivered');
+                this.showNotification('Delivery Complete!', 'Great job! Looking for more orders...', 'success');
+                
+                // Reset to waiting state after a brief celebration
+                setTimeout(() => {
+                    this.currentOrder = null;
+                    this.showWaitingScreen();
+                }, 3000);
+            } else {
+                this.showNotification('Error', 'Could not mark as delivered', 'error');
             }
-        }, 3000);
+        } catch (error) {
+            console.error('❌ Error marking delivered:', error);
+            this.showNotification('Network Error', 'Could not update status', 'error');
+        }
+    }
+    
+    handleOrderStatusUpdate(data) {
+        console.log('📋 Handling order status update:', data);
+        
+        switch (data.status) {
+            case 'ready_for_pickup':
+                this.updateTripProgress('pickedUp');
+                this.updatePrimaryAction('Navigate to Customer', '🧭');
+                this.showNotification('Order Ready!', 'Order is ready for pickup', 'success');
+                break;
+            case 'picked_up':
+                this.updateTripProgress('pickedUp');
+                this.updatePrimaryAction('Navigate to Customer', '🧭');
+                break;
+            case 'delivered':
+                this.updateTripProgress('delivered');
+                break;
+        }
+    }
+    
+    getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    this.driverLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    
+                    console.log('📍 Driver location updated:', this.driverLocation);
+                    
+                    // Update driver marker on map if active
+                    if (this.map && this.tripState === 'active') {
+                        this.addDriverMarker();
+                    }
+                },
+                (error) => {
+                    console.error('❌ Error getting location:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 10000,
+                    timeout: 5000
+                }
+            );
+        } else {
+            console.error('❌ Geolocation not supported');
+        }
+    }
+    
+    updateStatusBadge(status, text) {
+        const badge = document.getElementById('statusBadge');
+        badge.className = `status-badge ${status}`;
+        badge.textContent = text;
+    }
+    
+    showNotification(title, message, type = 'info') {
+        // Remove existing notifications
+        document.querySelectorAll('.notification-popup').forEach(n => n.remove());
+        
+        const notification = document.createElement('div');
+        notification.className = `notification-popup ${type}`;
+        notification.innerHTML = `
+            <h4>${title}</h4>
+            <p>${message}</p>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 4000);
+    }
+    
+    playNotificationSound() {
+        // Create audio context for notification sound
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+            console.log('🔇 Could not play notification sound');
+        }
     }
 }
 
-// Global functions for onclick handlers
-// Initialize app when page loads
+// Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Starting BeU Driver App...');
     window.driverApp = new DriverApp();
 });
-
-window.submitRegistration = function() {
-    window.driverApp.submitRegistration();
-};
-
-window.toggleOnlineStatus = function() {
-    window.driverApp.toggleOnlineStatus();
-};
-
-window.requestLocation = function() {
-    window.driverApp.requestLocation();
-};

@@ -3521,5 +3521,102 @@ Use the buttons below to get started:`;
     }
   });
 
+  // Driver order management endpoints for enhanced driver app
+  app.post('/api/drivers/orders/:orderId/accept', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { driverId } = req.body;
+      
+      console.log(`🚗 Driver ${driverId} accepting order ${orderId}`);
+      
+      // Update order with driver assignment
+      const updatedOrder = await storage.updateOrder(orderId, { 
+        driverId: driverId,
+        status: 'driver_assigned'
+      });
+      
+      // Update order status through service
+      await orderService.updateOrderStatus(orderId, 'driver_assigned');
+      
+      console.log(`✅ Order ${orderId} assigned to driver ${driverId}`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Order accepted successfully',
+        order: updatedOrder 
+      });
+    } catch (error) {
+      console.error('❌ Error accepting order:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to accept order' 
+      });
+    }
+  });
+
+  app.post('/api/drivers/orders/:orderId/reject', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { driverId } = req.body;
+      
+      console.log(`❌ Driver ${driverId} rejecting order ${orderId}`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Order rejected' 
+      });
+    } catch (error) {
+      console.error('❌ Error rejecting order:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to reject order' 
+      });
+    }
+  });
+
+  app.post('/api/drivers/orders/:orderId/pickup', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      console.log(`📦 Marking order ${orderId} as picked up`);
+      
+      // Update order status to picked up
+      await orderService.updateOrderStatus(orderId, 'picked_up');
+      
+      res.json({ 
+        success: true, 
+        message: 'Order marked as picked up' 
+      });
+    } catch (error) {
+      console.error('❌ Error marking pickup:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to mark pickup' 
+      });
+    }
+  });
+
+  app.post('/api/drivers/orders/:orderId/deliver', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      console.log(`✅ Marking order ${orderId} as delivered`);
+      
+      // Update order status to delivered
+      await orderService.updateOrderStatus(orderId, 'delivered');
+      
+      res.json({ 
+        success: true, 
+        message: 'Order delivered successfully' 
+      });
+    } catch (error) {
+      console.error('❌ Error marking delivery:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to mark delivery' 
+      });
+    }
+  });
+
   return httpServer;
 }
