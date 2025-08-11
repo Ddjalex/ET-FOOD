@@ -350,14 +350,13 @@ function DriverPanel() {
               >
                 {driver?.isOnline ? 'Online' : 'Offline'}
               </Badge>
-              <Button
-                onClick={() => toggleAvailabilityMutation.mutate()}
-                variant={driver?.isAvailable ? "destructive" : "default"}
-                disabled={toggleAvailabilityMutation.isPending || !driver?.isOnline}
-                data-testid="button-toggle-availability"
-              >
-                {driver?.isAvailable ? 'Go Unavailable' : 'Go Available'}
-              </Button>
+              {!driver?.isOnline && (
+                <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    📍 Share your live location in Telegram bot to go online
+                  </p>
+                </div>
+              )}
               
 
             </div>

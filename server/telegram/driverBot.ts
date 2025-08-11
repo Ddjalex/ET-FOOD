@@ -124,11 +124,10 @@ Hello ${firstName}! I'm your driver assistant for managing deliveries.
         // Approved driver - show dashboard
         const statusText = driver.isOnline ? (driver.isAvailable ? '🟢 Online & Available' : '🟡 Online & Busy') : '🔴 Offline';
         
+        const locationStatus = driver.isOnline && driver.isAvailable ? '🟢 Sharing Live Location' : '🔴 Location Not Shared';
+        
         const keyboard = {
           inline_keyboard: [
-            [
-              { text: driver.isOnline ? '🔴 Go Offline' : '🟢 Go Online', callback_data: driver.isOnline ? 'driver_offline' : 'driver_online' }
-            ],
             [
               { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
               { text: '💰 Earnings', callback_data: 'driver_earnings' }
@@ -136,11 +135,22 @@ Hello ${firstName}! I'm your driver assistant for managing deliveries.
           ]
         };
 
+        const instructionMessage = driver.isOnline && driver.isAvailable 
+          ? "You are currently sharing your live location and receiving orders!"
+          : `📍 **Start Working:**
+1. Click 📎 attachment icon below
+2. Select 📍 Location  
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"
+5. Tap Share to go online`;
+
         await ctx.reply(`🚗 Driver Dashboard
 
-Status: ${statusText}
+${locationStatus}
 Rating: ${driver.rating}⭐ (${driver.totalDeliveries || 0} deliveries)
 Zone: ${driver.zone || 'Not assigned'}
+
+${instructionMessage}
 
 Choose an option:`, { reply_markup: keyboard });
       }
@@ -165,29 +175,6 @@ Choose an option:`, { reply_markup: keyboard });
       if (!driver) return;
 
       switch (data) {
-        case 'driver_online':
-          await storage.updateDriverStatus(driver.id, true, true);
-          await ctx.answerCbQuery('You are now online and available for deliveries!');
-          
-          const locationInstructions = `🟢 You are now ONLINE and available for deliveries!
-
-📍 **To Share Your Live Location:**
-1. Click the 📎 attachment icon at the bottom
-2. Select 📍 Location
-3. Choose "Share My Live Location for..."
-4. Select "until I turn it off"
-5. Tap Share
-
-This allows restaurants and customers to track your real-time location during deliveries.`;
-          
-          await ctx.editMessageText(locationInstructions);
-          break;
-
-        case 'driver_offline':
-          await storage.updateDriverStatus(driver.id, false, false);
-          await ctx.answerCbQuery('You are now offline');
-          await ctx.editMessageText('🔴 You are now OFFLINE\n\nYou will not receive new delivery requests until you go online again.');
-          break;
 
         case 'my_deliveries':
           await ctx.answerCbQuery();
@@ -285,7 +272,7 @@ Ready to apply? Use the registration form!`);
     }
   });
 
-  // Handle location sharing
+  // Handle location sharing (both single location and live location)
   bot.on('location', async (ctx) => {
     const telegramUserId = ctx.from?.id.toString();
     const location = ctx.message.location;
@@ -310,25 +297,65 @@ Ready to apply? Use the registration form!`);
         return;
       }
 
-      // Save driver's live location
+      // Save driver's location
       await storage.updateDriverLocation(driver.id, {
         lat: location.latitude,
         lng: location.longitude
       });
 
-      // Also update driver status to online if they're sharing location
-      await storage.updateDriverStatus(driver.id, true, true);
+      // Check if this is live location (live_period exists) or regular location
+      const isLiveLocation = location.live_period && location.live_period > 0;
+      
+      if (isLiveLocation) {
+        // Live location shared - set driver online and available
+        await storage.updateDriverStatus(driver.id, true, true);
+        await ctx.reply('🟢 **Live location sharing started!**\n\nYou are now ONLINE and available for deliveries. You will receive order notifications from nearby restaurants.\n\n📱 You can stop sharing anytime from Telegram to go offline.');
+        console.log(`Driver ${driver.name} started live location sharing: ${location.latitude}, ${location.longitude} for ${location.live_period}s`);
+      } else {
+        // Regular location shared - just update location but don't change status
+        await ctx.reply('📍 Location received, but you need to share **Live Location** to go online.\n\nTo start working:\n1. Click 📎 attachment icon\n2. Select 📍 Location\n3. Choose "Share My Live Location for..."\n4. Select "until I turn it off"');
+        console.log(`Driver ${driver.name} shared regular location: ${location.latitude}, ${location.longitude}`);
+      }
 
-      await ctx.reply('✅ Location updated successfully!\n\nYou are now online and will receive orders from nearby restaurants.', {
-        reply_markup: {
-          remove_keyboard: true
-        }
-      });
-
-      console.log(`Driver ${driver.name} location updated: ${location.latitude}, ${location.longitude}`);
     } catch (error) {
       console.error('Error saving driver location:', error);
       await ctx.reply('❌ Failed to update location. Please try again.');
+    }
+  });
+
+  // Handle live location updates
+  bot.on('edited_message', async (ctx) => {
+    if (!ctx.editedMessage || !('location' in ctx.editedMessage)) return;
+    
+    const telegramUserId = ctx.from?.id.toString();
+    const location = ctx.editedMessage.location;
+    
+    if (!telegramUserId || !location) return;
+
+    try {
+      const user = await storage.getUserByTelegramId(telegramUserId);
+      if (!user) return;
+
+      const driver = await storage.getDriverByUserId(user.id);
+      if (!driver || !driver.isApproved) return;
+
+      // Update driver's live location
+      await storage.updateDriverLocation(driver.id, {
+        lat: location.latitude,
+        lng: location.longitude
+      });
+
+      // If live location stopped (live_period is 0 or undefined), set driver offline
+      if (!location.live_period || location.live_period === 0) {
+        await storage.updateDriverStatus(driver.id, false, false);
+        await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new orders.\n\nTo go online again, share your live location.');
+        console.log(`Driver ${driver.name} stopped live location sharing`);
+      } else {
+        console.log(`Driver ${driver.name} live location updated: ${location.latitude}, ${location.longitude}`);
+      }
+
+    } catch (error) {
+      console.error('Error handling live location update:', error);
     }
   });
 
@@ -468,9 +495,9 @@ export async function broadcastToAllDrivers(broadcastData: {
         } catch (error) {
           console.error(`❌ Failed to send message to driver ${driver.telegramId}:`, error);
           console.error(`❌ Error details:`, {
-            code: error.code,
-            message: error.message,
-            description: error.description
+            code: (error as any).code,
+            message: (error as any).message,
+            description: (error as any).description
           });
           errorCount++;
         }
