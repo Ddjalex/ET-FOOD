@@ -3053,7 +3053,7 @@ Use the buttons below to get started:`;
       }
       
       // Find and remove documents with null or undefined id fields
-      const brokenDrivers = await mongoose.connection.db.collection('drivers').find({
+      const brokenDrivers = await mongoose.connection.db!.collection('drivers').find({
         $or: [
           { id: null },
           { id: undefined },
@@ -3073,7 +3073,7 @@ Use the buttons below to get started:`;
         })));
         
         // Remove broken documents
-        const result = await mongoose.connection.db.collection('drivers').deleteMany({
+        const result = await mongoose.connection.db!.collection('drivers').deleteMany({
           $or: [
             { id: null },
             { id: undefined },
@@ -3086,7 +3086,7 @@ Use the buttons below to get started:`;
       
       // Drop the problematic id index if it exists
       try {
-        await mongoose.connection.db.collection('drivers').dropIndex('id_1');
+        await mongoose.connection.db!.collection('drivers').dropIndex('id_1');
         console.log('✅ Dropped problematic id index');
       } catch (error: any) {
         if (error.code === 27) {
@@ -3371,7 +3371,7 @@ Use the buttons below to get started:`;
         return res.status(400).json({ message: 'Latitude and longitude are required' });
       }
 
-      await storage.saveLiveLocation(req.params.id, latitude, longitude, timestamp);
+      await storage.saveLiveLocation(req.params.id, latitude, longitude);
       res.json({ message: 'Live location saved successfully' });
     } catch (error) {
       console.error('Failed to save live location:', error);
@@ -3515,7 +3515,7 @@ Use the buttons below to get started:`;
       
       console.log('✅ Test notification sent to driver:', driverId);
       res.json({ success: true, message: 'Test notification sent' });
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Test notification failed:', error);
       res.status(500).json({ error: error.message });
     }

@@ -1,5 +1,4 @@
 import { storage } from '../storage';
-import type { Order, Driver, Restaurant } from '../types';
 
 export class OrderService {
   async updateOrderStatus(orderId: string, status: string, restaurantId?: string) {
@@ -91,15 +90,17 @@ export class OrderService {
           console.log(`📱 Sending Telegram notification to driver ${assignedDriver.telegramId}`);
           const driverBot = await import('../telegram/driverBot');
           if (driverBot.notifyDriverNewOrder) {
-            await driverBot.notifyDriverNewOrder(assignedDriver.telegramId, {
+            if (assignedDriver.telegramId) {
+              await driverBot.notifyDriverNewOrder(assignedDriver.telegramId, {
               orderNumber: order.orderNumber,
               restaurantName: restaurant.name || 'Restaurant',
               customerName: order.customerName || 'Customer',
               estimatedEarnings: Math.max((order.totalAmount || order.total || 0) * 0.15, 50),
               distance: 2.3
-            });
+              });
+            }
           }
-        } catch (telegramError) {
+        } catch (telegramError: any) {
           console.error('❌ Error sending Telegram notification:', telegramError);
         }
 
@@ -147,15 +148,16 @@ export class OrderService {
           const customer = await storage.getUser(order.customerId);
           if (customer?.telegramUserId) {
             const customerBot = await import('../telegram/customerBot');
-            if (customerBot.sendMessageToCustomer) {
-              await customerBot.sendMessageToCustomer(customer.telegramUserId, {
-                title: '👨‍🍳 Order Actively Being Prepared!',
-                message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
-                orderNumber: order.orderNumber,
-                status: 'in_preparation'
-              });
-              console.log(`📱 Notified customer ${customer.telegramUserId} about active preparation`);
-            }
+            // Replace with WebSocket notification since method doesn't exist
+            const { broadcast } = await import('../websocket');
+            broadcast('order_status_updated', {
+              customerId: customer.telegramUserId,
+              title: '👨‍🍳 Order Actively Being Prepared!',
+              message: `Your order ${order.orderNumber} is now actively being prepared in the kitchen. We'll notify you when it's ready for pickup!`,
+              orderNumber: order.orderNumber,
+              status: 'in_preparation'
+            });
+            console.log(`📱 Notified customer ${customer.telegramUserId} about active preparation`);
           }
         } catch (error) {
           console.error('❌ Error notifying customer of active preparation:', error);
@@ -205,7 +207,7 @@ export class OrderService {
         await this.triggerDriverAssignmentAndNotification(order);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error handling order ready: ${error.message}`);
     }
   }
@@ -287,6 +289,39 @@ export class OrderService {
     } catch (error) {
       console.error('❌ Error finding available driver:', error);
       return null;
+    }
+  }
+
+  // Add missing methods required by routes.ts
+  async createOrder(orderData: any) {
+    try {
+      console.log('Creating new order:', orderData);
+      const order = await storage.createOrder(orderData);
+      console.log('Order created successfully:', order.id);
+      return order;
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
+  }
+
+  async triggerAutomatedDriverAssignment(orderId: string) {
+    try {
+      console.log(`Triggering automated driver assignment for order: ${orderId}`);
+      
+      // Get the order details
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        console.error(`Order ${orderId} not found`);
+        return;
+      }
+
+      // Trigger the driver assignment workflow
+      await this.triggerDriverAssignmentAndNotification(order);
+      console.log(`Automated driver assignment completed for order: ${orderId}`);
+    } catch (error) {
+      console.error('Error in automated driver assignment:', error);
+      throw error;
     }
   }
 }
