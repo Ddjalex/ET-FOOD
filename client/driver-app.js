@@ -37,17 +37,42 @@ class DriverApp {
     
     async initializeDriverSession() {
         try {
-            const response = await fetch('/api/telegram/session');
-            const data = await response.json();
+            // Try to get session from Telegram WebApp data first
+            const telegramData = this.tg.initDataUnsafe;
+            console.log('🔐 Telegram WebApp data:', telegramData);
             
-            if (data.userId) {
-                this.driverId = data.userId;
-                console.log('✅ Driver session initialized:', this.driverId);
-                this.updateStatusBadge('online', 'Online & Ready');
-            } else {
-                console.error('❌ Failed to get driver session');
-                this.updateStatusBadge('offline', 'Offline');
+            if (telegramData && telegramData.user) {
+                // Find driver by telegram ID
+                const response = await fetch(`/api/drivers/by-telegram/${telegramData.user.id}`);
+                if (response.ok) {
+                    const driver = await response.json();
+                    this.driverId = driver.id;
+                    console.log('✅ Driver session initialized from Telegram:', this.driverId);
+                    this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                    return;
+                }
             }
+            
+            // Fallback: Try to get session from API
+            const response = await fetch('/api/telegram/session');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.userId) {
+                    // Check if this is a driver
+                    const driverResponse = await fetch(`/api/drivers/by-user/${data.userId}`);
+                    if (driverResponse.ok) {
+                        const driver = await driverResponse.json();
+                        this.driverId = driver.id;
+                        console.log('✅ Driver session initialized from API:', this.driverId);
+                        this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                        return;
+                    }
+                }
+            }
+            
+            console.error('❌ Failed to get driver session');
+            this.updateStatusBadge('offline', 'Not Authenticated');
+            
         } catch (error) {
             console.error('❌ Error initializing driver session:', error);
             this.updateStatusBadge('offline', 'Connection Error');

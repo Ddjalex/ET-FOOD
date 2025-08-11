@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get driver by telegram ID (public route for Telegram Mini Apps)
-  app.get('/api/drivers/telegram/:telegramId', async (req, res) => {
+  app.get('/api/drivers/by-telegram/:telegramId', async (req, res) => {
     try {
       const { telegramId } = req.params;
       const driver = await storage.getDriverByTelegramId(telegramId);
@@ -117,6 +117,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(driver);
     } catch (error) {
       console.error('Error getting driver by telegram ID:', error);
+      res.status(500).json({ message: 'Failed to get driver' });
+    }
+  });
+
+  // Get driver by user ID (public route for Telegram Mini Apps)
+  app.get('/api/drivers/by-user/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const drivers = await storage.getDrivers();
+      const driver = drivers.find((d: any) => d.userId === userId);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      res.json(driver);
+    } catch (error) {
+      console.error('Error getting driver by user ID:', error);
       res.status(500).json({ message: 'Failed to get driver' });
     }
   });
