@@ -3625,6 +3625,38 @@ Use the buttons below to get started:`;
     return Math.round(orderTotal * commissionRate);
   }
 
+  // Get driver wallet balance (public route for Telegram Mini Apps)
+  app.get('/api/drivers/:driverId/wallet/balance', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      
+      console.log('💰 Getting wallet balance for driver', driverId);
+      
+      // Get all orders assigned to this driver
+      const allOrders = await storage.getOrders();
+      const driverOrders = allOrders.filter(order => order.driverId === driverId);
+      const deliveredOrders = driverOrders.filter(order => order.status === 'delivered');
+      
+      // Calculate total earnings (15% commission on delivered orders)
+      const totalEarnings = deliveredOrders.reduce((sum, order) => {
+        const orderTotal = order.total || order.totalAmount || 0;
+        return sum + calculateDriverEarnings(orderTotal);
+      }, 0);
+      
+      console.log(`✅ Driver ${driverId} has balance: ${totalEarnings} ETB from ${deliveredOrders.length} deliveries`);
+      
+      res.json({
+        success: true,
+        balance: totalEarnings,
+        deliveredOrders: deliveredOrders.length,
+        pendingOrders: driverOrders.filter(order => order.status !== 'delivered' && order.status !== 'cancelled').length
+      });
+    } catch (error) {
+      console.error('Error getting driver wallet balance:', error);
+      res.status(500).json({ message: 'Failed to get wallet balance' });
+    }
+  });
+
   // Driver order management endpoints for enhanced driver app
   app.post('/api/drivers/orders/:orderId/accept', async (req, res) => {
     try {

@@ -640,6 +640,201 @@
             margin-bottom: 16px;
             display: block;
         }
+
+        /* Wallet Styles */
+        .wallet-container {
+            padding: 0;
+        }
+
+        .wallet-container h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .wallet-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #E5E7EB;
+        }
+
+        .wallet-card.balance-card {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+        }
+
+        .wallet-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .wallet-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 16px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .balance-card .wallet-icon {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .wallet-card:not(.balance-card) .wallet-icon {
+            background: #F3F4F6;
+        }
+
+        .wallet-title h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: inherit;
+        }
+
+        .wallet-title p {
+            font-size: 13px;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        .wallet-amount {
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            color: white;
+        }
+
+        .wallet-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .wallet-actions .btn {
+            flex: 1;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .wallet-actions .btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .earnings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .earnings-stat {
+            text-align: center;
+            padding: 16px 8px;
+            background: #F9FAFB;
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .transactions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 4px;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .transaction-amount {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .transaction-amount.positive {
+            color: #10B981;
+        }
+
+        .transaction-amount.negative {
+            color: #EF4444;
+        }
+
+        .transaction-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .transaction-status.completed {
+            background: #ECFDF5;
+            color: #059669;
+        }
+
+        .transaction-status.pending {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .no-transactions {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6B7280;
+        }
+
+        .no-transactions-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -657,6 +852,7 @@
             <div class="nav-tabs">
                 <button class="nav-tab active" id="dashboardTab">Dashboard</button>
                 <button class="nav-tab" id="historyTab">History</button>
+                <button class="nav-tab" id="walletTab">Wallet</button>
             </div>
 
             <!-- Dashboard Tab Content -->
@@ -675,6 +871,72 @@
                     <h2>Delivery History</h2>
                     <div id="historyList" class="history-list">
                         <div class="loading-spinner">Loading your delivery history...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet Tab Content -->
+            <div class="tab-content" id="walletContent">
+                <div class="wallet-container">
+                    <h2>Driver Wallet</h2>
+                    
+                    <!-- Wallet Balance Card -->
+                    <div class="wallet-card balance-card">
+                        <div class="wallet-header">
+                            <div class="wallet-icon">💰</div>
+                            <div class="wallet-title">
+                                <h3>Current Balance</h3>
+                                <p>Available for withdrawal</p>
+                            </div>
+                        </div>
+                        <div class="wallet-amount" id="walletBalance">0 ETB</div>
+                        <div class="wallet-actions">
+                            <button class="btn btn-primary" id="withdrawBtn">
+                                🏦 Withdraw
+                            </button>
+                            <button class="btn btn-secondary" id="refreshBalanceBtn">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Earnings Summary -->
+                    <div class="wallet-card summary-card">
+                        <div class="wallet-header">
+                            <div class="wallet-icon">📊</div>
+                            <div class="wallet-title">
+                                <h3>Earnings Summary</h3>
+                                <p>Your performance this month</p>
+                            </div>
+                        </div>
+                        <div class="earnings-grid">
+                            <div class="earnings-stat">
+                                <div class="stat-value" id="totalEarnings">0 ETB</div>
+                                <div class="stat-label">Total Earned</div>
+                            </div>
+                            <div class="earnings-stat">
+                                <div class="stat-value" id="totalDeliveries">0</div>
+                                <div class="stat-label">Deliveries</div>
+                            </div>
+                            <div class="earnings-stat">
+                                <div class="stat-value" id="avgEarning">0 ETB</div>
+                                <div class="stat-label">Avg per Order</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="wallet-card">
+                        <div class="wallet-header">
+                            <div class="wallet-icon">💳</div>
+                            <div class="wallet-title">
+                                <h3>Recent Transactions</h3>
+                                <p>Last 10 transactions</p>
+                            </div>
+                        </div>
+                        <div id="transactionsList" class="transactions-list">
+                            <div class="loading-spinner">Loading transactions...</div>
+                        </div>
                     </div>
                 </div>
             

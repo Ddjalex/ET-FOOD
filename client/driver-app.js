@@ -141,12 +141,16 @@ class DriverApp {
         // Tab navigation
         const dashboardTab = document.getElementById('dashboardTab');
         const historyTab = document.getElementById('historyTab');
+        const walletTab = document.getElementById('walletTab');
         
         if (dashboardTab) {
             dashboardTab.addEventListener('click', () => this.switchTab('dashboard'));
         }
         if (historyTab) {
             historyTab.addEventListener('click', () => this.switchTab('history'));
+        }
+        if (walletTab) {
+            walletTab.addEventListener('click', () => this.switchTab('wallet'));
         }
         
         // Accept order button
@@ -168,6 +172,15 @@ class DriverApp {
         document.getElementById('onlineToggleBtn').addEventListener('click', () => {
             this.toggleOnlineStatus();
         });
+
+        // Wallet functionality
+        document.getElementById('withdrawBtn').addEventListener('click', () => {
+            this.handleWithdrawRequest();
+        });
+        
+        document.getElementById('refreshBalanceBtn').addEventListener('click', () => {
+            this.loadWalletData();
+        });
     }
 
     switchTab(tabName) {
@@ -176,14 +189,18 @@ class DriverApp {
         // Update tab buttons
         document.getElementById('dashboardTab').classList.toggle('active', tabName === 'dashboard');
         document.getElementById('historyTab').classList.toggle('active', tabName === 'history');
+        document.getElementById('walletTab').classList.toggle('active', tabName === 'wallet');
         
         // Update tab content
         document.getElementById('dashboardContent').classList.toggle('active', tabName === 'dashboard');
         document.getElementById('historyContent').classList.toggle('active', tabName === 'history');
+        document.getElementById('walletContent').classList.toggle('active', tabName === 'wallet');
         
-        // Load history data when history tab is selected
+        // Load data when tabs are selected
         if (tabName === 'history' && this.driverId) {
             this.loadDriverHistory();
+        } else if (tabName === 'wallet' && this.driverId) {
+            this.loadWalletData();
         }
     }
 
@@ -834,6 +851,168 @@ class DriverApp {
             oscillator.stop(audioContext.currentTime + 0.5);
         } catch (error) {
             console.log('🔇 Could not play notification sound');
+        }
+    }
+
+    // Wallet functionality methods
+    async loadWalletData() {
+        console.log('💰 Loading wallet data...');
+        
+        if (!this.driverId) {
+            console.error('❌ No driver ID available');
+            return;
+        }
+
+        try {
+            // Load wallet balance and transactions
+            const [balanceResponse, historyResponse] = await Promise.all([
+                fetch(`/api/drivers/${this.driverId}/wallet/balance`),
+                fetch(`/api/drivers/${this.driverId}/history`)
+            ]);
+
+            // Handle balance data
+            if (balanceResponse.ok) {
+                const balanceData = await balanceResponse.json();
+                this.updateWalletBalance(balanceData.balance || 0);
+            }
+
+            // Handle earnings summary from history
+            if (historyResponse.ok) {
+                const historyData = await historyResponse.json();
+                if (historyData.success) {
+                    this.updateEarningsSummary(historyData.data);
+                    this.updateTransactionsList(historyData.data);
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ Error loading wallet data:', error);
+            this.showNotification('Wallet Error', 'Failed to load wallet data', 'error');
+        }
+    }
+
+    updateWalletBalance(balance) {
+        const walletBalance = document.getElementById('walletBalance');
+        if (walletBalance) {
+            walletBalance.textContent = `${balance.toFixed(2)} ETB`;
+        }
+    }
+
+    updateEarningsSummary(orders) {
+        const totalEarningsEl = document.getElementById('totalEarnings');
+        const totalDeliveriesEl = document.getElementById('totalDeliveries');
+        const avgEarningEl = document.getElementById('avgEarning');
+
+        if (!orders || orders.length === 0) {
+            totalEarningsEl.textContent = '0 ETB';
+            totalDeliveriesEl.textContent = '0';
+            avgEarningEl.textContent = '0 ETB';
+            return;
+        }
+
+        const deliveredOrders = orders.filter(order => order.status === 'delivered');
+        const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.driverEarnings || 0), 0);
+        const avgEarning = deliveredOrders.length > 0 ? totalEarnings / deliveredOrders.length : 0;
+
+        totalEarningsEl.textContent = `${totalEarnings.toFixed(2)} ETB`;
+        totalDeliveriesEl.textContent = deliveredOrders.length.toString();
+        avgEarningEl.textContent = `${avgEarning.toFixed(2)} ETB`;
+    }
+
+    updateTransactionsList(orders) {
+        const transactionsList = document.getElementById('transactionsList');
+        
+        if (!orders || orders.length === 0) {
+            transactionsList.innerHTML = `
+                <div class="no-transactions">
+                    <div class="no-transactions-icon">💳</div>
+                    <h3>No Transactions Yet</h3>
+                    <p>Complete deliveries to see your earnings here</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Show last 10 delivered orders as transactions
+        const recentTransactions = orders
+            .filter(order => order.status === 'delivered')
+            .sort((a, b) => new Date(b.deliveredAt || b.createdAt) - new Date(a.deliveredAt || a.createdAt))
+            .slice(0, 10);
+
+        if (recentTransactions.length === 0) {
+            transactionsList.innerHTML = `
+                <div class="no-transactions">
+                    <div class="no-transactions-icon">💳</div>
+                    <h3>No Completed Deliveries</h3>
+                    <p>Complete deliveries to earn money and see transactions</p>
+                </div>
+            `;
+            return;
+        }
+
+        transactionsList.innerHTML = recentTransactions.map(order => {
+            const date = new Date(order.deliveredAt || order.createdAt);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `
+                <div class="transaction-item">
+                    <div class="transaction-details">
+                        <div class="transaction-title">Delivery - ${order.orderNumber}</div>
+                        <div class="transaction-date">${formattedDate}</div>
+                    </div>
+                    <div>
+                        <div class="transaction-amount positive">+${(order.driverEarnings || 0).toFixed(2)} ETB</div>
+                        <div class="transaction-status completed">Completed</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async handleWithdrawRequest() {
+        console.log('🏦 Handling withdrawal request...');
+        
+        // Get current balance first
+        try {
+            const response = await fetch(`/api/drivers/${this.driverId}/wallet/balance`);
+            const balanceData = await response.json();
+            const currentBalance = balanceData.balance || 0;
+
+            if (currentBalance <= 0) {
+                this.showNotification('No Balance', 'You have no earnings to withdraw', 'info');
+                return;
+            }
+
+            // Show withdrawal confirmation via Telegram WebApp
+            const message = `You have ${currentBalance.toFixed(2)} ETB available for withdrawal.\n\nTo withdraw your earnings:\n1. Contact support via the driver bot\n2. Provide your bank account details\n3. Withdrawals are processed within 24 hours`;
+            
+            if (this.tg && this.tg.showPopup) {
+                this.tg.showPopup({
+                    title: 'Withdrawal Request',
+                    message: message,
+                    buttons: [
+                        { id: 'cancel', type: 'cancel', text: 'Cancel' },
+                        { id: 'contact', type: 'default', text: 'Contact Support' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'contact') {
+                        // Open Telegram chat or show contact info
+                        this.showNotification('Contact Support', 'Please use the driver bot to contact support for withdrawals', 'info');
+                    }
+                });
+            } else {
+                // Fallback for when Telegram WebApp popup is not available
+                this.showNotification('Withdrawal Available', `${currentBalance.toFixed(2)} ETB available. Contact support to withdraw.`, 'info');
+            }
+
+        } catch (error) {
+            console.error('❌ Error handling withdrawal:', error);
+            this.showNotification('Withdrawal Error', 'Failed to process withdrawal request', 'error');
         }
     }
 }
