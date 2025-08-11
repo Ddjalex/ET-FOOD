@@ -90,6 +90,49 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
+
+        /* Enhanced cart animations */
+        .cart-slide-in {
+            animation: cartSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes cartSlideIn {
+            0% { 
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            100% { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .cart-bounce {
+            animation: cartBounce 0.6s ease;
+        }
+
+        @keyframes cartBounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* Button feedback animation */
+        .add-btn-success {
+            animation: addSuccess 0.8s ease;
+        }
+
+        @keyframes addSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -202,14 +245,34 @@
         </div>
     </div>
 
-    <!-- Shopping Cart -->
-    <div id="cartContainer" class="fixed bottom-0 left-0 right-0 bg-white sticky-cart hidden">
-        <div class="px-4 py-3">
-            <button id="viewCartBtn" class="w-full bg-primary text-white py-3 rounded-xl font-semibold flex items-center justify-between">
-                <span id="cartItemCount">0 items</span>
-                <span>View Cart</span>
-                <span id="cartTotal">$0.00</span>
-            </button>
+    <!-- Enhanced Shopping Cart -->
+    <div id="cartContainer" class="fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t border-gray-200 hidden z-40 transition-all duration-300" style="transform: translateY(100%); opacity: 0;">
+        <div class="px-4 py-4">
+            <div class="bg-gradient-to-r from-primary to-primaryDark rounded-2xl p-4 shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5.7M19 13v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6m14 0a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v2a2 2 0 002 2h2"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold" id="cartItemCount">0 items</p>
+                            <p class="text-white text-sm opacity-90">Ready to order</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-white text-lg font-bold" id="cartTotal">0.00 ETB</p>
+                        <p class="text-white text-xs opacity-75">Total</p>
+                    </div>
+                </div>
+                <button id="viewCartBtn" class="w-full bg-white text-primary py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    <span>View Cart & Checkout</span>
+                </button>
+            </div>
         </div>
     </div>
 

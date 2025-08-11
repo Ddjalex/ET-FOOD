@@ -359,24 +359,82 @@ class TelegramFoodApp {
             });
         }
 
+        // Update UI with immediate feedback
         this.updateCartUI();
-        this.showCartContainer();
+        
+        // Show visual feedback for the add action
+        this.showAddToCartFeedback(itemId);
+    }
+
+    showAddToCartFeedback(itemId) {
+        // Find the button that was clicked and show feedback
+        const button = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (button && button.classList.contains('add-to-cart-btn')) {
+            const originalText = button.textContent;
+            
+            // Add success animation
+            button.classList.add('add-btn-success');
+            button.textContent = '✓ Added!';
+            button.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white');
+            button.classList.remove('bg-primary', 'hover:bg-primaryDark');
+            
+            // Reset after animation
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('bg-green-500', 'hover:bg-green-600', 'add-btn-success');
+                button.classList.add('bg-primary', 'hover:bg-primaryDark');
+            }, 1200);
+        }
     }
 
     updateCartUI() {
         const itemCount = this.cart.reduce((sum, item) => sum + item.quantity, 0);
         const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        document.getElementById('cartItemCount').textContent = `${itemCount} items`;
-        document.getElementById('cartTotal').textContent = `${total.toFixed(2)} ETB`;
+        // Update cart display elements
+        const cartItemCount = document.getElementById('cartItemCount');
+        const cartTotal = document.getElementById('cartTotal');
+        const cartContainer = document.getElementById('cartContainer');
+
+        if (itemCount > 0) {
+            cartItemCount.textContent = `${itemCount} item${itemCount > 1 ? 's' : ''}`;
+            cartTotal.textContent = `${total.toFixed(2)} ETB`;
+            
+            // Show the cart container with enhanced animation
+            const wasHidden = cartContainer.classList.contains('hidden');
+            cartContainer.classList.remove('hidden');
+            
+            if (wasHidden) {
+                // First time showing - slide in
+                cartContainer.classList.add('cart-slide-in');
+                setTimeout(() => {
+                    cartContainer.classList.remove('cart-slide-in');
+                }, 400);
+            } else {
+                // Already visible - small bounce to indicate update
+                cartContainer.classList.add('cart-bounce');
+                setTimeout(() => {
+                    cartContainer.classList.remove('cart-bounce');
+                }, 600);
+            }
+            
+            cartContainer.style.transform = 'translateY(0)';
+            cartContainer.style.opacity = '1';
+        } else {
+            // Hide the cart container
+            cartContainer.style.transform = 'translateY(100%)';
+            cartContainer.style.opacity = '0';
+            setTimeout(() => {
+                if (this.cart.length === 0) {
+                    cartContainer.classList.add('hidden');
+                }
+            }, 300);
+        }
     }
 
     showCartContainer() {
-        if (this.cart.length > 0) {
-            document.getElementById('cartContainer').classList.remove('hidden');
-        } else {
-            document.getElementById('cartContainer').classList.add('hidden');
-        }
+        // This method is now handled within updateCartUI for better consistency
+        this.updateCartUI();
     }
 
     openCartModal() {
