@@ -146,8 +146,8 @@ class OrderService {
           createdAt: new Date().toISOString()
         };
 
-        // Send ride-style notification to specific driver
-        io.to(`driver_${assignedDriver.id}`).emit('new_order_notification', {
+        // Send ride-style notification to specific driver - FIX: Use consistent room naming
+        io.to(`driver:${assignedDriver.id}`).emit('new_order_notification', {
           order: driverNotificationData,
           urgency: 'high',
           type: 'ride_style_delivery'
@@ -216,87 +216,16 @@ class OrderService {
         }
       }
 
-      // Get restaurant location for driver assignment
-      const restaurant = await storage.getRestaurant(order.restaurantId);
-      if (!restaurant) {
-        console.error('Restaurant not found for order:', order.id);
-        return;
-      }
+      // CRITICAL FIX: Trigger driver assignment when kitchen starts preparing
+      console.log(`🚗 Kitchen started preparing - triggering driver assignment for order ${order.orderNumber}`);
+      await this.triggerDriverAssignmentAndNotification(order);
 
-      const restaurantLocation = {
-        lat: restaurant.latitude || restaurant.location?.lat,
-        lng: restaurant.longitude || restaurant.location?.lng
-      };
-
-      console.log(`🍽️ Restaurant location for ${order.restaurantId}:`, restaurantLocation);
-
-      // Find and assign driver when kitchen staff start preparing
-      const { driverService } = await import('./driverService');
-      
-      // Get the best available driver
-      const assignedDriver = await driverService.findAndAssignDriver(order, restaurantLocation);
-      
-      if (assignedDriver) {
-        console.log(`✅ Driver ${assignedDriver.id} assigned to order ${order.id}`);
-        
-        // Update order with assigned driver
-        await storage.assignOrderToDriver(order.id, assignedDriver.id);
-        
-        // Send real-time notification to assigned driver
-        const { notifyDriver } = await import('../websocket');
-        notifyDriver(assignedDriver.id, 'new_order_notification', {
-          driverId: assignedDriver.id,
-          order: {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            restaurantName: order.restaurantName || restaurant.name,
-            customerName: order.customerName || 'Customer',
-            totalAmount: order.total || order.totalAmount,
-            deliveryFee: 50,
-            estimatedEarnings: driverService.calculateEarnings(order),
-            distance: restaurantLocation ? driverService.calculateDistance(
-              restaurantLocation.lat,
-              restaurantLocation.lng,
-              assignedDriver.currentLocation?.lat || 0,
-              assignedDriver.currentLocation?.lng || 0
-            ) : 0,
-            restaurantLocation,
-            deliveryAddress: order.deliveryAddress,
-            status: 'assigned'
-          }
-        });
-
-        console.log(`🚨 Real-time notification sent to driver ${assignedDriver.id} for order ${order.orderNumber}`);
-
-        // Notify customer about driver assignment
-        if (order.customerId) {
-          try {
-            const customer = await storage.getUser(order.customerId);
-            if (customer?.telegramUserId) {
-              const customerBot = await import('../telegram/customerBot');
-              await customerBot.broadcastToSpecificCustomer(customer.telegramUserId, {
-                title: '🚗 Driver Assigned!',
-                message: `Great! Driver ${assignedDriver.name || 'Driver'} has been assigned to your order ${order.orderNumber}. They will pick it up once it's ready.`,
-                orderNumber: order.orderNumber,
-                status: 'driver_assigned',
-                driverName: assignedDriver.name
-              });
-            }
-          } catch (error) {
-            console.error('Error notifying customer of driver assignment:', error);
-          }
-        }
-
-      } else {
-        console.log(`⚠️ No available drivers for order ${order.id} - will try again when ready`);
-      }
-
-      // Broadcast to restaurant staff that order is actively being prepared
+      // Notify customer that preparation has started
       const { broadcast } = await import('../websocket');
       broadcast('order_status_updated', {
         orderId: order.id,
         status: 'in_preparation',
-        message: 'Order is actively being prepared in the kitchen'
+        message: 'Your order is now being actively prepared!'
       });
 
     } catch (error) {
