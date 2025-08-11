@@ -103,7 +103,10 @@ class DriverApp {
             } else {
                 console.warn('No Telegram user data available');
                 console.log('⚠️ No driver data available for authentication');
-                this.showRegistrationForm();
+                
+                // Enable test mode for demonstration
+                console.log('🧪 Enabling test mode for driver interface');
+                this.enableTestMode();
             }
         } catch (error) {
             console.error('Error loading driver data:', error);
@@ -1916,6 +1919,76 @@ class DriverApp {
             Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    enableTestMode() {
+        // Set up test driver data for demonstration
+        this.telegramUser = {
+            id: '383870190',
+            first_name: 'Test',
+            last_name: 'Driver',
+            username: 'testdriver',
+            fullName: 'Test Driver'
+        };
+        
+        this.driverData = {
+            id: '6894917ecb6d9925e5402f1c',
+            userId: '688c844eb154013d32b1b987',
+            telegramId: '383870190',
+            name: 'Test Driver',
+            phoneNumber: '251974408281',
+            status: 'active',
+            isOnline: true,
+            isAvailable: true,
+            isApproved: true,
+            rating: '4.8',
+            totalDeliveries: 15,
+            totalEarnings: '2500.00',
+            todayEarnings: '350.00',
+            weeklyEarnings: '1200.00'
+        };
+        
+        console.log('✅ Test mode enabled - showing driver dashboard');
+        this.showDashboard();
+        this.setupTestNotifications();
+    }
+
+    setupTestNotifications() {
+        // Add test notification button
+        setTimeout(() => {
+            const container = document.querySelector('.container');
+            if (container) {
+                const testButton = document.createElement('button');
+                testButton.innerHTML = '🧪 Test Notification';
+                testButton.className = 'btn btn-primary';
+                testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000;';
+                testButton.onclick = () => this.triggerTestNotification();
+                container.appendChild(testButton);
+            }
+        }, 1000);
+    }
+
+    async triggerTestNotification() {
+        try {
+            const response = await fetch('/api/test/driver-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    driverId: this.driverData.id,
+                    message: 'Test order notification'
+                })
+            });
+            
+            if (response.ok) {
+                console.log('✅ Test notification triggered successfully');
+            } else {
+                console.error('❌ Failed to trigger test notification');
+            }
+        } catch (error) {
+            console.error('Error triggering test notification:', error);
+        }
     }
 }
 
