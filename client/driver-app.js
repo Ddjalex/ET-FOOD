@@ -36,47 +36,17 @@ class DriverApp {
     
     async initializeDriverSession() {
         try {
-            // Get Telegram WebApp data
-            const telegramData = this.tg.initDataUnsafe;
-            console.log('🔐 Telegram WebApp data:', telegramData);
+            const response = await fetch('/api/telegram/session');
+            const data = await response.json();
             
-            if (telegramData && telegramData.user) {
-                // Use Telegram user ID as driver ID
-                this.driverId = telegramData.user.id.toString();
-                console.log('✅ Driver session initialized from Telegram:', this.driverId);
+            if (data.userId) {
+                this.driverId = data.userId;
+                console.log('✅ Driver session initialized:', this.driverId);
                 this.updateStatusBadge('online', 'Online & Ready');
-                
-                // Store driver info for later use
-                this.driverInfo = {
-                    id: this.driverId,
-                    firstName: telegramData.user.first_name,
-                    lastName: telegramData.user.last_name,
-                    username: telegramData.user.username
-                };
-                
-                return;
+            } else {
+                console.error('❌ Failed to get driver session');
+                this.updateStatusBadge('offline', 'Offline');
             }
-            
-            // Fallback: Try to get session from API
-            const response = await fetch('/api/telegram/session', {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.userId) {
-                    this.driverId = data.userId;
-                    console.log('✅ Driver session initialized from API:', this.driverId);
-                    this.updateStatusBadge('online', 'Online & Ready');
-                    return;
-                }
-            }
-            
-            console.error('❌ Failed to get driver session from both Telegram and API');
-            this.updateStatusBadge('offline', 'Not Authenticated');
-            
         } catch (error) {
             console.error('❌ Error initializing driver session:', error);
             this.updateStatusBadge('offline', 'Connection Error');
@@ -87,46 +57,21 @@ class DriverApp {
         console.log('🔌 Setting up WebSocket connection...');
         
         try {
-            // Use window.location.origin to get the correct host
-            const socketUrl = window.location.origin;
-            console.log('Connecting to WebSocket at:', socketUrl);
-            
-            this.socket = io(socketUrl, {
-                transports: ['websocket', 'polling'],
-                upgrade: true,
-                timeout: 10000,
-                forceNew: true
-            });
+            this.socket = io();
             
             this.socket.on('connect', () => {
-                console.log('✅ WebSocket connected to', socketUrl);
+                console.log('✅ WebSocket connected');
                 this.updateStatusBadge('online', 'Online & Ready');
                 
                 // Authenticate with driver ID
                 if (this.driverId) {
                     this.socket.emit('authenticate', { userId: this.driverId });
-                    console.log('🔐 Authenticated with driver ID:', this.driverId);
                 }
-            });
-            
-            this.socket.on('connect_error', (error) => {
-                console.error('❌ WebSocket connection error:', error);
-                this.updateStatusBadge('offline', 'Connection Error');
             });
             
             this.socket.on('disconnect', () => {
                 console.log('❌ WebSocket disconnected');
                 this.updateStatusBadge('offline', 'Connection Lost');
-            });
-            
-            this.socket.on('reconnect', () => {
-                console.log('🔄 WebSocket reconnected');
-                this.updateStatusBadge('online', 'Online & Ready');
-                
-                // Re-authenticate after reconnection
-                if (this.driverId) {
-                    this.socket.emit('authenticate', { userId: this.driverId });
-                }
             });
             
             // Listen for new order assignments (specific to this driver)

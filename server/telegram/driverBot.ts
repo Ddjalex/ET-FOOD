@@ -416,24 +416,27 @@ Ready to apply? Use the registration form!`);
       const isLocationStopped = !editedMessage.live_period || editedMessage.live_period === 0;
       
       if (isLocationStopped) {
-        // Live location stopped - set driver offline and unavailable
-        await storage.updateDriverStatus(driver.id, false, false);
+        // Check if driver is already offline to prevent duplicate processing
+        if (driver.isOnline) {
+          // Live location stopped - set driver offline and unavailable
+          await storage.updateDriverStatus(driver.id, false, false);
+          
+          // Send real-time update to all connected clients
+          const { broadcast } = await import('../websocket');
+          const updatedDriver = await storage.getDriver(driver.id);
+          broadcast('driver_status_updated', {
+            driverId: driver.id,
+            isOnline: false,
+            isAvailable: false,
+            status: 'live_location_stopped',
+            driver: updatedDriver
+          });
+        }
         
-        // Send real-time update to all connected clients
-        const { broadcast } = await import('../websocket');
-        const updatedDriver = await storage.getDriver(driver.id);
-        broadcast('driver_status_updated', {
-          driverId: driver.id,
-          isOnline: false,
-          isAvailable: false,
-          status: 'live_location_stopped',
-          driver: updatedDriver
-        });
-        
-        // Only send message once per stop event
-        const stopKey = `${telegramUserId}_stop_${currentTime}`;
-        if (!lastProcessedLocationUpdate.has(stopKey)) {
-          lastProcessedLocationUpdate.set(stopKey, currentTime);
+        // Only send message once per stop event with longer cooldown
+        const lastStopMessage = lastProcessedLocationUpdate.get(`${telegramUserId}_last_stop_message`);
+        if (!lastStopMessage || (currentTime - lastStopMessage) > 30000) { // 30 second cooldown for stop messages
+          lastProcessedLocationUpdate.set(`${telegramUserId}_last_stop_message`, currentTime);
           await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
         }
         console.log(`Driver ${driver.name} stopped live location sharing`);
