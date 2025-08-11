@@ -335,15 +335,13 @@ Ready to apply? Use the registration form!`);
       const driver = await storage.getDriverByUserId(user.id);
       if (!driver || !driver.isApproved) return;
 
-      const { latitude, longitude, live_period } = ctx.message.location;
+      const { latitude, longitude } = ctx.message.location;
+      const live_period = (ctx.message.location as any).live_period;
 
       if (live_period) {
         // Live location started - make driver online
-        await storage.updateDriverStatus(driver.id, {
-          isOnline: true,
-          isAvailable: true,
-          currentLocation: { lat: latitude, lng: longitude }
-        });
+        await storage.updateDriverLocation(driver.id, { lat: latitude, lng: longitude });
+        await storage.updateDriverStatus(driver.id, true, true);
 
         const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
           ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
@@ -362,9 +360,7 @@ Your live location is being tracked for real-time delivery updates.`, {
         });
       } else {
         // Regular location update
-        await storage.updateDriverStatus(driver.id, {
-          currentLocation: { lat: latitude, lng: longitude }
-        });
+        await storage.updateDriverLocation(driver.id, { lat: latitude, lng: longitude });
       }
     } catch (error) {
       console.error('Error handling location update:', error);
@@ -373,7 +369,7 @@ Your live location is being tracked for real-time delivery updates.`, {
 
   // Handle when live location stops
   bot.on('edited_message', async (ctx) => {
-    if (!ctx.editedMessage?.location) return;
+    if (!ctx.editedMessage || !('location' in ctx.editedMessage)) return;
     
     const telegramUserId = ctx.from?.id.toString();
     if (!telegramUserId) return;
@@ -386,14 +382,11 @@ Your live location is being tracked for real-time delivery updates.`, {
       if (!driver) return;
 
       // Check if live location stopped (live_period = 0)
-      const { live_period } = ctx.editedMessage.location;
+      const live_period = (ctx.editedMessage.location as any)?.live_period;
       
       if (live_period === 0) {
         // Live location stopped - make driver offline
-        await storage.updateDriverStatus(driver.id, {
-          isOnline: false,
-          isAvailable: false
-        });
+        await storage.updateDriverStatus(driver.id, false, false);
 
         await ctx.reply(`🔴 **Live location sharing stopped**
 
@@ -410,153 +403,9 @@ You are now OFFLINE. To receive deliveries again:
     }
   });
 
-  // Handle location sharing (both single location and live location)
-  bot.on('location', async (ctx) => {
-    const telegramUserId = ctx.from?.id.toString();
-    const location = ctx.message.location;
-    
-    if (!telegramUserId || !location) return;
 
-    try {
-      const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) {
-        await ctx.reply('❌ User not found. Please register first.');
-        return;
-      }
 
-      const driver = await storage.getDriverByUserId(user.id);
-      if (!driver) {
-        await ctx.reply('❌ Driver profile not found. Please register as a driver first.');
-        return;
-      }
 
-      if (!driver.isApproved) {
-        await ctx.reply('⏳ Your driver application is still pending approval. Please wait for admin approval.');
-        return;
-      }
-
-      // Save driver's location
-      await storage.updateDriverLocation(driver.id, {
-        lat: location.latitude,
-        lng: location.longitude
-      });
-
-      // Check if this is live location by checking the message type
-      // Live location messages have different properties than regular location
-      const isLiveLocation = ctx.message.live_period && ctx.message.live_period > 0;
-      
-      if (isLiveLocation) {
-        // Live location shared - set driver online and available for deliveries
-        await storage.updateDriverStatus(driver.id, true, true);
-        
-        // Send real-time update to all connected clients
-        const { broadcast } = await import('../websocket');
-        const updatedDriver = await storage.getDriver(driver.id);
-        broadcast('driver_status_updated', {
-          driverId: driver.id,
-          isOnline: true,
-          isAvailable: true,
-          status: 'live_location_started',
-          driver: updatedDriver
-        });
-        
-        await ctx.reply('🟢 **Live location sharing started!**\n\nYou are now ONLINE and AVAILABLE for deliveries. You will receive order notifications from nearby restaurants.\n\n📱 You can stop sharing anytime from Telegram to go offline.');
-        console.log(`Driver ${driver.name} started live location sharing: ${location.latitude}, ${location.longitude} for ${ctx.message.live_period}s`);
-      } else {
-        // Regular location shared - just update location but don't change availability status
-        await ctx.reply('📍 Location received, but you need to share **Live Location** to go online and receive orders.\n\nTo start working:\n1. Click 📎 attachment icon\n2. Select 📍 Location\n3. Choose "Share My Live Location for..."\n4. Select "until I turn it off"');
-        console.log(`Driver ${driver.name} shared regular location: ${location.latitude}, ${location.longitude}`);
-      }
-
-    } catch (error) {
-      console.error('Error saving driver location:', error);
-      await ctx.reply('❌ Failed to update location. Please try again.');
-    }
-  });
-
-  // Handle live location updates with deduplication
-  let lastProcessedLocationUpdate = new Map(); // Track last processed update per user
-  
-  bot.on('edited_message', async (ctx) => {
-    if (!ctx.editedMessage || !('location' in ctx.editedMessage)) return;
-    
-    const telegramUserId = ctx.from?.id.toString();
-    const location = ctx.editedMessage.location;
-    
-    if (!telegramUserId || !location) return;
-
-    // Prevent duplicate processing of the same location update
-    const updateKey = `${telegramUserId}_${ctx.editedMessage.message_id}`;
-    const currentTime = Date.now();
-    const lastUpdate = lastProcessedLocationUpdate.get(updateKey);
-    
-    if (lastUpdate && (currentTime - lastUpdate) < 5000) { // 5 second cooldown
-      console.log('Skipping duplicate location update for driver', telegramUserId);
-      return;
-    }
-    
-    lastProcessedLocationUpdate.set(updateKey, currentTime);
-
-    try {
-      const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) return;
-
-      const driver = await storage.getDriverByUserId(user.id);
-      if (!driver || !driver.isApproved) return;
-
-      // Update driver's live location
-      await storage.updateDriverLocation(driver.id, {
-        lat: location.latitude,
-        lng: location.longitude
-      });
-
-      // Check if live location stopped by examining the edited message
-      const editedMessage = ctx.editedMessage;
-      const isLocationStopped = !editedMessage.live_period || editedMessage.live_period === 0;
-      
-      if (isLocationStopped) {
-        // Check if driver is already offline to prevent duplicate processing
-        if (driver.isOnline) {
-          // Live location stopped - set driver offline and unavailable
-          await storage.updateDriverStatus(driver.id, false, false);
-          
-          // Send real-time update to all connected clients
-          const { broadcast } = await import('../websocket');
-          const updatedDriver = await storage.getDriver(driver.id);
-          broadcast('driver_status_updated', {
-            driverId: driver.id,
-            isOnline: false,
-            isAvailable: false,
-            status: 'live_location_stopped',
-            driver: updatedDriver
-          });
-        }
-        
-        // Only send message once per stop event with longer cooldown
-        const lastStopMessage = lastProcessedLocationUpdate.get(`${telegramUserId}_last_stop_message`);
-        if (!lastStopMessage || (currentTime - lastStopMessage) > 30000) { // 30 second cooldown for stop messages
-          lastProcessedLocationUpdate.set(`${telegramUserId}_last_stop_message`, currentTime);
-          await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
-        }
-        console.log(`Driver ${driver.name} stopped live location sharing`);
-      } else {
-        // Location update while still sharing - keep driver online and available
-        // Send real-time location update to all connected clients
-        const { broadcast } = await import('../websocket');
-        const updatedDriver = await storage.getDriver(driver.id);
-        broadcast('driver_location_updated', {
-          driverId: driver.id,
-          location: { lat: location.latitude, lng: location.longitude },
-          driver: updatedDriver
-        });
-        
-        console.log(`Driver ${driver.name} live location updated: ${location.latitude}, ${location.longitude}`);
-      }
-
-    } catch (error) {
-      console.error('Error handling live location update:', error);
-    }
-  });
 
   // Handle contact sharing
   bot.on('contact', async (ctx) => {
