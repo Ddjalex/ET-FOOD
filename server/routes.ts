@@ -3413,31 +3413,58 @@ Use the buttons below to get started:`;
     try {
       const { driverId, message } = req.body;
       
-      // Create a test order to trigger notification
+      // Create a realistic test order to trigger notification
       const testOrder = {
         id: 'test-order-' + Date.now(),
-        orderNumber: 'TEST-' + Date.now(),
+        orderNumber: 'ORD-' + Date.now().toString().slice(-6),
         customerId: '688c844eb154013d32b1b987',
-        customerName: 'Test Customer',
-        restaurantId: 'test-restaurant',
-        restaurantName: 'Test Restaurant',
-        items: [{ name: 'Test Item', price: 100, quantity: 1 }],
-        totalAmount: 100,
+        customerName: 'Sarah Mohammed',
+        restaurantId: 'rest-001',
+        restaurantName: 'Habesha Kitchen',
+        items: [
+          { name: 'Doro Wot with Injera', price: 120, quantity: 1 },
+          { name: 'Tibs', price: 80, quantity: 1 },
+          { name: 'Fresh Juice', price: 25, quantity: 2 }
+        ],
+        totalAmount: 250,
         deliveryFee: 50,
+        total: 300,
         status: 'confirmed',
-        customerLocation: { lat: 9.03, lng: 38.74 },
-        restaurantLocation: { lat: 9.04, lng: 38.75 }
+        customerLocation: { lat: 9.03, lng: 38.74, address: 'Bole, Addis Ababa' },
+        restaurantLocation: { lat: 9.04, lng: 38.75, address: 'Kazanchis, Addis Ababa' },
+        estimatedPreparationTime: '25 minutes',
+        notes: 'Extra spicy, no onions',
+        createdAt: new Date().toISOString()
       };
 
+      // Calculate realistic earnings and distance
+      const estimatedEarnings = Math.max(testOrder.totalAmount * 0.15, 50);
+      const distance = 2.3;
+
       // Trigger driver notification
-      console.log('🧪 Triggering test driver notification for:', driverId);
+      console.log('🧪 Triggering realistic order notification for driver:', driverId);
       
-      // Emit notification to specific driver
+      // Emit multiple notification types for comprehensive testing
       io.to(`driver_${driverId}`).emit('new_order_available', {
-        order: testOrder,
-        estimatedEarnings: 75,
-        distance: 2.5,
+        ...testOrder,
+        estimatedEarnings,
+        distance,
         type: 'order_notification'
+      });
+
+      // Also emit to all available drivers
+      io.emit('new_available_order', {
+        ...testOrder,
+        estimatedEarnings,
+        distance
+      });
+
+      // Enhanced notification with interactive modal
+      io.to(`driver_${driverId}`).emit('new_order_notification', {
+        order: testOrder,
+        estimatedEarnings,
+        distance,
+        urgency: 'high'
       });
       
       console.log('✅ Test notification sent to driver:', driverId);

@@ -1977,18 +1977,44 @@ class DriverApp {
                 },
                 body: JSON.stringify({
                     driverId: this.driverData.id,
-                    message: 'Test order notification'
+                    message: 'Test real-time customer order notification'
                 })
             });
             
             if (response.ok) {
                 console.log('✅ Test notification triggered successfully');
+                this.showAlert('🧪 Test order notification sent! Check Available Orders section.');
             } else {
                 console.error('❌ Failed to trigger test notification');
             }
         } catch (error) {
             console.error('Error triggering test notification:', error);
         }
+    }
+
+    showAlert(message) {
+        // Create a simple alert notification
+        const alert = document.createElement('div');
+        alert.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        alert.textContent = message;
+        document.body.appendChild(alert);
+
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 3000);
     }
 }
 
