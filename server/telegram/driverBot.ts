@@ -56,7 +56,17 @@ export async function setupDriverBot(bot: Telegraf) {
           ]
         };
 
-        await ctx.reply(`🚗 Welcome back, ${existingDriver.name}!\n\nStatus: ${statusText}\nRating: ${existingDriver.rating}⭐ (${existingDriver.totalDeliveries || 0} deliveries)\nZone: ${existingDriver.zone || 'Not assigned'}\n\nChoose an option:`, { reply_markup: keyboard });
+        const locationInstructions = `
+📍 **How to Share Your Live Location:**
+1. Click the 📎 attachment icon below
+2. Select 📍 Location from the menu
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off" for continuous tracking
+5. Tap Share to start location sharing
+
+This helps restaurants and customers track your delivery progress in real-time.`;
+
+        await ctx.reply(`🚗 Welcome back, ${existingDriver.name}!\n\nStatus: ${statusText}\nRating: ${existingDriver.rating}⭐ (${existingDriver.totalDeliveries || 0} deliveries)\nZone: ${existingDriver.zone || 'Not assigned'}${locationInstructions}\n\nChoose an option:`, { reply_markup: keyboard });
       }
     } else {
       // New driver - start with contact sharing
@@ -159,19 +169,18 @@ Choose an option:`, { reply_markup: keyboard });
           await storage.updateDriverStatus(driver.id, true, true);
           await ctx.answerCbQuery('You are now online and available for deliveries!');
           
-          // Request live location sharing
-          const locationKeyboard = {
-            inline_keyboard: [
-              [
-                {
-                  text: '📍 Share Live Location',
-                  callback_data: 'share_live_location'
-                }
-              ]
-            ]
-          };
+          const locationInstructions = `🟢 You are now ONLINE and available for deliveries!
+
+📍 **To Share Your Live Location:**
+1. Click the 📎 attachment icon at the bottom
+2. Select 📍 Location
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"
+5. Tap Share
+
+This allows restaurants and customers to track your real-time location during deliveries.`;
           
-          await ctx.editMessageText('🟢 You are now ONLINE and available for deliveries!\n\n📍 Please share your live location to receive nearby orders:', { reply_markup: locationKeyboard });
+          await ctx.editMessageText(locationInstructions);
           break;
 
         case 'driver_offline':
@@ -215,21 +224,23 @@ Rating: ${driver.rating}⭐`);
         case 'share_live_location':
           await ctx.answerCbQuery();
           
-          // Request live location from user
-          await ctx.reply('📍 Please share your current location:', {
-            reply_markup: {
-              keyboard: [
-                [
-                  {
-                    text: '📍 Share Live Location',
-                    request_location: true
-                  }
-                ]
-              ],
-              resize_keyboard: true,
-              one_time_keyboard: true
-            }
-          });
+          const detailedInstructions = `📍 **How to Share Your Live Location in Telegram:**
+
+**Step-by-step:**
+1. 📎 Click the attachment/paperclip icon at the bottom of this chat
+2. 📍 Select "Location" from the menu
+3. 🔴 Choose "Share My Live Location for..." (not just "Send selected location")
+4. ⏰ Select "until I turn it off" for continuous tracking
+5. ✅ Tap "Share" to confirm
+
+**Why this is important:**
+• Restaurants can see when you arrive for pickup
+• Customers can track your delivery progress
+• BeU system gets real-time updates for better coordination
+
+Your location will be shared only while you're working and can be stopped anytime.`;
+          
+          await ctx.reply(detailedInstructions);
           break;
 
         case 'driver_dashboard':

@@ -19,12 +19,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Truck,
-  Radio
+  Truck
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatDistance } from 'date-fns';
 
 interface Order {
@@ -254,10 +250,7 @@ function DriverPanel() {
     },
   });
 
-  // Location sharing state
-  const [isLocationSharing, setIsLocationSharing] = useState(false);
-  const [locationSharingDuration, setLocationSharingDuration] = useState<'until_off' | '15min' | '1hour' | '8hours'>('until_off');
-  const [showLocationDialog, setShowLocationDialog] = useState(false);
+
 
   // Toggle availability mutation
   const toggleAvailabilityMutation = useMutation({
@@ -279,82 +272,7 @@ function DriverPanel() {
     },
   });
 
-  // Location sharing functionality
-  const startLocationSharing = () => {
-    if (navigator.geolocation) {
-      setIsLocationSharing(true);
-      
-      const watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          // Send location update to server
-          fetch('/api/drivers/update-location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              driverId: currentDriverId,
-              latitude,
-              longitude,
-              timestamp: new Date().toISOString()
-            })
-          }).catch(console.error);
-        },
-        (error) => {
-          console.error('Location error:', error);
-          toast({
-            title: "Location Error",
-            description: "Unable to access your location. Please check permissions.",
-            variant: "destructive"
-          });
-          setIsLocationSharing(false);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 30000
-        }
-      );
 
-      // Store watch ID for cleanup
-      (window as any).locationWatchId = watchId;
-      
-      // Auto-stop based on duration
-      if (locationSharingDuration !== 'until_off') {
-        const durations = {
-          '15min': 15 * 60 * 1000,
-          '1hour': 60 * 60 * 1000, 
-          '8hours': 8 * 60 * 60 * 1000
-        };
-        
-        setTimeout(() => {
-          stopLocationSharing();
-        }, durations[locationSharingDuration]);
-      }
-
-      toast({
-        title: "Location Sharing Started",
-        description: `Sharing location ${locationSharingDuration === 'until_off' ? 'until you turn it off' : 'for ' + locationSharingDuration}`,
-      });
-    } else {
-      toast({
-        title: "Location Not Supported",
-        description: "Your browser doesn't support location sharing.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const stopLocationSharing = () => {
-    if ((window as any).locationWatchId) {
-      navigator.geolocation.clearWatch((window as any).locationWatchId);
-      (window as any).locationWatchId = null;
-    }
-    setIsLocationSharing(false);
-    toast({
-      title: "Location Sharing Stopped",
-      description: "You are no longer sharing your live location.",
-    });
-  };
 
   const calculateDistance = (location1: { lat: number; lng: number }, location2: { lat: number; lng: number }) => {
     const R = 6371; // Earth's radius in kilometers
@@ -441,15 +359,7 @@ function DriverPanel() {
                 {driver?.isAvailable ? 'Go Unavailable' : 'Go Available'}
               </Button>
               
-              <Button
-                onClick={() => setShowLocationDialog(true)}
-                variant={isLocationSharing ? "destructive" : "outline"}
-                disabled={!driver?.isOnline}
-                className="flex items-center gap-2"
-              >
-                <Radio className="w-4 h-4" />
-                {isLocationSharing ? 'Stop Sharing' : 'Share Location'}
-              </Button>
+
             </div>
           </div>
         </div>
@@ -781,75 +691,7 @@ function DriverPanel() {
           </TabsContent>
         </Tabs>
 
-        {/* Location Sharing Dialog */}
-        <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Radio className="w-6 h-6 text-blue-500" />
-                Share My Live Location
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Choose for how long BeU will see your accurate location, including when the app is closed.
-              </p>
-              
-              <RadioGroup
-                value={locationSharingDuration}
-                onValueChange={(value) => setLocationSharingDuration(value as any)}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="15min" id="15min" />
-                  <Label htmlFor="15min">for 15 minutes</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="1hour" id="1hour" />
-                  <Label htmlFor="1hour">for 1 hour</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="8hours" id="8hours" />
-                  <Label htmlFor="8hours">for 8 hours</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="until_off" id="until_off" />
-                  <Label htmlFor="until_off" className="font-medium">until I turn it off</Label>
-                </div>
-              </RadioGroup>
-              
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                <CheckCircle className="w-4 h-4" />
-                <span>Updated in real time as you move</span>
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowLocationDialog(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => {
-                    if (isLocationSharing) {
-                      stopLocationSharing();
-                    } else {
-                      startLocationSharing();
-                    }
-                    setShowLocationDialog(false);
-                  }}
-                  className="flex-1"
-                  variant={isLocationSharing ? "destructive" : "default"}
-                >
-                  {isLocationSharing ? 'Stop Sharing' : 'Share'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+
       </div>
     </div>
   );
