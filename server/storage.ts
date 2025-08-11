@@ -927,18 +927,15 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Initialize storage - MongoDB is already connected, prioritize it
-import { MongoStorage } from './mongoStorage';
-const useMongoStorage = true; // Force MongoDB usage since we connected successfully
-
+// Initialize storage - Use in-memory storage for development
 class StorageFactory {
   private _storage: IStorage | null = null;
   
   get storage(): IStorage {
     if (!this._storage) {
-      // Always use MongoDB storage - the connection is established
-      this._storage = new MongoStorage();
-      console.log('🔄 Initialized MongoDB storage (forced)');
+      // Always use in-memory storage for development
+      this._storage = new MemoryStorage();
+      console.log('✅ Initialized in-memory storage for development');
     }
     return this._storage!;
   }
