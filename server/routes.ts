@@ -3568,6 +3568,63 @@ Use the buttons below to get started:`;
     }
   });
 
+  // Driver history API endpoint (public route for Telegram Mini Apps)
+  app.get('/api/drivers/:driverId/history', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      console.log(`📋 Getting history for driver ${driverId}`);
+
+      // Get all orders assigned to this driver
+      const allOrders = await storage.getOrders();
+      const driverOrders = allOrders.filter(order => order.driverId === driverId);
+      
+      // Sort by creation date (most recent first) and limit
+      const recentOrders = driverOrders
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+
+      // Transform orders into history format
+      const driverHistory = await Promise.all(recentOrders.map(async (order) => {
+        const restaurant = await storage.getRestaurant(order.restaurantId);
+        
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          restaurantName: order.restaurantName || restaurant?.name || 'Unknown Restaurant',
+          customerName: order.customerName || 'Customer',
+          status: order.status,
+          total: order.total || order.totalAmount || 0,
+          earnings: calculateDriverEarnings(order.total || order.totalAmount || 0), // 15% of order value
+          deliveryAddress: order.deliveryAddress?.address || 'N/A',
+          completedAt: order.actualDeliveryTime || order.updatedAt,
+          createdAt: order.createdAt,
+          items: order.items?.length || 0,
+          rating: 5 // Default rating for completed orders
+        };
+      }));
+
+      console.log(`✅ Found ${driverHistory.length} orders for driver ${driverId}`);
+
+      res.json({
+        success: true,
+        data: driverHistory,
+        total: driverHistory.length
+      });
+
+    } catch (error) {
+      console.error('Error getting driver history:', error);
+      res.status(500).json({ message: 'Failed to get driver history' });
+    }
+  });
+
+  // Helper function to calculate driver earnings
+  function calculateDriverEarnings(orderTotal: number): number {
+    const commissionRate = 0.15; // 15% commission
+    return Math.round(orderTotal * commissionRate);
+  }
+
   // Driver order management endpoints for enhanced driver app
   app.post('/api/drivers/orders/:orderId/accept', async (req, res) => {
     try {

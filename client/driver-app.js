@@ -28,9 +28,6 @@ class DriverApp {
         // Setup event listeners
         this.setupEventListeners();
         
-        // Get current location
-        this.getCurrentLocation();
-        
         // Set initial UI state
         this.showWaitingScreen();
     }
@@ -141,6 +138,17 @@ class DriverApp {
     }
     
     setupEventListeners() {
+        // Tab navigation
+        const dashboardTab = document.getElementById('dashboardTab');
+        const historyTab = document.getElementById('historyTab');
+        
+        if (dashboardTab) {
+            dashboardTab.addEventListener('click', () => this.switchTab('dashboard'));
+        }
+        if (historyTab) {
+            historyTab.addEventListener('click', () => this.switchTab('history'));
+        }
+        
         // Accept order button
         document.getElementById('acceptOrderBtn').addEventListener('click', () => {
             this.acceptOrder();
@@ -160,6 +168,108 @@ class DriverApp {
         document.getElementById('onlineToggleBtn').addEventListener('click', () => {
             this.toggleOnlineStatus();
         });
+    }
+
+    switchTab(tabName) {
+        console.log(`📑 Switching to ${tabName} tab`);
+        
+        // Update tab buttons
+        document.getElementById('dashboardTab').classList.toggle('active', tabName === 'dashboard');
+        document.getElementById('historyTab').classList.toggle('active', tabName === 'history');
+        
+        // Update tab content
+        document.getElementById('dashboardContent').classList.toggle('active', tabName === 'dashboard');
+        document.getElementById('historyContent').classList.toggle('active', tabName === 'history');
+        
+        // Load history data when history tab is selected
+        if (tabName === 'history' && this.driverId) {
+            this.loadDriverHistory();
+        }
+    }
+
+    async loadDriverHistory() {
+        console.log('📋 Loading driver history...');
+        
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '<div class="loading-spinner">Loading your delivery history...</div>';
+        
+        try {
+            const response = await fetch(`/api/drivers/${this.driverId}/history`);
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                const history = result.data;
+                
+                if (history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="no-history">
+                            <span class="no-history-icon">📦</span>
+                            <h3>No deliveries yet</h3>
+                            <p>Your completed deliveries will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let historyHTML = '';
+                history.forEach(order => {
+                    const completedDate = new Date(order.completedAt).toLocaleDateString();
+                    const statusClass = order.status === 'delivered' ? 'delivered' : 'cancelled';
+                    
+                    historyHTML += `
+                        <div class="history-item">
+                            <div class="history-header">
+                                <div class="history-order-number">#${order.orderNumber}</div>
+                                <div class="history-earnings">+${order.earnings} ETB</div>
+                            </div>
+                            <div class="history-details">
+                                <div class="history-detail">
+                                    <strong>Restaurant:</strong> ${order.restaurantName}
+                                </div>
+                                <div class="history-detail">
+                                    <strong>Customer:</strong> ${order.customerName}
+                                </div>
+                                <div class="history-detail">
+                                    <strong>Total:</strong> ${order.total} ETB
+                                </div>
+                                <div class="history-detail">
+                                    <strong>Items:</strong> ${order.items} items
+                                </div>
+                            </div>
+                            <div class="history-detail">
+                                <strong>Address:</strong> ${order.deliveryAddress}
+                            </div>
+                            <div class="history-detail" style="margin-top: 8px;">
+                                <span class="history-status ${statusClass}">${order.status}</span>
+                                <span style="float: right; font-size: 12px;">${completedDate}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                historyList.innerHTML = historyHTML;
+                console.log(`✅ Loaded ${history.length} history items`);
+                
+            } else {
+                historyList.innerHTML = `
+                    <div class="no-history">
+                        <span class="no-history-icon">❌</span>
+                        <h3>Failed to load history</h3>
+                        <p>Please try again later</p>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading driver history:', error);
+            historyList.innerHTML = `
+                <div class="no-history">
+                    <span class="no-history-icon">📡</span>
+                    <h3>Connection Error</h3>
+                    <p>Could not load delivery history</p>
+                </div>
+            `;
+        }
     }
     
     showWaitingScreen() {

@@ -75,40 +75,32 @@ export async function setupDriverBot(bot: Telegraf) {
       if (!existingDriver.isApproved) {
         await ctx.reply('⏳ Your driver application is under review.\n\nStatus: Pending Approval\nWe will notify you once your application is approved.');
       } else {
-        // Show driver dashboard
-        const statusText = existingDriver.isOnline ? (existingDriver.isAvailable ? '🟢 Online & Available' : '🟡 Online & Busy') : '🔴 Offline';
-        
-        const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
-          : 'https://replit.com';
+        // Enhanced workflow: First show location sharing instructions
+        const locationInstructions = `🚗 **Welcome back, ${existingDriver.name}!**
 
-        const keyboard = {
-          inline_keyboard: [
-            [
-              { text: existingDriver.isOnline ? '🔴 Go Offline' : '🟢 Go Online', callback_data: existingDriver.isOnline ? 'driver_offline' : 'driver_online' }
-            ],
-            [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
-            [
-              { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
-              { text: '💰 Earnings', callback_data: 'driver_earnings' }
-            ]
-          ]
-        };
+📍 **To start receiving deliveries, please share your live location:**
 
-        const locationInstructions = `
-📍 **How to Share Your Live Location:**
+**Step-by-step instructions:**
 1. Click the 📎 attachment icon below
-2. Select 📍 Location from the menu
-3. Choose "Share My Live Location for..."
-4. Select "until I turn it off" for continuous tracking
-5. Tap Share to start location sharing
+2. Select 📍 **Location** from the menu  
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"** for continuous tracking
+5. Tap **Share** to start location sharing
 
-This helps restaurants and customers track your delivery progress in real-time.`;
+✅ **After sharing your location, you can access your driver dashboard!**
 
-        await ctx.reply(`🚗 Welcome back, ${existingDriver.name}!\n\nStatus: ${statusText}\nRating: ${existingDriver.rating}⭐ (${existingDriver.totalDeliveries || 0} deliveries)\nZone: ${existingDriver.zone || 'Not assigned'}${locationInstructions}\n\nChoose an option:`, { reply_markup: keyboard });
+This allows restaurants and customers to track your delivery progress in real-time.`;
+
+        await ctx.reply(locationInstructions, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '❓ Need Help with Location Sharing', callback_data: 'location_help' }]
+            ]
+          }
+        });
       }
     } else {
-      // New driver - start with contact sharing
+      // New driver - start with contact sharing  
       const welcomeMessage = `🚗 Welcome to BeU Delivery Driver Portal!
 
 Hello ${firstName}! I'm your driver assistant for managing deliveries.
@@ -215,6 +207,26 @@ Choose an option:`, { reply_markup: keyboard });
 
       switch (data) {
 
+        case 'location_help':
+          await ctx.answerCbQuery();
+          await ctx.reply(`📍 **Need Help with Location Sharing?**
+
+**Step-by-step instructions:**
+1. Click the 📎 attachment icon below
+2. Select 📍 **Location** from the menu  
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"** for continuous tracking
+5. Tap **Share** to start location sharing
+
+**Location received, but you need to share **Live Location** to go online and receive orders.**
+
+To start working:
+1. Click 📎 attachment icon
+2. Select 📍 Location
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"`);
+          break;
+
         case 'my_deliveries':
           await ctx.answerCbQuery();
           const deliveries = await storage.getDeliveriesByDriver(driver.id);
@@ -226,7 +238,7 @@ Choose an option:`, { reply_markup: keyboard });
             deliveries.slice(0, 5).forEach((delivery, index) => {
               deliveriesList += `${index + 1}. Order #${delivery.orderId}\n`;
               deliveriesList += `   Status: ${delivery.status}\n`;
-              deliveriesList += `   Earnings: ₹${delivery.earnings || 0}\n`;
+              deliveriesList += `   Earnings: ${delivery.earnings || 0} ETB\n`;
               if (delivery.deliveryTime) {
                 deliveriesList += `   Completed: ${new Date(delivery.deliveryTime).toLocaleDateString()}\n`;
               }
@@ -308,6 +320,93 @@ Ready to apply? Use the registration form!`);
     } catch (error) {
       console.error('Error handling driver callback:', error);
       await ctx.answerCbQuery('Error processing request');
+    }
+  });
+
+  // Handle live location updates
+  bot.on('location', async (ctx) => {
+    const telegramUserId = ctx.from?.id.toString();
+    if (!telegramUserId) return;
+
+    try {
+      const user = await storage.getUserByTelegramId(telegramUserId);
+      if (!user) return;
+
+      const driver = await storage.getDriverByUserId(user.id);
+      if (!driver || !driver.isApproved) return;
+
+      const { latitude, longitude, live_period } = ctx.message.location;
+
+      if (live_period) {
+        // Live location started - make driver online
+        await storage.updateDriverStatus(driver.id, {
+          isOnline: true,
+          isAvailable: true,
+          currentLocation: { lat: latitude, lng: longitude }
+        });
+
+        const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+          : 'https://replit.com';
+
+        await ctx.reply(`✅ **Location sharing started successfully!**
+
+🟢 **You are now ONLINE and available for deliveries!**
+
+Your live location is being tracked for real-time delivery updates.`, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }]
+            ]
+          }
+        });
+      } else {
+        // Regular location update
+        await storage.updateDriverStatus(driver.id, {
+          currentLocation: { lat: latitude, lng: longitude }
+        });
+      }
+    } catch (error) {
+      console.error('Error handling location update:', error);
+    }
+  });
+
+  // Handle when live location stops
+  bot.on('edited_message', async (ctx) => {
+    if (!ctx.editedMessage?.location) return;
+    
+    const telegramUserId = ctx.from?.id.toString();
+    if (!telegramUserId) return;
+
+    try {
+      const user = await storage.getUserByTelegramId(telegramUserId);
+      if (!user) return;
+
+      const driver = await storage.getDriverByUserId(user.id);
+      if (!driver) return;
+
+      // Check if live location stopped (live_period = 0)
+      const { live_period } = ctx.editedMessage.location;
+      
+      if (live_period === 0) {
+        // Live location stopped - make driver offline
+        await storage.updateDriverStatus(driver.id, {
+          isOnline: false,
+          isAvailable: false
+        });
+
+        await ctx.reply(`🔴 **Live location sharing stopped**
+
+You are now OFFLINE. To receive deliveries again:
+
+📍 **Start sharing live location:**
+1. Click 📎 attachment icon
+2. Select 📍 Location
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"`);
+      }
+    } catch (error) {
+      console.error('Error handling location stop:', error);
     }
   });
 

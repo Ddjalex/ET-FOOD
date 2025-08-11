@@ -490,6 +490,156 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: #F3F4F6;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #1F2937;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .nav-tab:hover {
+            color: #374151;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* History Styles */
+        .history-container {
+            padding: 0;
+        }
+
+        .history-container h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .history-list {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-order-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1F2937;
+        }
+
+        .history-earnings {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .history-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .history-detail {
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .history-detail strong {
+            color: #1F2937;
+        }
+
+        .history-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .history-status.delivered {
+            background: #ECFDF5;
+            color: #059669;
+        }
+
+        .history-status.cancelled {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6B7280;
+            font-size: 14px;
+        }
+
+        .no-history {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B7280;
+        }
+
+        .no-history-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -503,15 +653,33 @@
         </div>
         
         <div class="main-content">
-            <!-- Waiting for Orders Screen -->
-            <div class="status-screen" id="waitingScreen">
-                <div class="status-icon waiting">🚗</div>
-                <h2>Ready for Deliveries</h2>
-                <p>You're online and ready to receive new delivery requests. We'll notify you when a new order comes in.</p>
+            <!-- Navigation Tabs -->
+            <div class="nav-tabs">
+                <button class="nav-tab active" id="dashboardTab">Dashboard</button>
+                <button class="nav-tab" id="historyTab">History</button>
             </div>
+
+            <!-- Dashboard Tab Content -->
+            <div class="tab-content active" id="dashboardContent">
+                <!-- Waiting for Orders Screen -->
+                <div class="status-screen" id="waitingScreen">
+                    <div class="status-icon waiting">🚗</div>
+                    <h2>Ready for Deliveries</h2>
+                    <p>You're online and ready to receive new delivery requests. We'll notify you when a new order comes in.</p>
+                </div>
+            </div>
+
+            <!-- History Tab Content -->
+            <div class="tab-content" id="historyContent">
+                <div class="history-container">
+                    <h2>Delivery History</h2>
+                    <div id="historyList" class="history-list">
+                        <div class="loading-spinner">Loading your delivery history...</div>
+                    </div>
+                </div>
             
-            <!-- Incoming Order Screen -->
-            <div class="status-screen hidden" id="incomingOrderScreen">
+                <!-- Incoming Order Screen -->
+                <div class="status-screen hidden" id="incomingOrderScreen">
                 <div id="incomingOrderCard" class="order-card pending">
                     <div class="order-header">
                         <div class="order-number" id="incomingOrderNumber">New Order</div>
@@ -552,8 +720,8 @@
                 </div>
             </div>
             
-            <!-- Active Trip Screen -->
-            <div class="status-screen hidden" id="activeTripScreen">
+                <!-- Active Trip Screen -->
+                <div class="status-screen hidden" id="activeTripScreen">
                 <div id="activeTripCard" class="order-card active">
                     <div class="order-header">
                         <div class="order-number" id="activeOrderNumber">Order #12345</div>
@@ -607,6 +775,7 @@
                             🧭 Navigate to Restaurant
                         </button>
                     </div>
+                </div>
                 </div>
             </div>
         </div>
