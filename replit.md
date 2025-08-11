@@ -34,6 +34,8 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 
 **Driver Status Automation (August 11, 2025)**: ✅ Driver online/offline status now depends entirely on Telegram live location sharing. When drivers share live location, they automatically go online and available. When live location stops, they go offline. Removed manual toggle buttons - location sharing controls everything. Added handlers for live location updates and stop events.
 
+**Navigation Fix (August 11, 2025)**: ✅ Fixed driver mini app navigation error (ERR_UNKNOWN_URL_SCHEME) by replacing custom URL schemes with Google Maps web URLs. Navigation now uses `https://maps.google.com/maps` format which works reliably within Telegram WebView environment. Added proper error handling and fallback to OpenStreetMap if needed.
+
 **Interactive Driver Order Notification System Completed (August 7, 2025)**: ✅ Successfully overhauled the driver notification system from simple text popups to fully interactive order cards. Removed all legacy notification broadcasts that were interfering with the enhanced system. Implemented comprehensive interactive modal with OpenStreetMap integration, accept/reject API endpoints, distance calculations, and proper order data structures. System now sends detailed order objects with all necessary information (orderId, customerName, restaurantName, locations, status) enabling rich driver interactions through the mini web app interface.
 
 ## User Preferences

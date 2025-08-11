@@ -438,34 +438,37 @@ class DriverApp {
     }
     
     openNavigation(lat, lng, name) {
-        // Try to open in native map apps first (mobile-first approach)
+        // Telegram-compatible navigation approach
         const userAgent = navigator.userAgent.toLowerCase();
         let navigationUrl = '';
         
-        if (userAgent.includes('android')) {
-            // Try Google Maps first on Android
-            navigationUrl = `google.navigation:q=${lat},${lng}&mode=d`;
-            window.location.href = navigationUrl;
+        try {
+            if (userAgent.includes('android')) {
+                // Use Google Maps web URL for Android (works better in Telegram)
+                navigationUrl = `https://maps.google.com/maps?daddr=${lat},${lng}&dirflg=d`;
+                window.open(navigationUrl, '_blank');
+                
+            } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+                // Use Google Maps web URL for iOS (more reliable in Telegram)
+                navigationUrl = `https://maps.google.com/maps?daddr=${lat},${lng}&dirflg=d`;
+                window.open(navigationUrl, '_blank');
+                
+            } else {
+                // Web fallback - Google Maps web interface
+                navigationUrl = `https://maps.google.com/maps?daddr=${lat},${lng}&dirflg=d`;
+                window.open(navigationUrl, '_blank');
+            }
             
-            // Fallback to Maps.me after a short delay
-            setTimeout(() => {
-                navigationUrl = `mapsme://route?sll=${lat},${lng}&saddr=Current%20Location&daddr=${name}`;
-                window.location.href = navigationUrl;
-            }, 500);
+            console.log('🧭 Opening navigation to:', name, 'at', lat, lng);
+            this.showNotification('Navigation Opened', `Opening maps to ${name}`, 'success');
             
-        } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-            // Try Apple Maps on iOS
-            navigationUrl = `maps://saddr=Current%20Location&daddr=${lat},${lng}`;
-            window.location.href = navigationUrl;
-            
-        } else {
-            // Web fallback - open OpenStreetMap with directions
-            navigationUrl = `https://www.openstreetmap.org/directions?from=&to=${lat}%2C${lng}`;
+        } catch (error) {
+            console.error('❌ Navigation error:', error);
+            // Ultimate fallback to OpenStreetMap
+            navigationUrl = `https://www.openstreetmap.org/directions?to=${lat}%2C${lng}`;
             window.open(navigationUrl, '_blank');
+            this.showNotification('Navigation Error', 'Using alternative map service', 'warning');
         }
-        
-        console.log('🧭 Opening navigation to:', name, 'at', lat, lng);
-        this.showNotification('Navigation Opened', `Navigating to ${name}`, 'info');
     }
     
     async markArrivedAtRestaurant() {
