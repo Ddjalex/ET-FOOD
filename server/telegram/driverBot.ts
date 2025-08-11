@@ -303,17 +303,18 @@ Ready to apply? Use the registration form!`);
         lng: location.longitude
       });
 
-      // Check if this is live location (live_period exists) or regular location
-      const isLiveLocation = location.live_period && location.live_period > 0;
+      // Check if this is live location by checking the message type
+      // Live location messages have different properties than regular location
+      const isLiveLocation = ctx.message.live_period && ctx.message.live_period > 0;
       
       if (isLiveLocation) {
-        // Live location shared - set driver online and available
+        // Live location shared - set driver online and available for deliveries
         await storage.updateDriverStatus(driver.id, true, true);
-        await ctx.reply('🟢 **Live location sharing started!**\n\nYou are now ONLINE and available for deliveries. You will receive order notifications from nearby restaurants.\n\n📱 You can stop sharing anytime from Telegram to go offline.');
-        console.log(`Driver ${driver.name} started live location sharing: ${location.latitude}, ${location.longitude} for ${location.live_period}s`);
+        await ctx.reply('🟢 **Live location sharing started!**\n\nYou are now ONLINE and AVAILABLE for deliveries. You will receive order notifications from nearby restaurants.\n\n📱 You can stop sharing anytime from Telegram to go offline.');
+        console.log(`Driver ${driver.name} started live location sharing: ${location.latitude}, ${location.longitude} for ${ctx.message.live_period}s`);
       } else {
-        // Regular location shared - just update location but don't change status
-        await ctx.reply('📍 Location received, but you need to share **Live Location** to go online.\n\nTo start working:\n1. Click 📎 attachment icon\n2. Select 📍 Location\n3. Choose "Share My Live Location for..."\n4. Select "until I turn it off"');
+        // Regular location shared - just update location but don't change availability status
+        await ctx.reply('📍 Location received, but you need to share **Live Location** to go online and receive orders.\n\nTo start working:\n1. Click 📎 attachment icon\n2. Select 📍 Location\n3. Choose "Share My Live Location for..."\n4. Select "until I turn it off"');
         console.log(`Driver ${driver.name} shared regular location: ${location.latitude}, ${location.longitude}`);
       }
 
@@ -345,12 +346,17 @@ Ready to apply? Use the registration form!`);
         lng: location.longitude
       });
 
-      // If live location stopped (live_period is 0 or undefined), set driver offline
-      if (!location.live_period || location.live_period === 0) {
+      // Check if live location stopped by examining the edited message
+      const editedMessage = ctx.editedMessage;
+      const isLocationStopped = !editedMessage.live_period || editedMessage.live_period === 0;
+      
+      if (isLocationStopped) {
+        // Live location stopped - set driver offline and unavailable
         await storage.updateDriverStatus(driver.id, false, false);
-        await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new orders.\n\nTo go online again, share your live location.');
+        await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
         console.log(`Driver ${driver.name} stopped live location sharing`);
       } else {
+        // Location update while still sharing - keep driver online and available
         console.log(`Driver ${driver.name} live location updated: ${location.latitude}, ${location.longitude}`);
       }
 
