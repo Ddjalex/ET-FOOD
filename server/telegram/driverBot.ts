@@ -375,7 +375,9 @@ Ready to apply? Use the registration form!`);
     }
   });
 
-  // Handle live location updates
+  // Handle live location updates with deduplication
+  let lastProcessedLocationUpdate = new Map(); // Track last processed update per user
+  
   bot.on('edited_message', async (ctx) => {
     if (!ctx.editedMessage || !('location' in ctx.editedMessage)) return;
     
@@ -383,6 +385,18 @@ Ready to apply? Use the registration form!`);
     const location = ctx.editedMessage.location;
     
     if (!telegramUserId || !location) return;
+
+    // Prevent duplicate processing of the same location update
+    const updateKey = `${telegramUserId}_${ctx.editedMessage.message_id}`;
+    const currentTime = Date.now();
+    const lastUpdate = lastProcessedLocationUpdate.get(updateKey);
+    
+    if (lastUpdate && (currentTime - lastUpdate) < 5000) { // 5 second cooldown
+      console.log('Skipping duplicate location update for driver', telegramUserId);
+      return;
+    }
+    
+    lastProcessedLocationUpdate.set(updateKey, currentTime);
 
     try {
       const user = await storage.getUserByTelegramId(telegramUserId);
@@ -416,7 +430,12 @@ Ready to apply? Use the registration form!`);
           driver: updatedDriver
         });
         
-        await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
+        // Only send message once per stop event
+        const stopKey = `${telegramUserId}_stop_${currentTime}`;
+        if (!lastProcessedLocationUpdate.has(stopKey)) {
+          lastProcessedLocationUpdate.set(stopKey, currentTime);
+          await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
+        }
         console.log(`Driver ${driver.name} stopped live location sharing`);
       } else {
         // Location update while still sharing - keep driver online and available
