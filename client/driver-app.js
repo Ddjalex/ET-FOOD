@@ -800,7 +800,7 @@ class DriverApp {
                 Order #${order.orderNumber}
             </div>
             <div style="font-size: 12px; opacity: 0.9;">
-                ${order.restaurantName} • ${order.estimatedEarnings || 50} ETB
+                ${order.restaurantName} • ${order.estimatedEarnings || 50} ETB • ${order.distance || 2.3} km
             </div>
         `;
 
@@ -840,11 +840,16 @@ class DriverApp {
 
     handleNewAvailableOrder(data) {
         console.log('Processing new available order broadcast:', data);
-        // Refresh available orders to show the new order
-        this.loadAvailableOrders();
+        
+        // Direct display the order in Available Orders section
+        this.displayAvailableOrder(data);
+        this.updateOrderBadge();
         
         // Show notification popup
-        this.showAlert(`🆕 New order available: ${data.orderNumber} ($${data.total})`);
+        this.showAlert(`🆕 New order from ${data.restaurantName}: ${data.orderNumber} (${data.total} ETB)`);
+        
+        // Show prominent order notification popup
+        this.showOrderNotificationPopup(data);
         
         // Play notification sound
         try {
@@ -867,13 +872,26 @@ class DriverApp {
     displayAvailableOrder(order) {
         const ordersContainer = document.getElementById('availableOrders');
         
+        if (!ordersContainer) {
+            console.error('Available orders container not found');
+            return;
+        }
+        
         // Remove "no orders" message
-        if (ordersContainer.innerHTML.includes('No orders available')) {
+        if (ordersContainer.innerHTML.includes('No orders available') || ordersContainer.innerHTML.includes('no orders')) {
             ordersContainer.innerHTML = '';
+        }
+
+        // Check if order already exists
+        const existingOrder = document.getElementById(`order-${order.id}`);
+        if (existingOrder) {
+            existingOrder.remove();
         }
 
         const orderCard = this.createOrderCard(order, true);
         ordersContainer.appendChild(orderCard);
+        
+        console.log('✅ Order card added to Available Orders section:', order.orderNumber);
     }
 
     createOrderCard(order, isAvailable = false) {
@@ -904,7 +922,7 @@ class DriverApp {
                 </div>
                 <div class="order-detail-item">
                     <span>Estimated Earnings:</span>
-                    <span class="order-detail-value">$${estimatedEarnings}</span>
+                    <span class="order-detail-value">${order.estimatedEarnings || estimatedEarnings} ETB</span>
                 </div>
                 <div class="order-detail-item">
                     <span>Items:</span>
