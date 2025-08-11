@@ -3459,12 +3459,15 @@ Use the buttons below to get started:`;
         distance
       });
 
-      // Enhanced notification with interactive modal
+      // Enhanced ride-style notification
       io.to(`driver_${driverId}`).emit('new_order_notification', {
-        order: testOrder,
-        estimatedEarnings,
-        distance,
-        urgency: 'high'
+        order: {
+          ...testOrder,
+          estimatedEarnings,
+          distance
+        },
+        urgency: 'high',
+        type: 'ride_style_delivery'
       });
       
       console.log('✅ Test notification sent to driver:', driverId);

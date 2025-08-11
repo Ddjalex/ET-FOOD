@@ -736,13 +736,13 @@ class DriverApp {
             this.handleNewAvailableOrder(data);
         });
 
-        // Enhanced notification for interactive modal
+        // Enhanced ride-style notification
         this.socket.on('new_order_notification', (data) => {
-            console.log('🚨 Enhanced order notification received:', data);
+            console.log('🚨 Enhanced ride-style order notification received:', data);
             if (data.driverId === 'all' || data.driverId === this.driverData?.id) {
                 this.handleNewOrderNotification(data.order);
-                // Show enhanced interactive modal
-                this.showInteractiveOrderModal(data.order);
+                // Show ride-style delivery notification
+                this.createRideStyleNotification(data.order);
             }
         });
 
@@ -774,52 +774,305 @@ class DriverApp {
     }
 
     showOrderNotificationPopup(order) {
-        // Create a prominent notification popup for new orders
-        const popup = document.createElement('div');
-        popup.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            z-index: 10000;
-            max-width: 90%;
-            text-align: center;
-            animation: slideIn 0.3s ease-out;
-        `;
+        // Create ride-sharing style delivery notification
+        this.createRideStyleNotification(order);
         
-        popup.innerHTML = `
-            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
-                🚨 New Order Available!
-            </div>
-            <div style="font-size: 14px; margin-bottom: 5px;">
-                Order #${order.orderNumber}
-            </div>
-            <div style="font-size: 12px; opacity: 0.9;">
-                ${order.restaurantName} • ${order.estimatedEarnings || 50} ETB • ${order.distance || 2.3} km
-            </div>
-        `;
-
-        document.body.appendChild(popup);
-
-        // Show alert if in Telegram
-        if (this.tg) {
-            this.tg.showAlert(`🚨 New order available: #${order.orderNumber} from ${order.restaurantName}`);
+        // Show compact alert if in Telegram
+        if (this.tg && this.tg.showAlert) {
+            try {
+                this.tg.showAlert(`New delivery: ${order.restaurantName} → ${order.customerName}`);
+            } catch (e) {
+                console.log('Telegram alert not supported');
+            }
         }
 
-        // Auto-remove popup after 5 seconds
-        setTimeout(() => {
-            if (popup.parentNode) {
-                popup.remove();
-            }
-        }, 5000);
+        // Vibrate device for attention
+        this.vibrateDevice();
+    }
 
-        // Refresh available orders to show the new order
-        this.loadAvailableOrders();
+    createRideStyleNotification(order) {
+        // Remove any existing notification
+        const existing = document.getElementById('rideStyleNotification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.id = 'rideStyleNotification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 15000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        `;
+
+        const card = document.createElement('div');
+        card.style.cssText = `
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.4s ease-out;
+            position: relative;
+        `;
+
+        const earnBadge = order.estimatedEarnings || 50;
+        const distance = order.distance || 2.3;
+        const estimatedTime = Math.round(distance * 3 + 5); // Rough time estimate
+
+        card.innerHTML = `
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">🚗 New Delivery Request</div>
+                <div style="font-size: 16px; opacity: 0.9;">Earn ${earnBadge} ETB • ${distance} km</div>
+            </div>
+
+            <div style="padding: 24px;">
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <div style="width: 12px; height: 12px; background: #4CAF50; border-radius: 50%; margin-right: 12px;"></div>
+                        <div>
+                            <div style="font-weight: bold; color: #333; font-size: 16px;">${order.restaurantName}</div>
+                            <div style="color: #666; font-size: 14px;">${order.restaurantLocation?.address || 'Restaurant location'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="border-left: 2px dashed #ddd; margin-left: 5px; height: 20px;"></div>
+                    
+                    <div style="display: flex; align-items: center;">
+                        <div style="width: 12px; height: 12px; background: #FF5722; border-radius: 50%; margin-right: 12px;"></div>
+                        <div>
+                            <div style="font-weight: bold; color: #333; font-size: 16px;">${order.customerName}</div>
+                            <div style="color: #666; font-size: 14px;">${order.customerLocation?.address || 'Customer location'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666;">Order Total</span>
+                        <span style="font-weight: bold; color: #333;">${order.total || order.totalAmount} ETB</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666;">Items</span>
+                        <span style="color: #333;">${order.items?.length || 1} items</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #666;">Estimated Time</span>
+                        <span style="color: #333;">${estimatedTime} min</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button id="rejectRideOrder" style="
+                        flex: 1;
+                        padding: 16px;
+                        border: 2px solid #e0e0e0;
+                        background: white;
+                        color: #666;
+                        border-radius: 12px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    ">Decline</button>
+                    
+                    <button id="acceptRideOrder" style="
+                        flex: 2;
+                        padding: 16px;
+                        border: none;
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        color: white;
+                        border-radius: 12px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    ">Accept Delivery</button>
+                </div>
+            </div>
+
+            <div id="timerBar" style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                height: 4px;
+                background: linear-gradient(90deg, #FF5722, #FF9800);
+                width: 100%;
+                animation: timerCountdown 30s linear;
+            "></div>
+        `;
+
+        notification.appendChild(card);
+        document.body.appendChild(notification);
+
+        // Add CSS animations
+        this.addRideStyleAnimations();
+
+        // Auto-timeout after 30 seconds
+        const timeout = setTimeout(() => {
+            this.closeRideNotification();
+        }, 30000);
+
+        // Handle button clicks
+        document.getElementById('acceptRideOrder').onclick = () => {
+            clearTimeout(timeout);
+            this.acceptRideOrder(order);
+        };
+
+        document.getElementById('rejectRideOrder').onclick = () => {
+            clearTimeout(timeout);
+            this.rejectRideOrder(order);
+        };
+
+        // Close on backdrop click
+        notification.onclick = (e) => {
+            if (e.target === notification) {
+                clearTimeout(timeout);
+                this.closeRideNotification();
+            }
+        };
+    }
+
+    addRideStyleAnimations() {
+        if (document.getElementById('rideStyleAnimations')) return;
+
+        const style = document.createElement('style');
+        style.id = 'rideStyleAnimations';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes slideUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(100px) scale(0.9); 
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0) scale(1); 
+                }
+            }
+            
+            @keyframes timerCountdown {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            
+            @keyframes slideInRight {
+                from { 
+                    opacity: 0;
+                    transform: translateX(100px); 
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateX(0); 
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from { 
+                    opacity: 1;
+                    transform: translateX(0); 
+                }
+                to { 
+                    opacity: 0;
+                    transform: translateX(100px); 
+                }
+            }
+            
+            #acceptRideOrder:hover {
+                background: linear-gradient(135deg, #45a049, #3d8b40) !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            }
+            
+            #rejectRideOrder:hover {
+                background: #f5f5f5 !important;
+                border-color: #ccc !important;
+                transform: translateY(-2px);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    async acceptRideOrder(order) {
+        const button = document.getElementById('acceptRideOrder');
+        button.innerHTML = '⏳ Accepting...';
+        button.disabled = true;
+
+        try {
+            await this.acceptOrder(order.id);
+            this.showSuccessMessage('🎉 Delivery accepted! Navigating to restaurant...');
+            this.closeRideNotification();
+        } catch (error) {
+            button.innerHTML = 'Accept Delivery';
+            button.disabled = false;
+            this.showErrorMessage('Failed to accept order. Please try again.');
+        }
+    }
+
+    async rejectRideOrder(order) {
+        try {
+            await this.rejectOrder(order.id);
+            this.closeRideNotification();
+        } catch (error) {
+            this.showErrorMessage('Failed to reject order.');
+        }
+    }
+
+    closeRideNotification() {
+        const notification = document.getElementById('rideStyleNotification');
+        if (notification) {
+            notification.style.animation = 'fadeOut 0.3s ease-out forwards';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }
+
+    showSuccessMessage(message) {
+        this.showToast(message, 'success');
+    }
+
+    showErrorMessage(message) {
+        this.showToast(message, 'error');
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 20000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+            ${type === 'success' ? 'background: #4CAF50;' : 
+              type === 'error' ? 'background: #f44336;' : 'background: #2196F3;'}
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     handleNewOrderNotification(order) {
@@ -845,13 +1098,14 @@ class DriverApp {
         this.displayAvailableOrder(data);
         this.updateOrderBadge();
         
-        // Show notification popup
-        this.showAlert(`🆕 New order from ${data.restaurantName}: ${data.orderNumber} (${data.total} ETB)`);
-        
-        // Show prominent order notification popup
-        this.showOrderNotificationPopup(data);
+        // Show ride-style notification for immediate driver attention
+        this.createRideStyleNotification(data);
         
         // Play notification sound
+        this.playNotificationSound();
+    }
+
+    playNotificationSound() {
         try {
             const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmkcBjuX2O3AZyMFAILQ8seHBw==');
             audio.play().catch(e => console.log('Audio play failed:', e));
