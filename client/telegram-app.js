@@ -1,5 +1,5 @@
 // Telegram Mini Web App for BeU Delivery
-class BeUDeliveryApp {
+class TelegramFoodApp {
     constructor() {
         this.tg = window.Telegram.WebApp;
         this.cart = [];
@@ -43,6 +43,9 @@ class BeUDeliveryApp {
                 await this.validateSession(sessionToken, this.tg.initDataUnsafe?.user?.id);
             }
 
+            // Check if we need to request contact sharing
+            await this.checkContactSharing();
+
             // Load initial data
             await this.loadInitialData();
             
@@ -66,6 +69,8 @@ class BeUDeliveryApp {
                 this.sessionData = await response.json();
                 if (this.sessionData.location) {
                     this.userLocation = this.sessionData.location;
+                    // Get human-readable address for location
+                    await this.updateLocationDisplay();
                 }
             }
         } catch (error) {
@@ -73,11 +78,50 @@ class BeUDeliveryApp {
         }
     }
 
+    async reverseGeocode(latitude, longitude) {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.display_name) {
+                    // Extract relevant address components
+                    const address = data.address;
+                    let displayAddress = '';
+                    
+                    if (address.city || address.town || address.village) {
+                        displayAddress = address.city || address.town || address.village;
+                    }
+                    if (address.suburb || address.neighbourhood) {
+                        displayAddress += displayAddress ? `, ${address.suburb || address.neighbourhood}` : (address.suburb || address.neighbourhood);
+                    }
+                    if (address.country && address.country === 'Ethiopia') {
+                        displayAddress += displayAddress ? ', Ethiopia' : 'Ethiopia';
+                    }
+                    
+                    return displayAddress || data.display_name.split(',').slice(0, 3).join(', ');
+                }
+            }
+        } catch (error) {
+            console.error('Reverse geocoding error:', error);
+        }
+        // Fallback to coordinates if geocoding fails
+        return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    }
+
+    async updateLocationDisplay() {
+        if (this.userLocation && this.userLocation.latitude && this.userLocation.longitude) {
+            const readableAddress = await this.reverseGeocode(this.userLocation.latitude, this.userLocation.longitude);
+            const locationElement = document.getElementById('deliveryAddress');
+            if (locationElement) {
+                locationElement.innerHTML = `📍 ${readableAddress}`;
+            }
+        }
+    }
+
     async loadInitialData() {
-        // Update delivery address
+        // Update delivery address with reverse geocoding
         if (this.userLocation) {
-            const address = await this.getAddressFromCoordinates(this.userLocation.latitude, this.userLocation.longitude);
-            document.getElementById('deliveryAddress').textContent = `📍 ${address}`;
+            await this.updateLocationDisplay();
         }
 
         // Load categories
@@ -85,16 +129,6 @@ class BeUDeliveryApp {
         
         // Load restaurants
         await this.loadRestaurants();
-    }
-
-    async getAddressFromCoordinates(lat, lng) {
-        try {
-            // In a real app, you'd use a geocoding service
-            // For demo purposes, we'll return a formatted address
-            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        } catch (error) {
-            return 'Your location';
-        }
     }
 
     renderCategories() {
@@ -216,6 +250,16 @@ class BeUDeliveryApp {
             this.placeOrder();
         });
 
+        // Add contact sharing button if available
+        if (this.tg.requestContact) {
+            const contactBtn = document.getElementById('requestContactBtn');
+            if (contactBtn) {
+                contactBtn.addEventListener('click', () => {
+                    this.requestContactSharing();
+                });
+            }
+        }
+
         // Close modals when clicking outside
         document.addEventListener('click', (e) => {
             if (e.target.id === 'restaurantModal') {
@@ -269,7 +313,7 @@ class BeUDeliveryApp {
                             <div class="flex-1">
                                 <h4 class="font-medium text-gray-800">${item.name}</h4>
                                 <p class="text-sm text-gray-600 mb-2">${item.description}</p>
-                                <p class="font-semibold text-primary">$${item.price.toFixed(2)}</p>
+                                <p class="font-semibold text-primary">${item.price.toFixed(2)} ETB</p>
                             </div>
                             <button class="add-to-cart-btn bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primaryDark transition-colors" data-item-id="${item.id}">
                                 Add
@@ -324,7 +368,7 @@ class BeUDeliveryApp {
         const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         document.getElementById('cartItemCount').textContent = `${itemCount} items`;
-        document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('cartTotal').textContent = `${total.toFixed(2)} ETB`;
     }
 
     showCartContainer() {
@@ -356,7 +400,7 @@ class BeUDeliveryApp {
                     <div class="flex-1">
                         <h4 class="font-medium text-gray-800 text-sm">${item.name}</h4>
                         <p class="text-xs text-gray-500">${item.restaurantName}</p>
-                        <p class="text-primary font-semibold">$${item.price.toFixed(2)}</p>
+                        <p class="text-primary font-semibold">${item.price.toFixed(2)} ETB</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button class="quantity-btn w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300" data-action="decrease" data-item-id="${item.id}">-</button>
@@ -399,13 +443,13 @@ class BeUDeliveryApp {
 
     updateCartSummary() {
         const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const deliveryFee = 2.50;
+        const deliveryFee = 25.00; // 25 ETB delivery fee
         const tax = subtotal * 0.08; // 8% tax
         const total = subtotal + deliveryFee + tax;
 
-        document.getElementById('cartSubtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('taxAmount').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('finalTotal').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('cartSubtotal').textContent = `${subtotal.toFixed(2)} ETB`;
+        document.getElementById('taxAmount').textContent = `${tax.toFixed(2)} ETB`;
+        document.getElementById('finalTotal').textContent = `${total.toFixed(2)} ETB`;
     }
 
     openCheckoutModal() {
@@ -430,7 +474,7 @@ class BeUDeliveryApp {
     renderCheckoutSummary() {
         const container = document.getElementById('checkoutOrderSummary');
         const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const deliveryFee = 2.50;
+        const deliveryFee = 25.00; // 25 ETB delivery fee
         const tax = subtotal * 0.08;
         const total = subtotal + deliveryFee + tax;
 
@@ -438,30 +482,30 @@ class BeUDeliveryApp {
             ${this.cart.map(item => `
                 <div class="flex justify-between">
                     <span>${item.name} x${item.quantity}</span>
-                    <span>$${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>${(item.price * item.quantity).toFixed(2)} ETB</span>
                 </div>
             `).join('')}
             <div class="border-t pt-2 mt-2 space-y-1">
                 <div class="flex justify-between">
                     <span>Subtotal</span>
-                    <span>$${subtotal.toFixed(2)}</span>
+                    <span>${subtotal.toFixed(2)} ETB</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Delivery Fee</span>
-                    <span>$${deliveryFee.toFixed(2)}</span>
+                    <span>${deliveryFee.toFixed(2)} ETB</span>
                 </div>
                 <div class="flex justify-between">
                     <span>Tax</span>
-                    <span>$${tax.toFixed(2)}</span>
+                    <span>${tax.toFixed(2)} ETB</span>
                 </div>
                 <div class="flex justify-between font-semibold text-base border-t pt-1">
                     <span>Total</span>
-                    <span>$${total.toFixed(2)}</span>
+                    <span>${total.toFixed(2)} ETB</span>
                 </div>
             </div>
         `;
 
-        document.getElementById('checkoutTotal').textContent = `$${total.toFixed(2)}`;
+        document.getElementById('checkoutTotal').textContent = `${total.toFixed(2)} ETB`;
     }
 
     async placeOrder() {
@@ -487,7 +531,7 @@ class BeUDeliveryApp {
         }
 
         const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const deliveryFee = 2.50;
+        const deliveryFee = 25.00; // 25 ETB delivery fee
         const tax = subtotal * 0.08;
         const total = subtotal + deliveryFee + tax;
 
@@ -657,9 +701,89 @@ class BeUDeliveryApp {
             toast.remove();
         }, 3000);
     }
+
+    async checkContactSharing() {
+        // Check if user has already shared contact
+        const userContactInfo = localStorage.getItem('userContactInfo');
+        if (!userContactInfo && this.tg.requestContact) {
+            // Show contact sharing prompt after a delay
+            setTimeout(() => {
+                this.showContactPrompt();
+            }, 2000);
+        } else if (userContactInfo) {
+            // Autofill contact information if available
+            const contactData = JSON.parse(userContactInfo);
+            this.prefillUserData(contactData);
+        }
+    }
+
+    showContactPrompt() {
+        // Create a simple prompt for contact sharing
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        promptDiv.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
+                <div class="text-center mb-4">
+                    <div class="w-16 h-16 bg-primary bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-gray-800 mb-2">Quick Checkout</h3>
+                    <p class="text-sm text-gray-600 mb-4">Share your contact to make future orders faster and easier</p>
+                </div>
+                <button id="shareContactBtn" class="w-full bg-primary text-white py-3 rounded-xl font-semibold mb-3">
+                    Share Contact
+                </button>
+                <button id="skipContactBtn" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold">
+                    Skip for now
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(promptDiv);
+        
+        // Event listeners
+        document.getElementById('shareContactBtn').addEventListener('click', () => {
+            this.requestContactSharing();
+            document.body.removeChild(promptDiv);
+        });
+        
+        document.getElementById('skipContactBtn').addEventListener('click', () => {
+            document.body.removeChild(promptDiv);
+        });
+    }
+
+    requestContactSharing() {
+        if (this.tg.requestContact) {
+            this.tg.requestContact((contact) => {
+                if (contact) {
+                    // Store contact information
+                    const contactData = {
+                        phoneNumber: contact.phone_number,
+                        firstName: contact.first_name,
+                        lastName: contact.last_name || ''
+                    };
+                    localStorage.setItem('userContactInfo', JSON.stringify(contactData));
+                    this.prefillUserData(contactData);
+                }
+            });
+        }
+    }
+
+    prefillUserData(contactData) {
+        // Autofill phone input when checkout is opened
+        const phoneInput = document.getElementById('customerPhoneInput');
+        if (phoneInput && contactData.phoneNumber) {
+            phoneInput.value = contactData.phoneNumber;
+        }
+        
+        // Store for use in checkout
+        this.userContactData = contactData;
+    }
 }
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new BeUDeliveryApp();
+    new TelegramFoodApp();
 });
