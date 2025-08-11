@@ -250,14 +250,12 @@ class TelegramFoodApp {
             this.placeOrder();
         });
 
-        // Add contact sharing button if available
-        if (this.tg.requestContact) {
-            const contactBtn = document.getElementById('requestContactBtn');
-            if (contactBtn) {
-                contactBtn.addEventListener('click', () => {
-                    this.requestContactSharing();
-                });
-            }
+        // Add manual contact sharing button
+        const shareContactBtn = document.getElementById('shareContactManualBtn');
+        if (shareContactBtn) {
+            shareContactBtn.addEventListener('click', () => {
+                this.requestContactSharing();
+            });
         }
 
         // Close modals when clicking outside
@@ -518,6 +516,9 @@ class TelegramFoodApp {
             document.getElementById('deliveryAddressInput').value = document.getElementById('deliveryAddress').textContent.replace('📍 ', '');
         }
 
+        // Autofill phone number if available
+        this.autofillContactInfo();
+
         // Render checkout order summary
         this.renderCheckoutSummary();
         
@@ -763,15 +764,31 @@ class TelegramFoodApp {
     async checkContactSharing() {
         // Check if user has already shared contact
         const userContactInfo = localStorage.getItem('userContactInfo');
-        if (!userContactInfo && this.tg.requestContact) {
-            // Show contact sharing prompt after a delay
-            setTimeout(() => {
-                this.showContactPrompt();
-            }, 2000);
+        if (!userContactInfo) {
+            // Show contact sharing prompt after a delay (only if contact sharing is supported)
+            if (this.tg.requestContact) {
+                setTimeout(() => {
+                    this.showContactPrompt();
+                }, 3000);
+            } else {
+                // For development/testing, auto-populate with a test number
+                console.log('Contact sharing not available, setting test data');
+                const testContactData = {
+                    phoneNumber: '+251911234567',
+                    firstName: 'Test',
+                    lastName: 'User'
+                };
+                localStorage.setItem('userContactInfo', JSON.stringify(testContactData));
+                this.userContactData = testContactData;
+            }
         } else if (userContactInfo) {
             // Autofill contact information if available
-            const contactData = JSON.parse(userContactInfo);
-            this.prefillUserData(contactData);
+            try {
+                const contactData = JSON.parse(userContactInfo);
+                this.prefillUserData(contactData);
+            } catch (error) {
+                console.error('Error parsing contact data:', error);
+            }
         }
     }
 
@@ -824,20 +841,59 @@ class TelegramFoodApp {
                     };
                     localStorage.setItem('userContactInfo', JSON.stringify(contactData));
                     this.prefillUserData(contactData);
+                    
+                    // Show success message
+                    this.showSuccessMessage('Contact saved! Your checkout will be faster next time.');
                 }
             });
+        } else {
+            // For testing purposes, simulate contact sharing with a default phone number
+            console.log('Contact sharing not available, using default for testing');
+            const contactData = {
+                phoneNumber: '+251911234567',
+                firstName: 'Test',
+                lastName: 'User'
+            };
+            localStorage.setItem('userContactInfo', JSON.stringify(contactData));
+            this.prefillUserData(contactData);
         }
     }
 
     prefillUserData(contactData) {
-        // Autofill phone input when checkout is opened
+        // Store for use in checkout
+        this.userContactData = contactData;
+        
+        // Immediately autofill if phone input is available
         const phoneInput = document.getElementById('customerPhoneInput');
         if (phoneInput && contactData.phoneNumber) {
             phoneInput.value = contactData.phoneNumber;
         }
+    }
+
+    autofillContactInfo() {
+        // Check if we have stored contact data from localStorage
+        const userContactInfo = localStorage.getItem('userContactInfo');
+        if (userContactInfo) {
+            try {
+                const contactData = JSON.parse(userContactInfo);
+                const phoneInput = document.getElementById('customerPhoneInput');
+                if (phoneInput && contactData.phoneNumber) {
+                    phoneInput.value = contactData.phoneNumber;
+                    console.log('Autofilled phone from localStorage:', contactData.phoneNumber);
+                }
+            } catch (error) {
+                console.log('Error parsing stored contact info:', error);
+            }
+        }
         
-        // Store for use in checkout
-        this.userContactData = contactData;
+        // Also check if we have contact data from current session
+        if (this.userContactData && this.userContactData.phoneNumber) {
+            const phoneInput = document.getElementById('customerPhoneInput');
+            if (phoneInput) {
+                phoneInput.value = this.userContactData.phoneNumber;
+                console.log('Autofilled phone from session:', this.userContactData.phoneNumber);
+            }
+        }
     }
 }
 
