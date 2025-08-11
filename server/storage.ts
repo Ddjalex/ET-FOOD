@@ -564,6 +564,15 @@ class MemoryStorage implements IStorage {
     return undefined;
   }
 
+  async getDriverByTelegramId(telegramId: string): Promise<Driver | undefined> {
+    // Find user by telegram ID first
+    const user = await this.getUserByTelegramId(telegramId);
+    if (!user) return undefined;
+    
+    // Then find driver by user ID
+    return this.getDriverByUserId(user.id);
+  }
+
   async createDriver(driverData: InsertDriver): Promise<Driver> {
     const id = crypto.randomUUID();
     const driver: Driver = {
@@ -927,15 +936,23 @@ class MemoryStorage implements IStorage {
   }
 }
 
-// Initialize storage - Use in-memory storage for development
+// Initialize storage - Use MongoDB with user's database
+import { MongoStorage } from './mongoStorage';
+import { isMongoConnected } from './db';
+
 class StorageFactory {
   private _storage: IStorage | null = null;
   
   get storage(): IStorage {
     if (!this._storage) {
-      // Always use in-memory storage for development
-      this._storage = new MemoryStorage();
-      console.log('✅ Initialized in-memory storage for development');
+      // Try MongoDB first, fallback to memory if connection fails
+      if (isMongoConnected) {
+        this._storage = new MongoStorage();
+        console.log('✅ Initialized MongoDB storage with user database');
+      } else {
+        this._storage = new MemoryStorage();
+        console.log('⚠️ MongoDB not connected, using in-memory storage');
+      }
     }
     return this._storage!;
   }
