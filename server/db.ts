@@ -4,8 +4,8 @@ import { connectToMongoDB } from './mongodb';
 // Initialize MongoDB connection
 export let isMongoConnected = false;
 
-// Force MongoDB connection with the provided URI
-const MONGODB_URI = 'mongodb+srv://almeseged:A1l2m3e4s5@cluster0.t6sz6bo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Use environment variable for MongoDB URI (secure approach)
+const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI;
 
 if (MONGODB_URI) {
   connectToMongoDB()

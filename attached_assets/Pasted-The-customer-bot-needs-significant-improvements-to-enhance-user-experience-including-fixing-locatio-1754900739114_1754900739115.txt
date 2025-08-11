@@ -1,0 +1,29 @@
+The customer bot needs significant improvements to enhance user experience, including fixing location display, currency format, cart functionality, and the checkout process.
+
+1. Improve Location Display
+The current display of location coordinates (9.0476,38.7411) is not user-friendly.
+
+Action: Implement a reverse geocoding process. When the user's location is detected by coordinates, the backend should send these coordinates to a mapping service API (like OpenStreetMap's Nominatim) to get a human-readable address.
+
+Result: The app should display a clear location name, such as "Addis Ababa, Enkulale Fabrica," instead of raw longitude and latitude.
+
+2. Change Currency to ETB
+The currency is currently displayed in USD ($), which is incorrect for your target market.
+
+Action: Modify all front-end and back-end code that handles currency to use the Ethiopian Birr (ETB) symbol and format.
+
+Result: All prices, including subtotals, delivery fees, and totals, should be displayed with the currency symbol "ETB," as shown in the second image.
+
+3. Enhance "Add to Cart" Functionality
+The current cart functionality is confusing, as it shows a new pop-up when the user clicks "Add." The user expects to see the updated cart information on the main screen.
+
+Action: Rework the "Add" button's behavior. Instead of a separate pop-up, clicking "Add" should simply update the floating cart summary at the bottom of the screen.
+
+Result: The summary should clearly show the number of items and the total price, giving users a consistent and intuitive way to track their order, as shown in the third image.
+
+4. Autofill User Contact Information
+The checkout panel is pre-filled with fake data, which creates a poor user experience. The user should not have to re-enter their phone number.
+
+Action: Implement a one-time contact sharing feature. The first time a user interacts with the app, prompt them to share their contact information.
+
+Result: The app should save this contact information securely. When the user reaches the checkout panel, the contact information field should be autofilled with their real phone number, as shown in the fourth image, to streamline the ordering process.

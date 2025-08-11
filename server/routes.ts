@@ -1508,7 +1508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allOrders = await storage.getOrders();
       console.log(`📊 Raw orders from DB:`, allOrders.map(o => ({ id: o.id, orderNumber: o.orderNumber, driverId: o.driverId, status: o.status })));
       
-      const assignedOrders = allOrders.filter(order => order.driverId && (order.status === 'assigned' || order.status === 'driver_assigned' || order.status === 'picked_up' || order.status === 'ready_for_pickup'));
+      const assignedOrders = allOrders.filter(order => order.driverId && (order.status === 'driver_assigned' || order.status === 'picked_up' || order.status === 'ready_for_pickup'));
       
       console.log(`Found ${assignedOrders.length} assigned orders out of ${allOrders.length} total orders`);
       
@@ -1554,7 +1554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: 'Authentic Ethiopian cuisine',
           address: 'Mexico Square, Addis Ababa',
           phoneNumber: '+251911234567',
-          location: { lat: 9.0255, lng: 38.7735 },
+          location: [9.0255, 38.7735] as [number, number],
           isActive: true,
           adminId: '688c844eb154013d32b1b987'
         },
@@ -1563,7 +1563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: 'Traditional Ethiopian dishes',  
           address: 'Kazanchis, Addis Ababa',
           phoneNumber: '+251933456789',
-          location: { lat: 9.0455, lng: 38.7935 },
+          location: [9.0455, 38.7935] as [number, number],
           isActive: true,
           adminId: '688c844eb154013d32b1b987'
         },
@@ -1572,7 +1572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: 'Ethiopian cultural dining',
           address: 'Merkato, Addis Ababa', 
           phoneNumber: '+251955667788',
-          location: { lat: 9.0155, lng: 38.7635 },
+          location: [9.0155, 38.7635] as [number, number],
           isActive: true,
           adminId: '688c844eb154013d32b1b987'
         }
@@ -1595,9 +1595,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { name: 'Doro Wat', quantity: 1, price: 180, customizations: ['Extra spicy'] },
             { name: 'Injera', quantity: 2, price: 35, customizations: [] }
           ],
-          total: 250,
+          subtotal: '215',
+          total: '250',
           deliveryAddress: 'Bole, Addis Ababa',
-          deliveryLocation: { lat: 9.0155, lng: 38.7635 },
+          deliveryLocation: [9.0155, 38.7635] as [number, number],
           customerNotes: 'Please call when you arrive',
           estimatedDeliveryTime: new Date(Date.now() + 30 * 60000)
         },
@@ -1610,9 +1611,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { name: 'Kitfo', quantity: 1, price: 220, customizations: ['Medium rare'] },
             { name: 'Salad', quantity: 1, price: 100, customizations: [] }
           ],
-          total: 320,
+          subtotal: '320',
+          total: '320',
           deliveryAddress: 'CMC, Addis Ababa',
-          deliveryLocation: { lat: 9.0355, lng: 38.7835 },
+          deliveryLocation: [9.0355, 38.7835] as [number, number],
           customerNotes: null,
           estimatedDeliveryTime: new Date(Date.now() + 25 * 60000)
         },
@@ -1626,9 +1628,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             { name: 'Shiro Wat', quantity: 1, price: 120, customizations: [] },
             { name: 'Bread', quantity: 2, price: 30, customizations: [] }
           ],
-          total: 180,
+          subtotal: '150',
+          total: '180',
           deliveryAddress: 'Piassa, Addis Ababa',
-          deliveryLocation: { lat: 9.0055, lng: 38.7535 },
+          deliveryLocation: [9.0055, 38.7535] as [number, number],
           customerNotes: 'Second floor, blue door',
           estimatedDeliveryTime: new Date(Date.now() + 15 * 60000)
         }
@@ -1650,7 +1653,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('❌ Error creating sample data:', error);
-      res.status(500).json({ message: 'Failed to create sample data', error: error.message });
+      res.status(500).json({ 
+        message: 'Failed to create sample data', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 
@@ -1670,20 +1676,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the updated order
       const updatedOrder = await storage.getOrder(orderId);
       
-      // Notify driver about successful assignment
-      notifyDriver(driverId, 'order_accepted', {
-        orderId: orderId,
-        orderNumber: updatedOrder.orderNumber,
-        message: 'Order accepted! Navigate to restaurant to pick up.'
-      });
-      
-      // Notify restaurant about driver assignment
-      notifyRestaurantAdmin(updatedOrder.restaurantId, 'driver_assigned', {
-        orderId: orderId,
-        orderNumber: updatedOrder.orderNumber,
-        driverName: 'Driver',
-        message: 'Driver assigned to order'
-      });
+      if (updatedOrder) {
+        // Notify driver about successful assignment
+        notifyDriver(driverId, 'order_accepted', {
+          orderId: orderId,
+          orderNumber: updatedOrder.orderNumber,
+          message: 'Order accepted! Navigate to restaurant to pick up.'
+        });
+        
+        // Notify restaurant about driver assignment
+        notifyRestaurantAdmin(updatedOrder.restaurantId, 'driver_assigned', {
+          orderId: orderId,
+          orderNumber: updatedOrder.orderNumber,
+          driverName: 'Driver',
+          message: 'Driver assigned to order'
+        });
+      }
       
       res.json({ success: true, order: updatedOrder });
     } catch (error) {
@@ -2002,12 +2010,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      const driver = await storage.rejectDriver(req.params.id);
+      await storage.rejectDriver(req.params.id);
       
       // Broadcast driver rejection to connected clients
-      io.emit('driver-rejected', {
+      broadcast('driver-rejected', {
         driverId: req.params.id,
-        telegramId: driver?.telegramId,
         status: 'rejected'
       });
       
@@ -2712,7 +2719,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error replacing fake customers:', error);
-      res.status(500).json({ error: 'Failed to replace fake customers', details: error.message });
+      res.status(500).json({ 
+        error: 'Failed to replace fake customers', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 
