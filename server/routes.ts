@@ -1767,6 +1767,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver update location
+  app.post('/api/drivers/update-location', async (req, res) => {
+    try {
+      const { driverId, latitude, longitude, timestamp } = req.body;
+      
+      if (!driverId || latitude === undefined || longitude === undefined) {
+        return res.status(400).json({ message: 'Driver ID, latitude, and longitude are required' });
+      }
+
+      // Update driver's current location
+      const updatedDriver = await storage.updateDriverLocation(driverId, {
+        lat: parseFloat(latitude),
+        lng: parseFloat(longitude)
+      });
+
+      // Broadcast location update to connected clients (for real-time tracking)
+      broadcast('driver_location_updated', {
+        driverId,
+        location: { lat: parseFloat(latitude), lng: parseFloat(longitude) },
+        timestamp: timestamp || new Date().toISOString()
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Location updated successfully',
+        location: { lat: parseFloat(latitude), lng: parseFloat(longitude) }
+      });
+    } catch (error) {
+      console.error('Error updating driver location:', error);
+      res.status(500).json({ message: 'Failed to update location' });
+    }
+  });
+
 
 
   // Get nearby drivers for restaurant admin
