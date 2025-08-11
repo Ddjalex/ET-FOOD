@@ -310,6 +310,18 @@ Ready to apply? Use the registration form!`);
       if (isLiveLocation) {
         // Live location shared - set driver online and available for deliveries
         await storage.updateDriverStatus(driver.id, true, true);
+        
+        // Send real-time update to all connected clients
+        const { broadcast } = await import('../websocket');
+        const updatedDriver = await storage.getDriver(driver.id);
+        broadcast('driver_status_updated', {
+          driverId: driver.id,
+          isOnline: true,
+          isAvailable: true,
+          status: 'live_location_started',
+          driver: updatedDriver
+        });
+        
         await ctx.reply('🟢 **Live location sharing started!**\n\nYou are now ONLINE and AVAILABLE for deliveries. You will receive order notifications from nearby restaurants.\n\n📱 You can stop sharing anytime from Telegram to go offline.');
         console.log(`Driver ${driver.name} started live location sharing: ${location.latitude}, ${location.longitude} for ${ctx.message.live_period}s`);
       } else {
@@ -353,10 +365,31 @@ Ready to apply? Use the registration form!`);
       if (isLocationStopped) {
         // Live location stopped - set driver offline and unavailable
         await storage.updateDriverStatus(driver.id, false, false);
+        
+        // Send real-time update to all connected clients
+        const { broadcast } = await import('../websocket');
+        const updatedDriver = await storage.getDriver(driver.id);
+        broadcast('driver_status_updated', {
+          driverId: driver.id,
+          isOnline: false,
+          isAvailable: false,
+          status: 'live_location_stopped',
+          driver: updatedDriver
+        });
+        
         await ctx.reply('🔴 **Live location sharing stopped.**\n\nYou are now OFFLINE and will not receive new delivery orders.\n\nTo go online again, share your live location.');
         console.log(`Driver ${driver.name} stopped live location sharing`);
       } else {
         // Location update while still sharing - keep driver online and available
+        // Send real-time location update to all connected clients
+        const { broadcast } = await import('../websocket');
+        const updatedDriver = await storage.getDriver(driver.id);
+        broadcast('driver_location_updated', {
+          driverId: driver.id,
+          location: { lat: location.latitude, lng: location.longitude },
+          driver: updatedDriver
+        });
+        
         console.log(`Driver ${driver.name} live location updated: ${location.latitude}, ${location.longitude}`);
       }
 

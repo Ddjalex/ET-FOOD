@@ -986,6 +986,35 @@ function SuperAdminDashboardContent() {
         queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
       });
 
+      // Real-time driver status updates
+      newSocket.on('driver_status_updated', (data) => {
+        console.log('Driver status updated:', data);
+        
+        // Show toast notification based on status change
+        const statusMessage = data.status === 'live_location_started' 
+          ? `${data.driver?.name || 'Driver'} went online (sharing live location)`
+          : data.status === 'live_location_stopped'
+          ? `${data.driver?.name || 'Driver'} went offline (stopped location sharing)`
+          : `${data.driver?.name || 'Driver'} status changed`;
+          
+        toast({
+          title: 'Driver Status Update',
+          description: statusMessage,
+          duration: 3000,
+        });
+
+        // Refresh driver data to show updated status
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
+      // Real-time driver location updates
+      newSocket.on('driver_location_updated', (data) => {
+        console.log('Driver location updated:', data);
+        
+        // Refresh driver data to show updated location
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
       return () => {
         newSocket.disconnect();
       };

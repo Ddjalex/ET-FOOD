@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useLocation } from 'wouter';
+import { io, Socket } from 'socket.io-client';
 
 // Types
 interface DashboardStats {
@@ -140,6 +141,8 @@ function RestaurantAdminDashboardContent() {
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -388,6 +391,64 @@ function RestaurantAdminDashboardContent() {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   });
+
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    if (user) {
+      const newSocket = io('/');
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        setIsConnected(true);
+        console.log('Restaurant Admin WebSocket connected');
+        
+        // Authenticate with the server
+        newSocket.emit('authenticate', { userId: (user as any)?.id });
+      });
+
+      newSocket.on('disconnect', () => {
+        setIsConnected(false);
+        console.log('Restaurant Admin WebSocket disconnected');
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('Restaurant Admin WebSocket authenticated:', data);
+      });
+
+      // Real-time driver status updates
+      newSocket.on('driver_status_updated', (data) => {
+        console.log('Driver status updated:', data);
+        
+        // Show toast notification for nearby drivers
+        const statusMessage = data.status === 'live_location_started' 
+          ? `${data.driver?.name || 'Driver'} is now online and available`
+          : data.status === 'live_location_stopped'
+          ? `${data.driver?.name || 'Driver'} went offline`
+          : `${data.driver?.name || 'Driver'} status changed`;
+          
+        toast({
+          title: 'Driver Update',
+          description: statusMessage,
+          duration: 3000,
+        });
+
+        // Refresh drivers list for components that may need it
+        queryClient.invalidateQueries({ queryKey: ['/api/drivers/nearby'] });
+      });
+
+      // Real-time driver location updates
+      newSocket.on('driver_location_updated', (data) => {
+        console.log('Driver location updated:', data);
+        
+        // Refresh nearby drivers data
+        queryClient.invalidateQueries({ queryKey: ['/api/drivers/nearby'] });
+      });
+
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [user, toast, queryClient]);
 
   const handleLogout = async () => {
     try {
