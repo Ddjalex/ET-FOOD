@@ -102,6 +102,7 @@ class DriverApp {
                 }
             } else {
                 console.warn('No Telegram user data available');
+                console.log('⚠️ No driver data available for authentication');
                 this.showRegistrationForm();
             }
         } catch (error) {
@@ -378,10 +379,18 @@ class DriverApp {
             }
         } catch (error) {
             console.error('Registration error:', error);
-            if (this.tg) {
-                this.tg.showAlert(error.message);
+            const errorMessage = error.message || 'Registration failed. Please try again.';
+            
+            if (this.tg && typeof this.tg.showAlert === 'function') {
+                this.tg.showAlert(errorMessage);
+            } else if (this.tg && typeof this.tg.showPopup === 'function') {
+                this.tg.showPopup({
+                    title: 'Registration Error',
+                    message: errorMessage,
+                    buttons: [{ type: 'ok' }]
+                });
             } else {
-                alert(error.message);
+                alert(errorMessage);
             }
         } finally {
             submitBtn.disabled = false;
@@ -1911,24 +1920,19 @@ class DriverApp {
 }
 
 // Global functions for onclick handlers
-let driverApp;
+// Initialize app when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    window.driverApp = new DriverApp();
+});
 
 window.submitRegistration = function() {
-    driverApp.submitRegistration();
+    window.driverApp.submitRegistration();
 };
 
 window.toggleOnlineStatus = function() {
-    driverApp.toggleOnlineStatus();
+    window.driverApp.toggleOnlineStatus();
 };
 
 window.requestLocation = function() {
-    driverApp.requestLocation();
+    window.driverApp.requestLocation();
 };
-
-// Initialize app when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    driverApp = new DriverApp();
-});
-
-// Make methods available globally for onclick handlers
-window.driverApp = null;

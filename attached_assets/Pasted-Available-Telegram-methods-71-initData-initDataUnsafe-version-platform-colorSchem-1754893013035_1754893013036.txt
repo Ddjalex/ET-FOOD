@@ -1,0 +1,32 @@
+Available Telegram methods: 
+(71) ["initData", "initDataUnsafe", "version", "platform", "colorScheme", "themeParams", "isExpanded", "viewportHeight", "viewportStableHeight", "safeAreaInset", "contentSafeAreaInset", "isClosingConfirmationEnabled", "isVerticalSwipesEnabled", "isFullscreen", "isOrientationLocked", "isActive", "headerColor", "backgroundColor", "bottomBarColor", "BackButton", "MainButton", "SecondaryButton", "SettingsButton", "HapticFeedback", "CloudStorage", "DeviceStorage", "SecureStorage", "BiometricManager", "Accelerometer", "DeviceOrientation", "Gyroscope", "LocationManager", "isVersionAtLeast", "setHeaderColor", "setBackgroundColor", "setBottomBarColor", "enableClosingConfirmation", "disableClosingConfirmation", "enableVerticalSwipes", "disableVerticalSwipes", "lockOrientation", "unlockOrientation", "requestFullscreen", "exitFullscreen", "addToHomeScreen", "checkHomeScreenStatus", "onEvent", "offEvent", "sendData", "switchInlineQuery", "openLink", "openTelegramLink", "openInvoice", "showPopup", "showAlert", "showConfirm", "showScanQrPopup", "closeScanQrPopup", "readTextFromClipboard", "requestWriteAccess", "requestContact", "downloadFile", "shareToStory", "shareMessage", "setEmojiStatus", "requestEmojiStatusAccess", "invokeCustomMethod", "hideKeyboard", "ready", "expand", "close"]
+Contact sharing support: true
+Telegram user data: undefined
+No Telegram user data available
+Setting up manual phone number entry
+Connected to server
+⚠️ No driver data available for authentication
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
+Registration error: 
+Error {}
+
+[Telegram.WebApp] Method showPopup is not supported in version 6.0
