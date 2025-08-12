@@ -1,6 +1,4 @@
 import { PostgresStorage } from "./postgresStorage";
-import { MongoStorage } from "./mongoStorage";
-import { isMongoConnected } from "./db";
 import {
   type User,
   type UpsertUser,
@@ -945,14 +943,9 @@ class StorageFactory {
   
   get storage(): IStorage {
     if (!this._storage) {
-      // Try MongoDB first, fallback to memory if connection fails
-      if (isMongoConnected) {
-        this._storage = new MongoStorage();
-        console.log('✅ Initialized MongoDB storage with user database');
-      } else {
-        this._storage = new MemoryStorage();
-        console.log('⚠️ MongoDB not connected, using in-memory storage');
-      }
+      // Force MongoDB storage since we verified connection
+      this._storage = new MongoStorage();
+      console.log('✅ Using MongoDB storage with your restaurant database');
     }
     return this._storage!;
   }

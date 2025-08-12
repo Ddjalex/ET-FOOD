@@ -3,7 +3,7 @@
 ## Overview
 BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's delivery ecosystem, built around Telegram. It connects restaurants, drivers, and customers through interconnected dashboards and a Telegram bot interface. Key capabilities include real-time order tracking, driver management, restaurant administration, and seamless integration with Telegram Mini Web Apps. The project aims to provide a full-stack solution for efficient food delivery.
 
-**Migration Status**: ✅ Successfully migrated from Replit Agent to standard Replit environment (August 2025). All systems operational including Telegram bots (Enbela_bot for customers, EnbelaDriver_bot for drivers), database connections, real-time features, and broadcast messaging functionality. Final migration completed with bot tokens configured and all broadcast features working properly. **Migration verified and completed August 11, 2025** - All services running successfully in standard Replit environment with bot tokens properly configured and bots actively running.
+**Migration Status**: ✅ Successfully migrated from Replit Agent to standard Replit environment (August 12, 2025). All systems operational including Telegram bots (Enbela_bot for customers, EnbelaDriver_bot for drivers), MongoDB database connections with existing restaurant data (6 restaurants, 8 users, orders), real-time features, and broadcast messaging functionality. Migration completed with bot tokens configured and MongoDB storage integration verified.
 
 **Final Migration Completion (August 11, 2025)**: ✅ Project successfully migrated to Replit environment with all systems operational. Bot tokens configured, MongoDB connected, Express server running on port 5000, React frontend loading, and both Telegram bots (Customer and Driver) initialized and running. All core functionality preserved including real-time notifications, driver assignment, restaurant management, and order tracking.
 
@@ -56,7 +56,7 @@ The client application uses **React with TypeScript** and **Vite**, leveraging *
 The server is built with **Node.js and Express.js**, providing RESTful APIs and WebSocket support. It utilizes **PostgreSQL with Drizzle ORM** for database operations, Replit Auth for authentication with `connect-pg-simple` for session management, and Multer for file uploads. A dedicated service layer separates business logic for orders, drivers, and restaurants.
 
 ### Database Design
-**PostgreSQL** is the primary database, managed with **Drizzle ORM**. Key schema decisions include enum-based user roles, PostGIS point types for geospatial data, status-based order management, and local file system storage for uploads. PostgreSQL also backs session management for authentication.
+**MongoDB** is the primary database, managed with **Mongoose ODM**. The database contains existing production data including restaurants (Flavour cafe, Rich Cafe, WINA JUICE, Habesha Restaurant, etc.), users, orders, menu items, and driver information. Key schema features include location-based data for restaurants and drivers, order status management, and comprehensive user role system.
 
 ### Telegram Integration
 The platform deeply integrates with Telegram via a **Telegraf.js** bot, featuring role-specific modules for customers and drivers. Complex interactions are handled through **React-based Telegram Mini Web Apps**, and real-time order updates are delivered via bot notifications.
@@ -102,5 +102,5 @@ The platform deeply integrates with Telegram via a **Telegraf.js** bot, featurin
 - **ESLint + Prettier**: Code formatting and linting
 
 ### Database and Migrations
-- **drizzle-kit**: Database migration and schema management
-- **PostgreSQL**: Primary relational database
+- **Mongoose ODM**: MongoDB object modeling and schema management
+- **MongoDB Atlas**: Primary NoSQL database with existing production data
