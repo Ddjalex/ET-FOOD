@@ -1,4 +1,5 @@
 import { storage } from '../storage';
+import { geocodingService } from './geocodingService';
 
 export class OrderService {
   async updateOrderStatus(orderId: string, status: string, restaurantId?: string) {

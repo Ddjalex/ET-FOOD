@@ -1,4 +1,5 @@
 import { IStorage } from './storage';
+import { geocodingService } from './services/geocodingService';
 import { User } from './models/User';
 import { Restaurant } from './models/Restaurant';  
 import { Driver as DriverModel } from './models/Driver';
@@ -814,6 +815,8 @@ export class MongoStorage implements IStorage {
         tax: order.tax || 0,
         status: order.status,
         deliveryAddress: order.deliveryAddress,
+        restaurantAddressName: order.restaurantAddressName || null,
+        customerAddressName: order.customerAddressName || null,
         specialInstructions: order.specialInstructions || null,
         estimatedDeliveryTime: order.estimatedDeliveryTime || null,
         actualDeliveryTime: order.actualDeliveryTime || null,
@@ -852,6 +855,8 @@ export class MongoStorage implements IStorage {
         tax: order.tax || 0,
         status: order.status || 'pending',
         deliveryAddress: order.deliveryAddress || null,
+        restaurantAddressName: order.restaurantAddressName || null,
+        customerAddressName: order.customerAddressName || null,
         specialInstructions: order.specialInstructions || null,
         estimatedDeliveryTime: order.estimatedDeliveryTime || null,
         actualDeliveryTime: order.actualDeliveryTime || null,
@@ -883,6 +888,8 @@ export class MongoStorage implements IStorage {
         tax: order.tax || 0,
         status: order.status,
         deliveryAddress: order.deliveryAddress,
+        restaurantAddressName: order.restaurantAddressName || null,
+        customerAddressName: order.customerAddressName || null,
         specialInstructions: order.specialInstructions || null,
         estimatedDeliveryTime: order.estimatedDeliveryTime || null,
         actualDeliveryTime: order.actualDeliveryTime || null,
@@ -921,12 +928,30 @@ export class MongoStorage implements IStorage {
   async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
   async createOrder(orderData: any): Promise<any> {
     try {
-      // First, try to drop the collection entirely to clear any conflicting indexes
-      try {
-        await OrderModel.collection.drop();
-        console.log('Dropped entire orders collection to clear indexes');
-      } catch (dropError) {
-        // Collection might not exist, that's fine
+      console.log('🔄 Creating order with reverse geocoding...');
+      
+      // Get restaurant information for geocoding
+      const restaurant = await Restaurant.findById(orderData.restaurantId);
+      let restaurantAddressName = 'Restaurant Address';
+      let customerAddressName = 'Delivery Address';
+      
+      // Perform reverse geocoding if we have locations
+      if (restaurant?.location && orderData.deliveryAddress?.latitude && orderData.deliveryAddress?.longitude) {
+        console.log('📍 Performing reverse geocoding for addresses...');
+        try {
+          const locationInfo = await geocodingService.getOrderLocationInfo(
+            { lat: restaurant.location.latitude, lng: restaurant.location.longitude },
+            { lat: orderData.deliveryAddress.latitude, lng: orderData.deliveryAddress.longitude }
+          );
+          
+          restaurantAddressName = locationInfo.restaurantAddressName;
+          customerAddressName = locationInfo.customerAddressName;
+          console.log(`✅ Geocoded addresses: Restaurant: ${restaurantAddressName}, Customer: ${customerAddressName}`);
+        } catch (geocodingError) {
+          console.warn('⚠️ Geocoding failed, using fallback addresses:', geocodingError);
+          restaurantAddressName = restaurant.address || 'Restaurant Address';
+          customerAddressName = orderData.deliveryAddress.address || 'Delivery Address';
+        }
       }
 
       const order = new OrderModel({
@@ -939,7 +964,10 @@ export class MongoStorage implements IStorage {
         deliveryAddress: orderData.deliveryAddress,
         paymentMethod: orderData.paymentMethod,
         status: orderData.status || 'pending',
-        specialInstructions: orderData.specialInstructions || ''
+        specialInstructions: orderData.specialInstructions || '',
+        // Add human-readable address names
+        restaurantAddressName,
+        customerAddressName
       });
 
       const savedOrder = await order.save();
@@ -956,6 +984,8 @@ export class MongoStorage implements IStorage {
         paymentMethod: savedOrder.paymentMethod,
         status: savedOrder.status,
         specialInstructions: savedOrder.specialInstructions,
+        restaurantAddressName: savedOrder.restaurantAddressName,
+        customerAddressName: savedOrder.customerAddressName,
         createdAt: savedOrder.createdAt,
         updatedAt: savedOrder.updatedAt
       };
@@ -969,7 +999,7 @@ export class MongoStorage implements IStorage {
           await OrderModel.collection.drop();
           console.log('Cleared orders collection, retrying order creation...');
           
-          // Retry the order creation
+          // Retry the order creation with geocoding
           const order = new OrderModel({
             customerId: orderData.customerId,
             restaurantId: orderData.restaurantId,
@@ -980,7 +1010,9 @@ export class MongoStorage implements IStorage {
             deliveryAddress: orderData.deliveryAddress,
             paymentMethod: orderData.paymentMethod,
             status: orderData.status || 'pending',
-            specialInstructions: orderData.specialInstructions || ''
+            specialInstructions: orderData.specialInstructions || '',
+            restaurantAddressName,
+            customerAddressName
           });
 
           const savedOrder = await order.save();
@@ -997,6 +1029,8 @@ export class MongoStorage implements IStorage {
             paymentMethod: savedOrder.paymentMethod,
             status: savedOrder.status,
             specialInstructions: savedOrder.specialInstructions,
+            restaurantAddressName: savedOrder.restaurantAddressName,
+            customerAddressName: savedOrder.customerAddressName,
             createdAt: savedOrder.createdAt,
             updatedAt: savedOrder.updatedAt
           };

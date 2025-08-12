@@ -41,6 +41,9 @@ interface Order {
   total: number;
   deliveryAddress: string;
   deliveryLocation: { lat: number; lng: number } | null;
+  // New human-readable address fields
+  restaurantAddressName?: string;
+  customerAddressName?: string;
   items: Array<{
     name: string;
     quantity: number;
@@ -487,7 +490,7 @@ function DriverPanel() {
                         <div className="flex-1">
                           <p className="font-medium">{order.restaurant.name}</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {order.restaurant.address}
+                            {order.restaurantAddressName || order.restaurant.address}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Phone className="h-4 w-4" />
@@ -502,7 +505,7 @@ function DriverPanel() {
                         <div className="flex-1">
                           <p className="font-medium">{order.customer.name}</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {order.deliveryAddress}
+                            {order.customerAddressName || order.deliveryAddress}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Phone className="h-4 w-4" />
@@ -610,7 +613,7 @@ function DriverPanel() {
                             <p className="font-medium">Pickup from</p>
                             <p className="text-sm">{order.restaurant.name}</p>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
-                              {order.restaurant.address}
+                              {order.restaurantAddressName || order.restaurant.address}
                             </p>
                           </div>
                         </div>
@@ -621,7 +624,7 @@ function DriverPanel() {
                             <p className="font-medium">Deliver to</p>
                             <p className="text-sm">{order.customer.name}</p>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
-                              {order.deliveryAddress}
+                              {order.customerAddressName || order.deliveryAddress}
                             </p>
                           </div>
                         </div>

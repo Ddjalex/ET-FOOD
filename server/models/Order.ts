@@ -29,6 +29,9 @@ const OrderSchema = new mongoose.Schema({
     longitude: { type: Number, required: true },
     phoneNumber: { type: String, required: true }
   },
+  // Human-readable address names for better UX
+  restaurantAddressName: { type: String },
+  customerAddressName: { type: String },
   paymentMethod: { type: String, required: true },
   status: { 
     type: String, 

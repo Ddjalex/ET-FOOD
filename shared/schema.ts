@@ -132,6 +132,8 @@ export const orders = pgTable("orders", {
   paymentMethod: varchar("payment_method"),
   deliveryAddress: text("delivery_address").notNull(),
   deliveryLocation: point("delivery_location"), // GeoJSON Point
+  restaurantAddressName: text("restaurant_address_name"), // Human-readable restaurant address
+  customerAddressName: text("customer_address_name"), // Human-readable customer address
   customerNotes: text("customer_notes"),
   estimatedDeliveryTime: timestamp("estimated_delivery_time"),
   actualDeliveryTime: timestamp("actual_delivery_time"),
