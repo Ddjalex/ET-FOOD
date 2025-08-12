@@ -3,6 +3,7 @@ import { geocodingService } from './services/geocodingService';
 import { User } from './models/User';
 import { Restaurant } from './models/Restaurant';  
 import { Driver as DriverModel } from './models/Driver';
+import { Customer } from './models/Customer';
 import { SystemSettings } from './models/SystemSettings';
 import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
 import { MenuItem as MenuItemModel } from './models/MenuItem';
@@ -1615,6 +1616,182 @@ export class MongoStorage implements IStorage {
     } catch (error) {
       console.error('Error getting restaurant menu:', error);
       return { categories: [], items: [] };
+    }
+  }
+
+  // Customer operations implementation
+  async getCustomer(userId: string): Promise<any | undefined> {
+    try {
+      console.log('🔍 MongoDB getCustomer() called with userId:', userId);
+      const customer = await Customer.findOne({ userId }).lean();
+      
+      if (!customer) {
+        console.log('❌ Customer not found for userId:', userId);
+        return undefined;
+      }
+
+      console.log('✅ Customer found:', {
+        userId: customer.userId,
+        phoneNumber: customer.phoneNumber,
+        firstName: customer.firstName,
+        lastName: customer.lastName
+      });
+
+      return {
+        id: customer._id.toString(),
+        userId: customer.userId,
+        phoneNumber: customer.phoneNumber,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        telegramUserId: customer.telegramUserId,
+        telegramUsername: customer.telegramUsername,
+        isActive: customer.isActive,
+        orderHistory: customer.orderHistory || [],
+        defaultAddress: customer.defaultAddress,
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt
+      };
+    } catch (error) {
+      console.error('❌ Error getting customer:', error);
+      return undefined;
+    }
+  }
+
+  async getCustomerByPhone(phoneNumber: string): Promise<any | undefined> {
+    try {
+      console.log('🔍 MongoDB getCustomerByPhone() called with phone:', phoneNumber);
+      const customer = await Customer.findOne({ phoneNumber }).lean();
+      
+      if (!customer) {
+        console.log('❌ Customer not found for phone:', phoneNumber);
+        return undefined;
+      }
+
+      console.log('✅ Customer found by phone:', {
+        userId: customer.userId,
+        phoneNumber: customer.phoneNumber
+      });
+
+      return {
+        id: customer._id.toString(),
+        userId: customer.userId,
+        phoneNumber: customer.phoneNumber,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        telegramUserId: customer.telegramUserId,
+        telegramUsername: customer.telegramUsername,
+        isActive: customer.isActive,
+        orderHistory: customer.orderHistory || [],
+        defaultAddress: customer.defaultAddress,
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt
+      };
+    } catch (error) {
+      console.error('❌ Error getting customer by phone:', error);
+      return undefined;
+    }
+  }
+
+  async createCustomer(customerData: any): Promise<any> {
+    try {
+      console.log('🆕 MongoDB createCustomer() called with data:', customerData);
+      
+      const customer = new Customer(customerData);
+      const savedCustomer = await customer.save();
+      
+      console.log('✅ Customer created successfully:', {
+        userId: savedCustomer.userId,
+        phoneNumber: savedCustomer.phoneNumber
+      });
+
+      return {
+        id: savedCustomer._id.toString(),
+        userId: savedCustomer.userId,
+        phoneNumber: savedCustomer.phoneNumber,
+        firstName: savedCustomer.firstName,
+        lastName: savedCustomer.lastName,
+        telegramUserId: savedCustomer.telegramUserId,
+        telegramUsername: savedCustomer.telegramUsername,
+        isActive: savedCustomer.isActive,
+        orderHistory: savedCustomer.orderHistory || [],
+        defaultAddress: savedCustomer.defaultAddress,
+        createdAt: savedCustomer.createdAt,
+        updatedAt: savedCustomer.updatedAt
+      };
+    } catch (error) {
+      console.error('❌ Error creating customer:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomer(userId: string, customerData: any): Promise<any> {
+    try {
+      console.log('🔄 MongoDB updateCustomer() called:', { userId, customerData });
+      
+      const updatedCustomer = await Customer.findOneAndUpdate(
+        { userId },
+        { ...customerData, updatedAt: new Date() },
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedCustomer) {
+        throw new Error(`Customer not found: ${userId}`);
+      }
+
+      console.log('✅ Customer updated successfully');
+
+      return {
+        id: updatedCustomer._id.toString(),
+        userId: updatedCustomer.userId,
+        phoneNumber: updatedCustomer.phoneNumber,
+        firstName: updatedCustomer.firstName,
+        lastName: updatedCustomer.lastName,
+        telegramUserId: updatedCustomer.telegramUserId,
+        telegramUsername: updatedCustomer.telegramUsername,
+        isActive: updatedCustomer.isActive,
+        orderHistory: updatedCustomer.orderHistory || [],
+        defaultAddress: updatedCustomer.defaultAddress,
+        createdAt: updatedCustomer.createdAt,
+        updatedAt: updatedCustomer.updatedAt
+      };
+    } catch (error) {
+      console.error('❌ Error updating customer:', error);
+      throw error;
+    }
+  }
+
+  async generateUniqueUserId(): Promise<string> {
+    try {
+      const crypto = await import('crypto');
+      let userId: string;
+      let isUnique = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (!isUnique && attempts < maxAttempts) {
+        // Generate a unique ID using crypto.randomUUID() and take first 12 chars
+        userId = crypto.randomUUID().replace(/-/g, '').substring(0, 12);
+        
+        // Check if this userId already exists
+        const existingCustomer = await Customer.findOne({ userId });
+        if (!existingCustomer) {
+          isUnique = true;
+          console.log('✅ Generated unique userId:', userId);
+          return userId;
+        }
+        attempts++;
+      }
+
+      // Fallback: use timestamp + random string
+      const timestamp = Date.now().toString(36);
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      userId = `${timestamp}${randomStr}`;
+      console.log('⚠️ Fallback userId generated:', userId);
+      return userId;
+    } catch (error) {
+      console.error('❌ Error generating unique userId:', error);
+      // Ultimate fallback
+      return `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     }
   }
 

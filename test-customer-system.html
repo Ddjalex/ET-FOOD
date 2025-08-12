@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeU Delivery - Customer System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005BBB;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .customer-info {
+            background: #e3f2fd;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="title">BeU Delivery</div>
+        <div class="subtitle">Customer Registration Test</div>
+        
+        <div id="status"></div>
+        
+        <!-- Phone Number Step -->
+        <div id="phone-step">
+            <input 
+                type="tel" 
+                id="phoneInput" 
+                placeholder="251912345678" 
+                value=""
+            />
+            <button onclick="checkPhone()">Continue</button>
+        </div>
+
+        <!-- Name Step -->
+        <div id="name-step" class="hidden">
+            <input 
+                type="text" 
+                id="firstNameInput" 
+                placeholder="First Name"
+            />
+            <input 
+                type="text" 
+                id="lastNameInput" 
+                placeholder="Last Name (optional)"
+            />
+            <button onclick="registerCustomer()">Register</button>
+        </div>
+
+        <!-- Customer Dashboard -->
+        <div id="customer-dashboard" class="hidden">
+            <div class="customer-info">
+                <strong>Welcome back!</strong><br>
+                <span id="customerName"></span><br>
+                <span id="customerPhone"></span><br>
+                <small>User ID: <span id="customerId"></span></small>
+            </div>
+            <button onclick="resetDemo()">Test with New Phone</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="title">LocalStorage Status</div>
+        <div id="localStorage-status">
+            Checking localStorage...
+        </div>
+        <button onclick="clearLocalStorage()">Clear LocalStorage</button>
+    </div>
+
+    <script>
+        let currentCustomer = null;
+
+        // Check localStorage on page load
+        window.onload = function() {
+            updateLocalStorageStatus();
+            
+            const storedUserId = localStorage.getItem('beu_customer_userId');
+            if (storedUserId) {
+                console.log('Found stored userId:', storedUserId);
+                fetchCustomerData(storedUserId);
+            }
+        };
+
+        function updateLocalStorageStatus() {
+            const storedUserId = localStorage.getItem('beu_customer_userId');
+            const status = document.getElementById('localStorage-status');
+            
+            if (storedUserId) {
+                status.innerHTML = `<strong>Stored User ID:</strong> ${storedUserId}`;
+            } else {
+                status.innerHTML = 'No customer data stored';
+            }
+        }
+
+        async function fetchCustomerData(userId) {
+            try {
+                showStatus('Checking existing customer...', 'info');
+                
+                const response = await fetch(`/api/customer/${userId}`);
+                if (response.ok) {
+                    const { customer } = await response.json();
+                    showCustomerDashboard(customer);
+                } else {
+                    // Invalid stored userId, clear it
+                    localStorage.removeItem('beu_customer_userId');
+                    showStatus('Stored user ID invalid, please register', 'error');
+                    updateLocalStorageStatus();
+                }
+            } catch (error) {
+                console.error('Error fetching customer:', error);
+                showStatus('Error checking customer data', 'error');
+            }
+        }
+
+        async function checkPhone() {
+            const phoneNumber = document.getElementById('phoneInput').value.trim();
+            
+            if (!phoneNumber) {
+                showStatus('Please enter your phone number', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Checking phone number...', 'info');
+                
+                const response = await fetch(`/api/customer/phone/${phoneNumber}`);
+                
+                if (response.ok) {
+                    // Customer exists
+                    const { customer } = await response.json();
+                    
+                    // Store userId in localStorage
+                    localStorage.setItem('beu_customer_userId', customer.userId);
+                    updateLocalStorageStatus();
+                    
+                    showCustomerDashboard(customer);
+                } else {
+                    // New customer
+                    showNameStep();
+                }
+            } catch (error) {
+                console.error('Error checking phone:', error);
+                showStatus('Error checking phone number', 'error');
+            }
+        }
+
+        async function registerCustomer() {
+            const phoneNumber = document.getElementById('phoneInput').value.trim();
+            const firstName = document.getElementById('firstNameInput').value.trim();
+            const lastName = document.getElementById('lastNameInput').value.trim();
+
+            if (!firstName) {
+                showStatus('First name is required', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Registering customer...', 'info');
+                
+                const response = await fetch('/api/customer/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        phoneNumber,
+                        firstName,
+                        lastName
+                    })
+                });
+
+                if (response.ok) {
+                    const { customer } = await response.json();
+                    
+                    // Store userId in localStorage
+                    localStorage.setItem('beu_customer_userId', customer.userId);
+                    updateLocalStorageStatus();
+                    
+                    showCustomerDashboard(customer);
+                    showStatus('Registration successful!', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showStatus(errorData.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                console.error('Error registering:', error);
+                showStatus('Registration error', 'error');
+            }
+        }
+
+        function showNameStep() {
+            document.getElementById('phone-step').classList.add('hidden');
+            document.getElementById('name-step').classList.remove('hidden');
+            showStatus('New customer! Please provide your name', 'info');
+        }
+
+        function showCustomerDashboard(customer) {
+            currentCustomer = customer;
+            
+            document.getElementById('phone-step').classList.add('hidden');
+            document.getElementById('name-step').classList.add('hidden');
+            document.getElementById('customer-dashboard').classList.remove('hidden');
+            
+            document.getElementById('customerName').textContent = `${customer.firstName} ${customer.lastName}`;
+            document.getElementById('customerPhone').textContent = customer.phoneNumber;
+            document.getElementById('customerId').textContent = customer.userId;
+            
+            clearStatus();
+        }
+
+        function resetDemo() {
+            currentCustomer = null;
+            
+            document.getElementById('phone-step').classList.remove('hidden');
+            document.getElementById('name-step').classList.add('hidden');
+            document.getElementById('customer-dashboard').classList.add('hidden');
+            
+            // Clear inputs
+            document.getElementById('phoneInput').value = '';
+            document.getElementById('firstNameInput').value = '';
+            document.getElementById('lastNameInput').value = '';
+            
+            clearStatus();
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('beu_customer_userId');
+            updateLocalStorageStatus();
+            resetDemo();
+            showStatus('LocalStorage cleared', 'success');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = type;
+            status.textContent = message;
+        }
+
+        function clearStatus() {
+            document.getElementById('status').textContent = '';
+            document.getElementById('status').className = '';
+        }
+    </script>
+</body>
+</html>

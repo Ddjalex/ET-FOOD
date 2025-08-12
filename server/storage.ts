@@ -120,6 +120,13 @@ export interface IStorage {
   getDashboardStats(): Promise<any>;
   getOrderAnalytics(): Promise<any>;
 
+  // Customer operations (for streamlined registration)
+  getCustomer(userId: string): Promise<any | undefined>;
+  getCustomerByPhone(phoneNumber: string): Promise<any | undefined>;
+  createCustomer(customerData: any): Promise<any>;
+  updateCustomer(userId: string, customerData: any): Promise<any>;
+  generateUniqueUserId(): Promise<string>;
+
   // Kitchen operations (missing functions)
   getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]>;
   getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]>;

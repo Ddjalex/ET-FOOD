@@ -26,6 +26,7 @@ import Notifications from "@/pages/Notifications";
 import DriverPanel from "@/pages/DriverPanel";
 import DriverLogin from "@/pages/DriverLogin";
 import DriverRegistration from "@/pages/DriverRegistration";
+import { CustomerApp } from "@/pages/CustomerApp";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/driver-panel" component={DriverPanel} />
+      <Route path="/customer" component={CustomerApp} />
       
       {/* Regular routes with Replit Auth */}
       {isLoading || !isAuthenticated ? (

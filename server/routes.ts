@@ -13,6 +13,7 @@ import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAcc
 import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast, notifyDriver } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
 import { getCustomerSession } from "./telegram/customerBot";
+import customerRoutes from "./routes/customerRoutes";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -183,6 +184,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Failed to update driver status' });
     }
   });
+
+  // Customer routes (public access for Telegram mini-apps)
+  app.use('/api', customerRoutes);
 
   // Auth middleware
   await setupAuth(app);
