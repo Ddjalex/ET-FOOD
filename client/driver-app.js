@@ -1126,12 +1126,11 @@ class DriverApp {
 
             console.log('✅ Validation passed. Submitting credit request:', amount, 'ETB');
 
-        // Show loading state
-        const submitBtn = document.getElementById('submitCreditBtn');
-        submitBtn.classList.add('loading');
-        submitBtn.textContent = 'Submitting...';
+            // Show loading state
+            const submitBtn = document.getElementById('submitCreditBtn');
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Submitting...';
 
-        try {
             // Create form data
             const formData = new FormData();
             formData.append('amount', amount);
@@ -1155,21 +1154,21 @@ class DriverApp {
                 console.error('❌ Credit request failed:', result);
                 this.showNotification('Request Failed', result.message || 'Could not submit request', 'error');
             }
-        } catch (networkError) {
-            console.error('❌ Network error submitting credit request:', networkError);
-            this.showNotification('Network Error', 'Could not connect to server', 'error');
-        } finally {
+
             // Reset button state
+            submitBtn.classList.remove('loading');
+            submitBtn.textContent = '💰 Submit Request';
+        
+        } catch (formError) {
+            console.error('❌ Form handling error:', formError);
+            this.showNotification('Form Error', 'An error occurred while processing the form', 'error');
+            
+            // Reset button state on error
             const submitBtn = document.getElementById('submitCreditBtn');
             if (submitBtn) {
                 submitBtn.classList.remove('loading');
                 submitBtn.textContent = '💰 Submit Request';
             }
-        }
-        
-        } catch (formError) {
-            console.error('❌ Form handling error:', formError);
-            this.showNotification('Form Error', 'An error occurred while processing the form', 'error');
         }
     }
 
