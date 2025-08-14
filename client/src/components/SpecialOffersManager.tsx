@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Image, DollarSign, Percent, Calendar, Upload } from 'lucide-react';
+import { Plus, Image, DollarSign, Percent, Calendar, Upload, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface SpecialOffer {
   _id: string;
@@ -25,7 +27,15 @@ interface SpecialOffer {
 
 export default function SpecialOffersManager() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<SpecialOffer | null>(null);
   const [newOffer, setNewOffer] = useState({
+    offerTitle: '',
+    originalPrice: '',
+    discountedPrice: '',
+    offerImage: null as File | null
+  });
+  const [editOffer, setEditOffer] = useState({
     offerTitle: '',
     originalPrice: '',
     discountedPrice: '',
@@ -103,6 +113,65 @@ export default function SpecialOffersManager() {
     },
   });
 
+  // Edit offer mutation
+  const editOfferMutation = useMutation({
+    mutationFn: async ({ offerId, formData }: { offerId: string; formData: FormData }) => {
+      const response = await fetch(`/api/restaurant/offers/${offerId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Failed to update offer');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurant/offers'] });
+      setIsEditDialogOpen(false);
+      setEditingOffer(null);
+      setEditOffer({
+        offerTitle: '',
+        originalPrice: '',
+        discountedPrice: '',
+        offerImage: null
+      });
+      toast({
+        title: "Offer Updated",
+        description: "Special offer has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update special offer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete offer mutation
+  const deleteOfferMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      const response = await fetch(`/api/restaurant/offers/${offerId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete offer');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/restaurant/offers'] });
+      toast({
+        title: "Offer Deleted",
+        description: "Special offer has been deleted successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete special offer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateOffer = () => {
     const { offerTitle, originalPrice, discountedPrice, offerImage } = newOffer;
     
@@ -150,6 +219,70 @@ export default function SpecialOffersManager() {
       return Math.round(((original - discounted) / original) * 100);
     }
     return 0;
+  };
+
+  const calculateEditDiscount = () => {
+    const original = parseFloat(editOffer.originalPrice);
+    const discounted = parseFloat(editOffer.discountedPrice);
+    if (original && discounted && original > discounted) {
+      return Math.round(((original - discounted) / original) * 100);
+    }
+    return 0;
+  };
+
+  const handleEditOffer = (offer: SpecialOffer) => {
+    setEditingOffer(offer);
+    setEditOffer({
+      offerTitle: offer.offerTitle,
+      originalPrice: offer.originalPrice.toString(),
+      discountedPrice: offer.discountedPrice.toString(),
+      offerImage: null
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateOffer = () => {
+    if (!editingOffer) return;
+    
+    const { offerTitle, originalPrice, discountedPrice } = editOffer;
+    
+    if (!offerTitle || !originalPrice || !discountedPrice) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const originalPriceNum = parseFloat(originalPrice);
+    const discountedPriceNum = parseFloat(discountedPrice);
+
+    if (originalPriceNum <= 0 || discountedPriceNum <= 0 || discountedPriceNum >= originalPriceNum) {
+      toast({
+        title: "Invalid Pricing",
+        description: "Discounted price must be less than original price and both must be positive.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('offerTitle', offerTitle);
+    formData.append('originalPrice', originalPrice);
+    formData.append('discountedPrice', discountedPrice);
+    if (editOffer.offerImage) {
+      formData.append('offerImage', editOffer.offerImage);
+    }
+
+    editOfferMutation.mutate({ offerId: editingOffer._id, formData });
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditOffer(prev => ({ ...prev, offerImage: file }));
+    }
   };
 
   if (isLoading) {
@@ -271,6 +404,104 @@ export default function SpecialOffersManager() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Offer Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Special Offer</DialogTitle>
+              <DialogDescription>
+                Update your special offer details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editOfferTitle">Offer Title</Label>
+                <Input
+                  id="editOfferTitle"
+                  value={editOffer.offerTitle}
+                  onChange={(e) => setEditOffer(prev => ({ ...prev, offerTitle: e.target.value }))}
+                  placeholder="e.g., Burger Combo Deal"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editOriginalPrice">Original Price</Label>
+                  <Input
+                    id="editOriginalPrice"
+                    type="number"
+                    step="0.01"
+                    value={editOffer.originalPrice}
+                    onChange={(e) => setEditOffer(prev => ({ ...prev, originalPrice: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editDiscountedPrice">Sale Price</Label>
+                  <Input
+                    id="editDiscountedPrice"
+                    type="number"
+                    step="0.01"
+                    value={editOffer.discountedPrice}
+                    onChange={(e) => setEditOffer(prev => ({ ...prev, discountedPrice: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {calculateEditDiscount() > 0 && (
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Percent className="h-4 w-4 text-green-600" />
+                    <span className="text-green-700 dark:text-green-300 font-medium">
+                      {calculateEditDiscount()}% OFF
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="editOfferImage">Update Image (Optional)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="editOfferImage"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditFileChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('editOfferImage')?.click()}
+                    className="w-full"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {editOffer.offerImage ? editOffer.offerImage.name : 'Choose New Image'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={handleUpdateOffer}
+                  disabled={editOfferMutation.isPending}
+                  className="flex-1"
+                >
+                  {editOfferMutation.isPending ? 'Updating...' : 'Update Offer'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {offers.length === 0 ? (
@@ -296,13 +527,51 @@ export default function SpecialOffersManager() {
                     target.src = '/placeholder-food.jpg';
                   }}
                 />
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 flex gap-2">
                   <Badge
                     variant={offer.isLive ? "default" : "secondary"}
                     className={offer.isLive ? "bg-green-500" : ""}
                   >
                     {offer.isLive ? 'Live' : 'Inactive'}
                   </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="sm" className="h-6 w-6 p-0">
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditOffer(offer)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Special Offer</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{offer.offerTitle}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteOfferMutation.mutate(offer._id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="absolute top-2 left-2">
                   <Badge variant="secondary" className="bg-red-500 text-white">

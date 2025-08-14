@@ -4319,7 +4319,113 @@ Use the buttons below to get started:`;
     }
   });
 
+  // Update special offer (Kitchen Staff)
+  app.put('/api/restaurant/offers/:offerId', requireSession, upload.single('offerImage'), async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || (user.role !== 'kitchen_staff' && user.role !== 'restaurant_admin' && user.role !== 'superadmin')) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
 
+      const { offerId } = req.params;
+      const { offerTitle, originalPrice, discountedPrice } = req.body;
+      const offerImage = req.file;
+
+      if (!offerTitle || !originalPrice || !discountedPrice) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      const originalPriceNum = parseFloat(originalPrice);
+      const discountedPriceNum = parseFloat(discountedPrice);
+
+      if (originalPriceNum <= 0 || discountedPriceNum <= 0 || discountedPriceNum >= originalPriceNum) {
+        return res.status(400).json({ 
+          message: 'Invalid pricing: discounted price must be less than original price and both must be positive' 
+        });
+      }
+
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const offer = await SpecialOffer.findById(offerId);
+      if (!offer) {
+        return res.status(404).json({ message: 'Offer not found' });
+      }
+
+      // Check if user owns this offer
+      const restaurantId = user.restaurantId || 'demo-restaurant';
+      if (offer.restaurantId !== restaurantId && user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Calculate discount percentage
+      const discountPercentage = Math.round(((originalPriceNum - discountedPriceNum) / originalPriceNum) * 100);
+
+      // Update offer fields
+      offer.offerTitle = offerTitle;
+      offer.originalPrice = originalPriceNum;
+      offer.discountedPrice = discountedPriceNum;
+      offer.discountPercentage = discountPercentage;
+
+      // Update image if provided
+      if (offerImage) {
+        offer.offerImageURL = `/uploads/${offerImage.filename}`;
+      }
+
+      await offer.save();
+
+      res.json({
+        success: true,
+        message: 'Special offer updated successfully',
+        offer
+      });
+
+    } catch (error) {
+      console.error('Error updating special offer:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update special offer' 
+      });
+    }
+  });
+
+  // Delete special offer (Kitchen Staff)
+  app.delete('/api/restaurant/offers/:offerId', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || (user.role !== 'kitchen_staff' && user.role !== 'restaurant_admin' && user.role !== 'superadmin')) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { offerId } = req.params;
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const offer = await SpecialOffer.findById(offerId);
+      if (!offer) {
+        return res.status(404).json({ message: 'Offer not found' });
+      }
+
+      // Check if user owns this offer
+      const restaurantId = user.restaurantId || 'demo-restaurant';
+      if (offer.restaurantId !== restaurantId && user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Delete the offer
+      await SpecialOffer.findByIdAndDelete(offerId);
+
+      res.json({
+        success: true,
+        message: 'Special offer deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('Error deleting special offer:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to delete special offer' 
+      });
+    }
+  });
 
   return httpServer;
 }
