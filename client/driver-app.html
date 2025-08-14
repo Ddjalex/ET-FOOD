@@ -14,7 +14,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -22,7 +22,7 @@
             color: #333;
             overflow-x: hidden;
         }
-        
+
         .container {
             max-width: 420px;
             margin: 0 auto;
@@ -31,7 +31,7 @@
             position: relative;
             box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
-        
+
         .header {
             background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
             color: white;
@@ -41,20 +41,20 @@
             top: 0;
             z-index: 100;
         }
-        
+
         .header h1 {
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 8px;
         }
-        
+
         .header-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 12px;
         }
-        
+
         .credit-balance {
             background: rgba(255,255,255,0.2);
             padding: 8px 12px;
@@ -66,17 +66,17 @@
             align-items: center;
             gap: 6px;
         }
-        
+
         .credit-balance.low {
             background: rgba(239, 68, 68, 0.9);
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
-        
+
         .status-badge {
             background: rgba(255,255,255,0.2);
             padding: 6px 16px;
@@ -84,7 +84,7 @@
             font-size: 14px;
             font-weight: 500;
         }
-        
+
         .online-toggle {
             background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.3);
@@ -96,34 +96,34 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .online-toggle:hover {
             background: rgba(255,255,255,0.3);
         }
-        
+
         .online-toggle.online {
             background: #10B981;
             border-color: #10B981;
         }
-        
+
         .online-toggle.offline {
             background: #EF4444;
             border-color: #EF4444;
         }
-        
+
         .status-badge.online {
             background: #10B981;
         }
-        
+
         .status-badge.offline {
             background: #EF4444;
         }
-        
+
         .main-content {
             padding: 20px;
             min-height: calc(100vh - 120px);
         }
-        
+
         /* Order Card Styles */
         .order-card {
             background: white;
@@ -136,16 +136,16 @@
             overflow: hidden;
             animation: slideIn 0.5s ease-out;
         }
-        
+
         .order-card.pending {
             border-left: 4px solid #F59E0B;
         }
-        
+
         .order-card.active {
             border-left: 4px solid #10B981;
             background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%);
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
@@ -156,20 +156,20 @@
                 transform: translateY(0);
             }
         }
-        
+
         .order-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
         }
-        
+
         .order-number {
             font-size: 18px;
             font-weight: 700;
             color: #1F2937;
         }
-        
+
         .earnings-badge {
             background: linear-gradient(135deg, #10B981, #059669);
             color: white;
@@ -178,11 +178,11 @@
             font-size: 14px;
             font-weight: 600;
         }
-        
+
         .location-info {
             margin-bottom: 16px;
         }
-        
+
         .location-row {
             display: flex;
             align-items: center;
@@ -191,7 +191,7 @@
             background: #F9FAFB;
             border-radius: 12px;
         }
-        
+
         .location-icon {
             width: 32px;
             height: 32px;
@@ -202,30 +202,30 @@
             margin-right: 12px;
             font-size: 16px;
         }
-        
+
         .location-icon.restaurant {
             background: #FEF3C7;
             color: #D97706;
         }
-        
+
         .location-icon.customer {
             background: #DBEAFE;
             color: #2563EB;
         }
-        
+
         .location-details h4 {
             font-size: 14px;
             font-weight: 600;
             color: #1F2937;
             margin-bottom: 4px;
         }
-        
+
         .location-details p {
             font-size: 12px;
             color: #6B7280;
             line-height: 1.4;
         }
-        
+
         .distance-info {
             display: flex;
             justify-content: space-between;
@@ -235,23 +235,23 @@
             border-radius: 12px;
             margin-bottom: 16px;
         }
-        
+
         .distance-info span {
             font-size: 14px;
             color: #4B5563;
         }
-        
+
         .distance-info strong {
             color: #1F2937;
         }
-        
+
         /* Button Styles */
         .button-group {
             display: flex;
             gap: 12px;
             margin-top: 16px;
         }
-        
+
         .btn {
             flex: 1;
             padding: 14px;
@@ -266,57 +266,57 @@
             justify-content: center;
             gap: 8px;
         }
-        
+
         .btn-accept {
             background: linear-gradient(135deg, #10B981, #059669);
             color: white;
         }
-        
+
         .btn-accept:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
         }
-        
+
         .btn-reject {
             background: #F3F4F6;
             color: #6B7280;
             border: 1px solid #E5E7EB;
         }
-        
+
         .btn-reject:hover {
             background: #E5E7EB;
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #3B82F6, #1D4ED8);
             color: white;
         }
-        
+
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
         }
-        
+
         .btn-secondary {
             background: linear-gradient(135deg, #F59E0B, #D97706);
             color: white;
         }
-        
+
         .btn-secondary:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
         }
-        
+
         .btn-success {
             background: linear-gradient(135deg, #10B981, #059669);
             color: white;
         }
-        
+
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
         }
-        
+
         /* Map Styles */
         #map {
             height: 300px;
@@ -324,17 +324,17 @@
             margin: 16px 0;
             z-index: 1;
         }
-        
+
         /* Status Screens */
         .status-screen {
             text-align: center;
             padding: 60px 20px;
         }
-        
+
         .status-screen.hidden {
             display: none;
         }
-        
+
         .status-icon {
             width: 80px;
             height: 80px;
@@ -347,25 +347,25 @@
             background: linear-gradient(135deg, #E5E7EB, #F3F4F6);
             color: #6B7280;
         }
-        
+
         .status-icon.waiting {
             background: linear-gradient(135deg, #FEF3C7, #FDE68A);
             color: #D97706;
         }
-        
+
         .status-screen h2 {
             font-size: 24px;
             font-weight: 700;
             color: #1F2937;
             margin-bottom: 12px;
         }
-        
+
         .status-screen p {
             color: #6B7280;
             font-size: 16px;
             line-height: 1.6;
         }
-        
+
         /* Notification Popup */
         .notification-popup {
             position: fixed;
@@ -381,7 +381,7 @@
             animation: popIn 0.4s ease-out;
             border-left: 4px solid #10B981;
         }
-        
+
         @keyframes popIn {
             from {
                 opacity: 0;
@@ -392,29 +392,29 @@
                 transform: translateX(-50%) translateY(0);
             }
         }
-        
+
         .notification-popup.error {
             border-left-color: #EF4444;
         }
-        
+
         .notification-popup h4 {
             font-size: 14px;
             font-weight: 600;
             color: #1F2937;
             margin-bottom: 4px;
         }
-        
+
         .notification-popup p {
             font-size: 13px;
             color: #6B7280;
         }
-        
+
         /* Loading States */
         .btn.loading {
             opacity: 0.7;
             pointer-events: none;
         }
-        
+
         .btn.loading::after {
             content: '';
             width: 16px;
@@ -425,7 +425,7 @@
             animation: spin 1s linear infinite;
             margin-left: 8px;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -440,7 +440,7 @@
             background: #F9FAFB;
             border-radius: 12px;
         }
-        
+
         .progress-step {
             display: flex;
             flex-direction: column;
@@ -448,7 +448,7 @@
             flex: 1;
             position: relative;
         }
-        
+
         .progress-step:not(:last-child)::after {
             content: '';
             position: absolute;
@@ -459,15 +459,15 @@
             background: #E5E7EB;
             z-index: 1;
         }
-        
+
         .progress-step.active::after {
             background: #10B981;
         }
-        
+
         .progress-step.completed::after {
             background: #10B981;
         }
-        
+
         .progress-circle {
             width: 40px;
             height: 40px;
@@ -481,24 +481,24 @@
             position: relative;
             z-index: 2;
         }
-        
+
         .progress-step.active .progress-circle {
             background: #10B981;
             color: white;
         }
-        
+
         .progress-step.completed .progress-circle {
             background: #10B981;
             color: white;
         }
-        
+
         .progress-label {
             margin-top: 8px;
             font-size: 12px;
             color: #6B7280;
             text-align: center;
         }
-        
+
         .progress-step.active .progress-label {
             color: #10B981;
             font-weight: 600;
@@ -507,7 +507,7 @@
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -739,19 +739,97 @@
 
         .wallet-actions {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .wallet-actions .btn {
             flex: 1;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
+            min-width: 140px;
         }
 
-        .wallet-actions .btn:hover {
-            background: rgba(255,255,255,0.3);
+        /* Credit Request Modal Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .form-actions .btn {
+            flex: 1;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #b8daff;
+            color: #0c5460;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #007bff;
+            color: #007bff;
+        }
+
+        .btn-outline:hover {
+            background: #007bff;
+            color: white;
         }
 
         .earnings-grid {
@@ -871,7 +949,7 @@
                 <button class="online-toggle offline" id="onlineToggleBtn">Go Online</button>
             </div>
         </div>
-        
+
         <div class="main-content">
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
@@ -904,7 +982,7 @@
             <div class="tab-content" id="walletContent">
                 <div class="wallet-container">
                     <h2>Driver Wallet</h2>
-                    
+
                     <!-- Wallet Balance Card -->
                     <div class="wallet-card balance-card">
                         <div class="wallet-header">
@@ -964,7 +1042,7 @@
                         </div>
                     </div>
                 </div>
-            
+
                 <!-- Incoming Order Screen -->
                 <div class="status-screen hidden" id="incomingOrderScreen">
                 <div id="incomingOrderCard" class="order-card pending">
@@ -972,7 +1050,7 @@
                         <div class="order-number" id="incomingOrderNumber">New Order</div>
                         <div class="earnings-badge" id="incomingEarnings">+0 ETB</div>
                     </div>
-                    
+
                     <div class="location-info">
                         <div class="location-row">
                             <div class="location-icon restaurant">🍽️</div>
@@ -981,7 +1059,7 @@
                                 <p id="incomingRestaurantAddress">Restaurant Address</p>
                             </div>
                         </div>
-                        
+
                         <div class="location-row">
                             <div class="location-icon customer">📍</div>
                             <div class="location-details">
@@ -990,12 +1068,12 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="distance-info">
                         <span>Distance: <strong id="incomingDistance">2.3 km</strong></span>
                         <span>Time: <strong>15-20 min</strong></span>
                     </div>
-                    
+
                     <div class="button-group">
                         <button class="btn btn-reject" id="rejectOrderBtn">
                             ❌ Reject
@@ -1006,7 +1084,7 @@
                     </div>
                 </div>
             </div>
-            
+
                 <!-- Active Trip Screen -->
                 <div class="status-screen hidden" id="activeTripScreen">
                 <div id="activeTripCard" class="order-card active">
@@ -1014,7 +1092,7 @@
                         <div class="order-number" id="activeOrderNumber">Order #12345</div>
                         <div class="earnings-badge" id="activeEarnings">+85 ETB</div>
                     </div>
-                    
+
                     <!-- Trip Progress -->
                     <div class="trip-progress" id="tripProgress">
                         <div class="progress-step active" id="stepAccepted">
@@ -1034,10 +1112,10 @@
                             <div class="progress-label">Delivered</div>
                         </div>
                     </div>
-                    
+
                     <!-- OpenStreetMap -->
                     <div id="map"></div>
-                    
+
                     <div class="location-info">
                         <div class="location-row">
                             <div class="location-icon restaurant">🍽️</div>
@@ -1046,7 +1124,7 @@
                                 <p id="activeRestaurantAddress">Restaurant Address</p>
                             </div>
                         </div>
-                        
+
                         <div class="location-row">
                             <div class="location-icon customer">📍</div>
                             <div class="location-details">
@@ -1055,7 +1133,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Dynamic Action Button -->
                     <div class="button-group">
                         <button class="btn btn-primary" id="primaryActionBtn">
@@ -1064,6 +1142,69 @@
                     </div>
                 </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Request Modal -->
+    <div class="modal" id="creditRequestModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💳 Request Credit</h3>
+                <button class="close-btn" onclick="closeModal('creditRequestModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="creditRequestStatus" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>📋 Pending Request</strong>
+                        <p>You have a pending credit request for <span id="pendingAmount">0</span> ETB.</p>
+                        <p>Please wait for admin approval.</p>
+                    </div>
+                </div>
+
+                <form id="creditRequestForm" style="display: block;">
+                    <div class="form-group">
+                        <label>Amount (ETB)</label>
+                        <input type="number" id="requestAmount" step="0.01" min="1" placeholder="Enter amount..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Payment Screenshot</label>
+                        <div class="file-upload-container">
+                            <input type="file" id="screenshotFile" accept="image/*" required style="display: none;">
+                            <button type="button" class="btn btn-outline" onclick="document.getElementById('screenshotFile').click()">
+                                📷 Upload Screenshot
+                            </button>
+                            <div id="fileName" class="file-name"></div>
+                        </div>
+                    </div>
+
+                    <div id="imagePreview" class="image-preview" style="display: none;">
+                        <img id="previewImage" src="" alt="Preview">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submitCreditRequest">
+                            💳 Submit Request
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('creditRequestModal')">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 Transaction History</h3>
+                <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="transactionHistory">
+                <div class="loading">Loading transactions...</div>
             </div>
         </div>
     </div>
