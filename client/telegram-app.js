@@ -7,6 +7,8 @@ class TelegramFoodApp {
         this.userLocation = null;
         this.sessionData = null;
         this.restaurants = [];
+        this.specialOffers = [];
+        this.currentOfferIndex = 0;
         this.categories = [
             { id: 'pizza', name: 'Pizza', emoji: '🍕' },
             { id: 'burger', name: 'Burgers', emoji: '🍔' },
@@ -124,6 +126,9 @@ class TelegramFoodApp {
             await this.updateLocationDisplay();
         }
 
+        // Load special offers
+        await this.loadSpecialOffers();
+
         // Load categories
         this.renderCategories();
         
@@ -141,6 +146,158 @@ class TelegramFoodApp {
                 <span class="text-xs text-gray-600 font-medium">${category.name}</span>
             </div>
         `).join('');
+    }
+
+    async loadSpecialOffers() {
+        try {
+            const response = await fetch('/api/customer/offers');
+            if (!response.ok) {
+                throw new Error('Failed to fetch special offers');
+            }
+            
+            const data = await response.json();
+            this.specialOffers = data.offers || [];
+            
+            this.renderSpecialOffers();
+        } catch (error) {
+            console.error('Error loading special offers:', error);
+        }
+    }
+
+    renderSpecialOffers() {
+        const container = document.getElementById('specialOffersContainer');
+        
+        if (!this.specialOffers || this.specialOffers.length === 0) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+        
+        container.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <span class="text-red-500">🎯</span>
+                    Special Offers
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button id="prevOfferBtn" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" ${this.specialOffers.length <= 1 ? 'disabled' : ''}>
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <button id="nextOfferBtn" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" ${this.specialOffers.length <= 1 ? 'disabled' : ''}>
+                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="relative overflow-hidden rounded-xl">
+                <div id="offersSlider" class="flex transition-transform duration-300 ease-in-out" style="transform: translateX(-${this.currentOfferIndex * 100}%)">
+                    ${this.specialOffers.map(offer => `
+                        <div class="w-full flex-shrink-0">
+                            <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl overflow-hidden">
+                                <div class="flex">
+                                    <div class="w-1/3 relative">
+                                        <img src="${offer.offerImageURL || '/placeholder-food.jpg'}" alt="${offer.offerTitle}" class="w-full h-32 object-cover">
+                                        <div class="absolute top-2 left-2">
+                                            <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">${offer.discountPercentage}% OFF</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-2/3 p-4 flex flex-col justify-between">
+                                        <div>
+                                            <h3 class="font-bold text-lg text-gray-900 mb-2">${offer.offerTitle}</h3>
+                                            <div class="flex items-center gap-3 mb-3">
+                                                <span class="text-sm line-through text-gray-500">${offer.originalPrice.toFixed(2)} ETB</span>
+                                                <span class="text-xl font-bold text-green-600">${offer.discountedPrice.toFixed(2)} ETB</span>
+                                                <span class="text-sm text-green-600 font-medium">Save ${(offer.originalPrice - offer.discountedPrice).toFixed(2)} ETB</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <div class="text-xs text-gray-500">Limited time offer</div>
+                                            <button class="order-offer-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2" data-offer-id="${offer._id}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5.7M19 13v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6m14 0a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v2a2 2 0 002 2h2"></path>
+                                                </svg>
+                                                Order Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners for offer navigation
+        this.setupOfferNavigation();
+    }
+
+    setupOfferNavigation() {
+        const prevBtn = document.getElementById('prevOfferBtn');
+        const nextBtn = document.getElementById('nextOfferBtn');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                this.currentOfferIndex = (this.currentOfferIndex - 1 + this.specialOffers.length) % this.specialOffers.length;
+                this.updateOfferSlider();
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                this.currentOfferIndex = (this.currentOfferIndex + 1) % this.specialOffers.length;
+                this.updateOfferSlider();
+            });
+        }
+        
+        // Add event listeners for order buttons
+        document.querySelectorAll('.order-offer-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const offerId = e.target.closest('.order-offer-btn').dataset.offerId;
+                const offer = this.specialOffers.find(o => o._id === offerId);
+                if (offer) {
+                    this.addOfferToCart(offer);
+                }
+            });
+        });
+    }
+
+    updateOfferSlider() {
+        const slider = document.getElementById('offersSlider');
+        if (slider) {
+            slider.style.transform = `translateX(-${this.currentOfferIndex * 100}%)`;
+        }
+    }
+
+    addOfferToCart(offer) {
+        // Add offer to cart
+        const cartItem = {
+            id: offer._id,
+            name: offer.offerTitle,
+            price: offer.discountedPrice,
+            originalPrice: offer.originalPrice,
+            quantity: 1,
+            isSpecialOffer: true,
+            restaurantId: offer.restaurantId
+        };
+        
+        // Check if item already exists in cart
+        const existingItemIndex = this.cart.findIndex(item => item.id === cartItem.id);
+        if (existingItemIndex > -1) {
+            this.cart[existingItemIndex].quantity += 1;
+        } else {
+            this.cart.push(cartItem);
+        }
+        
+        this.updateCartDisplay();
+        
+        // Show feedback
+        this.showSuccessMessage(`${offer.offerTitle} added to cart!`);
     }
 
     async loadRestaurants() {
