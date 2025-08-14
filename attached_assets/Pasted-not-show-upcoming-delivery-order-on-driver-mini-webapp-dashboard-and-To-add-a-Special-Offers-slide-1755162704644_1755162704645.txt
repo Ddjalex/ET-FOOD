@@ -1,0 +1,50 @@
+not show upcoming delivery order on driver mini webapp dashboard and To add a "Special Offers" slider to the customer bot and a dashboard for kitchen staff, the Replit AI agent needs to implement changes across the backend and both front-end applications.
+
+Here is a detailed description of the features and the required modifications.
+
+1. Backend (Database & API)
+The agent must create a new system to manage the special offers.
+
+New Database Collection: Create a new MongoDB collection called specialOffers. Each document in this collection will represent a single offer and contain the following fields:
+
+offerId: A unique identifier for the offer.
+
+restaurantId: The ID of the restaurant that created the offer.
+
+offerTitle: A short, descriptive title (e.g., "Burger Combo Deal").
+
+offerImageURL: The URL of the image for the offer.
+
+originalPrice: The original price of the item.
+
+discountedPrice: The special discounted price.
+
+discountPercentage: The percentage off (e.g., "30% OFF").
+
+isLive: A boolean to indicate if the offer is currently active.
+
+New API Endpoints: Create the following API endpoints:
+
+POST /restaurant/offers: This endpoint will allow kitchen staff to upload a new offer, including an image file. The backend will handle the file upload to a persistent storage service and store the image's URL in the database.
+
+GET /customer/offers: This endpoint will retrieve all currently live special offers from all restaurants.
+
+2. Frontend (Kitchen Staff Dashboard)
+The kitchen staff dashboard needs a new interface to manage offers.
+
+Offer Management Panel: Add a new section to the dashboard called "Special Offers."
+
+Form: This section should include a form with input fields for offerTitle, originalPrice, discountedPrice, and a file input for the offerImage.
+
+Offer List: Display a list of all existing offers from that restaurant. Each offer should have a toggle or a button to easily set its isLive status, making it simple to activate or deactivate deals.
+
+3. Frontend (Customer Bot Mini-App)
+The customer bot needs a new slider to display the offers.
+
+API Integration: The bot will make an API call to the GET /customer/offers endpoint to retrieve all live offers.
+
+UI Component: On the main menu page, add an automatic, horizontally scrolling "Special Offers" slider. The slider should be prominently placed to catch the user's attention.
+
+Offer Card: Each slide will be an "offer card" that displays the offerImageURL, offerTitle, originalPrice (with a strikethrough), the discountedPrice, and the discountPercentage (e.g., "30% OFF").
+
+User Interaction: When a customer clicks on an offer card, the app should show the full details of the offer and a button to add it to their cart. This should function similarly to how a regular menu item works.
