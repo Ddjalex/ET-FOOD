@@ -200,28 +200,30 @@ class TelegramFoodApp {
                         <div class="w-full flex-shrink-0">
                             <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl overflow-hidden">
                                 <div class="flex">
-                                    <div class="w-1/3 relative">
-                                        <img src="${offer.offerImageURL || '/placeholder-food.jpg'}" alt="${offer.offerTitle}" class="w-full h-32 object-cover">
+                                    <div class="w-2/5 relative">
+                                        <img src="${offer.offerImageURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjY1IiByPSIyNSIgZmlsbD0iI0Y1OTU0NCIvPgo8cGF0aCBkPSJNODUgNzVoMzBjNSAwIDkgNCA5IDl2MTFIODV2LTExYzAtNSA0LTkgOS05eiIgZmlsbD0iI0Y1OTU0NCIvPgo8Y2lyY2xlIGN4PSI5NSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwNSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjczIiByPSIzIiBmaWxsPSIjRkY2QjZCIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTM5Mzk2IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPkZvb2QgSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='}" alt="${offer.offerTitle}" class="w-full h-28 object-cover rounded-l-xl" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjY1IiByPSIyNSIgZmlsbD0iI0Y1OTU0NCIvPgo8cGF0aCBkPSJNODUgNzVoMzBjNSAwIDkgNCA5IDl2MTFIODV2LTExYzAtNSA0LTkgOS05eiIgZmlsbD0iI0Y1OTU0NCIvPgo8Y2lyY2xlIGN4PSI5NSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwNSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjczIiByPSIzIiBmaWxsPSIjRkY2QjZCIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTM5Mzk2IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPkZvb2QgSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='">
                                         <div class="absolute top-2 left-2">
                                             <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">${offer.discountPercentage}% OFF</span>
                                         </div>
                                     </div>
-                                    <div class="w-2/3 p-4 flex flex-col justify-between">
+                                    <div class="w-3/5 p-3 flex flex-col justify-between">
                                         <div>
-                                            <h3 class="font-bold text-lg text-gray-900 mb-2">${offer.offerTitle}</h3>
-                                            <div class="flex items-center gap-3 mb-3">
-                                                <span class="text-sm line-through text-gray-500">${offer.originalPrice.toFixed(2)} ETB</span>
-                                                <span class="text-xl font-bold text-green-600">${offer.discountedPrice.toFixed(2)} ETB</span>
-                                                <span class="text-sm text-green-600 font-medium">Save ${(offer.originalPrice - offer.discountedPrice).toFixed(2)} ETB</span>
+                                            <h3 class="font-bold text-base text-gray-900 mb-1">${offer.offerTitle}</h3>
+                                            <div class="flex flex-col gap-1 mb-2">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm line-through text-gray-500">${offer.originalPrice.toFixed(2)} ETB</span>
+                                                    <span class="text-lg font-bold text-green-600">${offer.discountedPrice.toFixed(2)} ETB</span>
+                                                </div>
+                                                <span class="text-xs text-green-600 font-medium">Save ${(offer.originalPrice - offer.discountedPrice).toFixed(2)} ETB</span>
                                             </div>
                                         </div>
                                         <div class="flex items-center justify-between">
-                                            <div class="text-xs text-gray-500">Limited time offer</div>
-                                            <button class="order-offer-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2" data-offer-id="${offer._id}">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div class="text-xs text-gray-500">Limited time</div>
+                                            <button class="order-offer-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm" data-offer-id="${offer._id}">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5.7M19 13v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6m14 0a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v2a2 2 0 002 2h2"></path>
                                                 </svg>
-                                                Order Now
+                                                Order
                                             </button>
                                         </div>
                                     </div>
