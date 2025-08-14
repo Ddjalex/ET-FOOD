@@ -890,6 +890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Driver Credit Management API
   app.post('/api/superadmin/drivers/:id/credit', requireSession, requireSuperadmin, async (req, res) => {
     try {
@@ -930,6 +932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!driver) {
         return res.status(404).json({ message: 'Driver not found' });
       }
+
+
 
       res.json({ 
         driverId: id,

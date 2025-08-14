@@ -95,6 +95,7 @@ export class MongoStorage implements IStorage {
       totalEarnings: driver.totalEarnings?.toString() || null,
       todayEarnings: driver.todayEarnings?.toString() || null,
       weeklyEarnings: driver.weeklyEarnings?.toString() || null,
+      creditBalance: driver.creditBalance || 0,
       zone: driver.zone || null,
       lastOnline: driver.lastOnline || null,
       createdAt: driver.createdAt || null,
@@ -718,6 +719,7 @@ export class MongoStorage implements IStorage {
       ).lean();
       
       if (!driver) throw new Error('Driver not found');
+      
       return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error updating driver credit balance:', error);
