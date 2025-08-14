@@ -1674,6 +1674,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver top-up request endpoint (Public route for Telegram Mini Apps)
+  app.post('/api/drivers/request-topup', async (req, res) => {
+    try {
+      const { driverId, amount, reason } = req.body;
+      
+      if (!driverId || !amount || !reason) {
+        return res.status(400).json({ message: 'Driver ID, amount, and reason are required' });
+      }
+
+      if (amount <= 0) {
+        return res.status(400).json({ message: 'Amount must be greater than 0' });
+      }
+
+      console.log(`Driver ${driverId} requesting top-up: ${amount} ETB - ${reason}`);
+      
+      // Store the top-up request in storage (you may want to create a dedicated collection for this)
+      // For now, we'll log it and return success
+      const topUpRequest = {
+        driverId,
+        amount: parseFloat(amount),
+        reason,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      // TODO: Implement storage.createTopUpRequest(topUpRequest) or add to notifications system
+      console.log('Top-up request created:', topUpRequest);
+      
+      // Send notification to WebSocket for superadmin
+      broadcast('topup_request_created', {
+        driverId,
+        amount: parseFloat(amount),
+        reason,
+        timestamp: new Date().toISOString()
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Top-up request submitted successfully',
+        request: topUpRequest
+      });
+    } catch (error) {
+      console.error('Error creating top-up request:', error);
+      res.status(500).json({ message: 'Failed to submit top-up request' });
+    }
+  });
+
   // Create sample orders for testing (temporary endpoint)
   app.post('/api/admin/create-sample-orders', async (req, res) => {
     try {

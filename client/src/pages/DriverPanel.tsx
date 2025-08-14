@@ -4,6 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
@@ -19,7 +23,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Truck
+  Truck,
+  CreditCard,
+  Plus
 } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 
@@ -70,11 +76,15 @@ interface Driver {
   totalEarnings: number;
   todayEarnings: number;
   weeklyEarnings: number;
+  creditBalance?: number;
 }
 
 function DriverPanel() {
   const [currentDriverId, setCurrentDriverId] = useState<string>('demo-driver-id');
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [showTopUpDialog, setShowTopUpDialog] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [topUpReason, setTopUpReason] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -275,7 +285,60 @@ function DriverPanel() {
     },
   });
 
+  // Top-up request mutation
+  const topUpRequestMutation = useMutation({
+    mutationFn: async (requestData: { amount: string; reason: string }) => {
+      const response = await fetch('/api/drivers/request-topup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driverId: currentDriverId,
+          amount: parseFloat(requestData.amount),
+          reason: requestData.reason,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to submit top-up request');
+      return response.json();
+    },
+    onSuccess: () => {
+      setShowTopUpDialog(false);
+      setTopUpAmount('');
+      setTopUpReason('');
+      toast({
+        title: "Top-up Request Submitted",
+        description: "Your top-up request has been sent to the super admin.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to submit top-up request. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
+  const handleTopUpRequest = () => {
+    if (!topUpAmount || !topUpReason.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both amount and reason for the top-up request.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (parseFloat(topUpAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount greater than 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    topUpRequestMutation.mutate({ amount: topUpAmount, reason: topUpReason });
+  };
 
   const calculateDistance = (location1: { lat: number; lng: number }, location2: { lat: number; lng: number }) => {
     const R = 6371; // Earth's radius in kilometers
@@ -367,7 +430,7 @@ function DriverPanel() {
         </div>
 
         {/* Driver Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -421,6 +484,38 @@ function DriverPanel() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Credit Balance Card */}
+          <Card className="relative">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-8 w-8 text-orange-500" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Credit Balance</p>
+                    <p className="text-2xl font-bold text-orange-600" data-testid="text-credit-balance">
+                      {driver?.creditBalance?.toFixed(2) || '0.00'} ETB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3"
+                  onClick={() => setShowTopUpDialog(true)}
+                  data-testid="button-request-topup"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Top Up
+                </Button>
+              </div>
+              {(driver?.creditBalance || 0) < 50 && (
+                <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ Low balance - Add credit to accept COD orders
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -693,6 +788,55 @@ function DriverPanel() {
           </TabsContent>
         </Tabs>
 
+        {/* Top-up Request Dialog */}
+        <Dialog open={showTopUpDialog} onOpenChange={setShowTopUpDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request Credit Top-up</DialogTitle>
+              <DialogDescription>
+                Submit a request to add credits to your balance. The super admin will review your request.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="topup-amount">Amount (ETB)</Label>
+                <Input
+                  id="topup-amount"
+                  type="number"
+                  placeholder="Enter amount"
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                  min="1"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="topup-reason">Reason for Request</Label>
+                <Textarea
+                  id="topup-reason"
+                  placeholder="Please explain why you need a credit top-up..."
+                  value={topUpReason}
+                  onChange={(e) => setTopUpReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTopUpDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleTopUpRequest}
+                  disabled={topUpRequestMutation.isPending}
+                >
+                  {topUpRequestMutation.isPending ? 'Submitting...' : 'Submit Request'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>
