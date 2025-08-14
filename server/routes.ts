@@ -3001,6 +3001,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🎯 This customer should now receive broadcast messages!`);
       }
 
+      // Map payment method to correct enum value
+      const paymentMethod = orderData.paymentMethod === 'cash' ? 'cash_on_delivery' : orderData.paymentMethod;
+
       // Create order for real customer
       const order = await storage.createOrder({
         customerId: customer.id,
@@ -3010,7 +3013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subtotal: orderData.subtotal,
         total: orderData.total,
         deliveryAddress: orderData.deliveryAddress,
-        paymentMethod: orderData.paymentMethod,
+        paymentMethod: paymentMethod,
         status: 'pending'
       });
 
@@ -3023,7 +3026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: orderData.items,
         total: orderData.total,
         deliveryAddress: orderData.deliveryAddress.address,
-        paymentMethod: orderData.paymentMethod,
+        paymentMethod: paymentMethod,
         specialInstructions: orderData.specialInstructions,
         status: 'pending',
         createdAt: new Date()

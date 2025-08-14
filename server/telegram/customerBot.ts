@@ -283,6 +283,9 @@ Estimated delivery time: 25-35 minutes`;
         return;
       }
 
+      // Map payment method to correct enum value
+      const mappedPaymentMethod = paymentMethod === 'cash' ? 'cash_on_delivery' : paymentMethod;
+
       // Fallback: create order if not processed by API
       const order = await storage.createOrder({
         customerId: user.id,
@@ -292,7 +295,7 @@ Estimated delivery time: 25-35 minutes`;
         subtotal: total.toString(),
         total: total.toString(),
         deliveryAddress: deliveryAddress.address,
-        paymentMethod,
+        paymentMethod: mappedPaymentMethod,
         status: 'pending'
       });
 
@@ -302,7 +305,7 @@ Estimated delivery time: 25-35 minutes`;
 Order #${order.id.slice(-6)}
 Restaurant: ${webAppData.restaurantName || 'Selected Restaurant'}
 Total: $${total.toFixed(2)}
-Payment: ${paymentMethod}
+Payment: ${mappedPaymentMethod}
 
 Your order is being prepared! We'll notify you with updates.
 
