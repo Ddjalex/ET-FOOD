@@ -3780,22 +3780,29 @@ Use the buttons below to get started:`;
       
       console.log('💰 Getting wallet balance for driver', driverId);
       
-      // Get all orders assigned to this driver
+      // Get driver data to access credit balance
+      const driver = await storage.getDriver(driverId);
+      
+      if (!driver) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Driver not found' 
+        });
+      }
+
+      // Get all orders assigned to this driver for stats
       const allOrders = await storage.getOrders();
       const driverOrders = allOrders.filter(order => order.driverId === driverId);
       const deliveredOrders = driverOrders.filter(order => order.status === 'delivered');
       
-      // Calculate total earnings (15% commission on delivered orders)
-      const totalEarnings = deliveredOrders.reduce((sum, order) => {
-        const orderTotal = parseFloat(order.total || '0');
-        return sum + calculateDriverEarnings(orderTotal);
-      }, 0);
+      // Use the driver's credit balance which includes manual credits from superadmin
+      const creditBalance = (driver as any).creditBalance || 0;
       
-      console.log(`✅ Driver ${driverId} has balance: ${totalEarnings} ETB from ${deliveredOrders.length} deliveries`);
+      console.log(`✅ Driver ${driverId} has balance: ${creditBalance} ETB from ${deliveredOrders.length} deliveries`);
       
       res.json({
         success: true,
-        balance: totalEarnings,
+        balance: creditBalance,
         deliveredOrders: deliveredOrders.length,
         pendingOrders: driverOrders.filter(order => order.status !== 'delivered' && order.status !== 'cancelled').length
       });
