@@ -264,9 +264,34 @@ class DriverApp {
             this.handleScreenshotUpload(e);
         });
 
-        document.getElementById('creditRequestForm').addEventListener('submit', (e) => {
-            this.handleCreditRequestSubmit(e);
-        });
+        // Credit request form submission
+        const creditForm = document.getElementById('creditRequestForm');
+        if (creditForm) {
+            creditForm.addEventListener('submit', (e) => {
+                console.log('📝 Form submit event captured');
+                this.handleCreditRequestSubmit(e);
+            });
+            console.log('✅ Credit request form event listener attached');
+        } else {
+            console.log('❌ Credit request form not found');
+        }
+
+        // Also add direct button click handler as backup
+        const submitButton = document.getElementById('submitCreditBtn');
+        if (submitButton) {
+            submitButton.addEventListener('click', (e) => {
+                console.log('🔘 Submit button clicked directly');
+                // Prevent default button action
+                e.preventDefault();
+                // Trigger form submission manually
+                const form = document.getElementById('creditRequestForm');
+                if (form) {
+                    const submitEvent = new Event('submit', { cancelable: true });
+                    form.dispatchEvent(submitEvent);
+                }
+            });
+            console.log('✅ Submit button direct click handler attached');
+        }
 
 
     }
@@ -1066,6 +1091,7 @@ class DriverApp {
     }
 
     async handleCreditRequestSubmit(event) {
+        console.log('🔄 Credit request submit triggered');
         event.preventDefault();
         
         const amount = document.getElementById('creditAmount').value.trim();
