@@ -242,6 +242,16 @@ class DriverApp {
         document.getElementById('refreshBalanceBtn').addEventListener('click', () => {
             this.loadWalletData();
         });
+
+        // Credit request functionality
+        document.getElementById('screenshotUpload').addEventListener('change', (e) => {
+            this.handleFileUpload(e);
+        });
+
+        document.getElementById('creditRequestForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleCreditRequest();
+        });
     }
 
     switchTab(tabName) {
@@ -956,6 +966,112 @@ class DriverApp {
         } catch (error) {
             console.error('❌ Error loading wallet data:', error);
             this.showNotification('Wallet Error', 'Failed to load wallet data', 'error');
+        }
+    }
+
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        if (file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            filePreview.classList.add('show');
+            
+            // Update upload label
+            const uploadLabel = document.querySelector('.file-upload-label span:last-child');
+            uploadLabel.textContent = 'Change screenshot';
+        } else {
+            filePreview.classList.remove('show');
+            const uploadLabel = document.querySelector('.file-upload-label span:last-child');
+            uploadLabel.textContent = 'Choose screenshot of payment';
+        }
+    }
+
+    async handleCreditRequest() {
+        const form = document.getElementById('creditRequestForm');
+        const amountInput = document.getElementById('requestAmount');
+        const fileInput = document.getElementById('screenshotUpload');
+        const submitBtn = document.getElementById('submitCreditRequest');
+        const statusDiv = document.getElementById('requestStatus');
+
+        if (!this.driverId) {
+            this.showRequestStatus('error', 'Driver ID not found. Please refresh and try again.');
+            return;
+        }
+
+        const amount = parseFloat(amountInput.value);
+        const file = fileInput.files[0];
+
+        // Validation
+        if (!amount || amount < 10) {
+            this.showRequestStatus('error', 'Please enter a valid amount (minimum 10 ETB)');
+            return;
+        }
+
+        if (!file) {
+            this.showRequestStatus('error', 'Please upload a payment screenshot');
+            return;
+        }
+
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            this.showRequestStatus('error', 'File size must be less than 5MB');
+            return;
+        }
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('amount', amount.toString());
+            formData.append('driverId', this.driverId);
+            formData.append('screenshot', file);
+
+            console.log('💳 Submitting credit request:', { amount, driverId: this.driverId, fileName: file.name });
+
+            const response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                this.showRequestStatus('success', 'Credit request submitted successfully! It will be reviewed by our admin team.');
+                form.reset();
+                document.getElementById('filePreview').classList.remove('show');
+                document.querySelector('.file-upload-label span:last-child').textContent = 'Choose screenshot of payment';
+                
+                this.showNotification('Request Submitted', `Credit request for ${amount} ETB submitted successfully`, 'success');
+            } else {
+                this.showRequestStatus('error', result.message || 'Failed to submit credit request');
+            }
+
+        } catch (error) {
+            console.error('❌ Error submitting credit request:', error);
+            this.showRequestStatus('error', 'Network error. Please check your connection and try again.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Request';
+        }
+    }
+
+    showRequestStatus(type, message) {
+        const statusDiv = document.getElementById('requestStatus');
+        statusDiv.className = `request-status ${type}`;
+        statusDiv.textContent = message;
+        statusDiv.style.display = 'block';
+        
+        // Auto-hide after 5 seconds for success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
         }
     }
 
