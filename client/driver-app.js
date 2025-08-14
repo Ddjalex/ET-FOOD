@@ -1094,25 +1094,37 @@ class DriverApp {
         console.log('🔄 Credit request submit triggered');
         event.preventDefault();
         
-        const amount = document.getElementById('creditAmount').value.trim();
-        const screenshot = document.getElementById('paymentScreenshot').files[0];
+        try {
+            const amountInput = document.getElementById('creditAmount');
+            const screenshotInput = document.getElementById('paymentScreenshot');
+            
+            if (!amountInput || !screenshotInput) {
+                console.error('❌ Form elements not found');
+                this.showNotification('Form Error', 'Form elements not found', 'error');
+                return;
+            }
 
-        console.log('💰 Form validation - Amount:', amount, 'Type:', typeof amount, 'ParseFloat:', parseFloat(amount));
+            const amount = amountInput.value.trim();
+            const screenshot = screenshotInput.files[0];
 
-        // Convert to number and validate
-        const numericAmount = parseFloat(amount);
-        if (!amount || isNaN(numericAmount) || numericAmount <= 0) {
-            console.log('❌ Validation failed - Amount:', amount, 'Numeric:', numericAmount);
-            this.showNotification('Invalid Amount', 'Please enter a valid amount', 'error');
-            return;
-        }
+            console.log('💰 Form validation - Amount:', amount, 'Type:', typeof amount, 'ParseFloat:', parseFloat(amount));
+            console.log('📷 Screenshot:', screenshot ? screenshot.name : 'No file selected');
 
-        if (!screenshot) {
-            this.showNotification('Screenshot Required', 'Please upload a payment screenshot', 'error');
-            return;
-        }
+            // Convert to number and validate
+            const numericAmount = parseFloat(amount);
+            if (!amount || isNaN(numericAmount) || numericAmount <= 0) {
+                console.log('❌ Validation failed - Amount:', amount, 'Numeric:', numericAmount);
+                this.showNotification('Invalid Amount', 'Please enter a valid amount', 'error');
+                return;
+            }
 
-        console.log('💰 Submitting credit request:', amount, 'ETB');
+            if (!screenshot) {
+                console.log('❌ No screenshot provided');
+                this.showNotification('Screenshot Required', 'Please upload a payment screenshot', 'error');
+                return;
+            }
+
+            console.log('✅ Validation passed. Submitting credit request:', amount, 'ETB');
 
         // Show loading state
         const submitBtn = document.getElementById('submitCreditBtn');
@@ -1143,13 +1155,21 @@ class DriverApp {
                 console.error('❌ Credit request failed:', result);
                 this.showNotification('Request Failed', result.message || 'Could not submit request', 'error');
             }
-        } catch (error) {
-            console.error('❌ Error submitting credit request:', error);
+        } catch (networkError) {
+            console.error('❌ Network error submitting credit request:', networkError);
             this.showNotification('Network Error', 'Could not connect to server', 'error');
         } finally {
             // Reset button state
-            submitBtn.classList.remove('loading');
-            submitBtn.textContent = '💰 Submit Request';
+            const submitBtn = document.getElementById('submitCreditBtn');
+            if (submitBtn) {
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = '💰 Submit Request';
+            }
+        }
+        
+        } catch (formError) {
+            console.error('❌ Form handling error:', formError);
+            this.showNotification('Form Error', 'An error occurred while processing the form', 'error');
         }
     }
 
