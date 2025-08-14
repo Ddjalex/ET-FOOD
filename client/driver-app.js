@@ -8,6 +8,7 @@ class DriverApp {
         this.driverLocation = null;
         this.socket = null;
         this.driverId = null;
+        this.creditBalance = 0;
         
         this.init();
     }
@@ -46,6 +47,9 @@ class DriverApp {
                     this.driverId = driver.id;
                     console.log('✅ Driver session initialized from Telegram:', this.driverId);
                     this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                    
+                    // Load credit balance
+                    await this.loadCreditBalance();
                     return;
                 }
             }
@@ -62,6 +66,9 @@ class DriverApp {
                         this.driverId = driver.id;
                         console.log('✅ Driver session initialized from API:', this.driverId);
                         this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                        
+                        // Load credit balance
+                        await this.loadCreditBalance();
                         return;
                     }
                 }
@@ -74,6 +81,51 @@ class DriverApp {
             console.error('❌ Error initializing driver session:', error);
             this.updateStatusBadge('offline', 'Connection Error');
         }
+    }
+    
+    async loadCreditBalance() {
+        if (!this.driverId) {
+            console.log('❌ Cannot load credit balance: No driver ID');
+            return;
+        }
+        
+        try {
+            console.log('💳 Loading credit balance for driver:', this.driverId);
+            const response = await fetch(`/api/drivers/${this.driverId}/credit`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.creditBalance = data.creditBalance || 0;
+                this.updateCreditBalance(this.creditBalance);
+                console.log('✅ Credit balance loaded:', this.creditBalance);
+            } else {
+                console.error('❌ Failed to load credit balance:', response.status);
+                this.updateCreditBalance(0);
+            }
+        } catch (error) {
+            console.error('❌ Error loading credit balance:', error);
+            this.updateCreditBalance(0);
+        }
+    }
+    
+    updateCreditBalance(balance) {
+        this.creditBalance = balance;
+        const creditAmountElement = document.getElementById('creditAmount');
+        const creditBalanceElement = document.getElementById('creditBalance');
+        
+        if (creditAmountElement) {
+            creditAmountElement.textContent = `${balance.toFixed(2)} ETB`;
+        }
+        
+        // Update visual state based on balance
+        if (creditBalanceElement) {
+            creditBalanceElement.classList.remove('low');
+            if (balance < 50) {
+                creditBalanceElement.classList.add('low');
+            }
+        }
+        
+        console.log('💳 Credit balance updated to:', balance);
     }
     
     setupWebSocket() {
@@ -120,6 +172,15 @@ class DriverApp {
                     this.updateTripProgress('pickedUp');
                     this.updatePrimaryAction('Navigate to Customer', '🧭');
                     this.showNotification('Order Ready!', 'Order is ready for pickup at restaurant', 'success');
+                }
+            });
+            
+            // Listen for credit balance updates
+            this.socket.on('credit_balance_updated', (data) => {
+                console.log('💳 Credit balance updated:', data);
+                if (data.driverId === this.driverId) {
+                    this.updateCreditBalance(data.newBalance);
+                    this.showNotification('Credit Updated', `Your balance is now ${data.newBalance} ETB`, 'success');
                 }
             });
             
@@ -864,11 +925,18 @@ class DriverApp {
         }
 
         try {
-            // Load wallet balance and transactions
-            const [balanceResponse, historyResponse] = await Promise.all([
+            // Load credit balance, wallet balance and transactions
+            const [creditResponse, balanceResponse, historyResponse] = await Promise.all([
+                fetch(`/api/drivers/${this.driverId}/credit`),
                 fetch(`/api/drivers/${this.driverId}/wallet/balance`),
                 fetch(`/api/drivers/${this.driverId}/history`)
             ]);
+
+            // Handle credit balance data
+            if (creditResponse.ok) {
+                const creditData = await creditResponse.json();
+                this.updateCreditBalance(creditData.creditBalance || 0);
+            }
 
             // Handle balance data
             if (balanceResponse.ok) {

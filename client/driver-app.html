@@ -55,6 +55,28 @@
             margin-top: 12px;
         }
         
+        .credit-balance {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .credit-balance.low {
+            background: rgba(239, 68, 68, 0.9);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         .status-badge {
             background: rgba(255,255,255,0.2);
             padding: 6px 16px;
@@ -841,6 +863,9 @@
     <div class="container">
         <div class="header">
             <h1>BeU Driver</h1>
+            <div class="credit-balance" id="creditBalance">
+                💳 <span id="creditAmount">-- ETB</span>
+            </div>
             <div class="header-controls">
                 <div class="status-badge" id="statusBadge">Connecting...</div>
                 <button class="online-toggle offline" id="onlineToggleBtn">Go Online</button>
