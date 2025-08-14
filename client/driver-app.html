@@ -751,6 +751,169 @@
 
         
 
+        /* Credit Request Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 20px;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1F2937;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6B7280;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .close-btn:hover {
+            background-color: #F3F4F6;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .form-actions .btn {
+            flex: 1;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #b8daff;
+            color: #0c5460;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #007bff;
+            color: #007bff;
+        }
+
+        .btn-outline:hover {
+            background: #007bff;
+            color: white;
+        }
+
         .earnings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -951,17 +1114,19 @@
 
                     
 
-                    <!-- Recent Transactions -->
+                    <!-- Credit Request -->
                     <div class="wallet-card">
                         <div class="wallet-header">
-                            <div class="wallet-icon">💳</div>
+                            <div class="wallet-icon">💰</div>
                             <div class="wallet-title">
-                                <h3>Recent Transactions</h3>
-                                <p>Last 10 transactions</p>
+                                <h3>Request Credit</h3>
+                                <p>Add cash delivery earnings to your account</p>
                             </div>
                         </div>
-                        <div id="transactionsList" class="transactions-list">
-                            <div class="loading-spinner">Loading transactions...</div>
+                        <div class="wallet-actions">
+                            <button class="btn btn-success" id="requestCreditBtn">
+                                💳 Request Credit
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1071,15 +1236,49 @@
 
     
 
-    <!-- Transaction History Modal -->
-    <div class="modal" id="transactionModal">
+    <!-- Credit Request Modal -->
+    <div class="modal" id="creditRequestModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📋 Transaction History</h3>
-                <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
+                <h3>💰 Request Credit</h3>
+                <button class="close-btn" id="closeCreditModal">&times;</button>
             </div>
-            <div class="modal-body" id="transactionHistory">
-                <div class="loading">Loading transactions...</div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>📱 How it works:</strong><br>
+                    1. Enter the amount you collected from cash-on-delivery orders<br>
+                    2. Upload a screenshot of your payment/transfer proof<br>
+                    3. Admin will review and approve your credit request
+                </div>
+                
+                <form id="creditRequestForm">
+                    <div class="form-group">
+                        <label for="creditAmount">Amount (ETB)</label>
+                        <input type="number" id="creditAmount" placeholder="Enter amount..." step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentScreenshot">Payment Screenshot</label>
+                        <div class="file-upload-container">
+                            <input type="file" id="paymentScreenshot" accept="image/*" required style="display: none;">
+                            <button type="button" class="btn btn-outline" id="uploadButton">
+                                📷 Upload Screenshot
+                            </button>
+                            <div class="file-name" id="fileName"></div>
+                        </div>
+                        
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImage" src="" alt="Payment screenshot preview">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" id="cancelCreditBtn">Cancel</button>
+                        <button type="submit" class="btn btn-success" id="submitCreditBtn">
+                            💰 Submit Request
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

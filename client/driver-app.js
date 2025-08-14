@@ -243,6 +243,31 @@ class DriverApp {
             this.loadWalletData();
         });
 
+        // Credit request functionality
+        document.getElementById('requestCreditBtn').addEventListener('click', () => {
+            this.showCreditRequestModal();
+        });
+
+        document.getElementById('closeCreditModal').addEventListener('click', () => {
+            this.hideCreditRequestModal();
+        });
+
+        document.getElementById('cancelCreditBtn').addEventListener('click', () => {
+            this.hideCreditRequestModal();
+        });
+
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            document.getElementById('paymentScreenshot').click();
+        });
+
+        document.getElementById('paymentScreenshot').addEventListener('change', (e) => {
+            this.handleScreenshotUpload(e);
+        });
+
+        document.getElementById('creditRequestForm').addEventListener('submit', (e) => {
+            this.handleCreditRequestSubmit(e);
+        });
+
 
     }
 
@@ -927,7 +952,7 @@ class DriverApp {
         }
 
         try {
-            // Load credit balance, wallet balance and transactions
+            // Load credit balance, wallet balance and earnings summary
             const [creditResponse, balanceResponse, historyResponse] = await Promise.all([
                 fetch(`/api/drivers/${this.driverId}/credit`),
                 fetch(`/api/drivers/${this.driverId}/wallet/balance`),
@@ -946,12 +971,11 @@ class DriverApp {
                 this.updateWalletBalance(balanceData.balance || 0);
             }
 
-            // Handle earnings summary from history
+            // Handle earnings summary from history (but don't show transactions)
             if (historyResponse.ok) {
                 const historyData = await historyResponse.json();
                 if (historyData.success) {
                     this.updateEarningsSummary(historyData.data);
-                    this.updateTransactionsList(historyData.data);
                 }
             }
 
@@ -991,59 +1015,111 @@ class DriverApp {
         avgEarningEl.textContent = `${avgEarning.toFixed(2)} ETB`;
     }
 
-    updateTransactionsList(orders) {
-        const transactionsList = document.getElementById('transactionsList');
+    showCreditRequestModal() {
+        console.log('💰 Opening credit request modal');
+        const modal = document.getElementById('creditRequestModal');
+        modal.classList.add('show');
+        
+        // Reset form
+        document.getElementById('creditRequestForm').reset();
+        document.getElementById('fileName').textContent = '';
+        document.getElementById('imagePreview').style.display = 'none';
+    }
 
-        if (!orders || orders.length === 0) {
-            transactionsList.innerHTML = `
-                <div class="no-transactions">
-                    <div class="no-transactions-icon">💳</div>
-                    <h3>No Transactions Yet</h3>
-                    <p>Complete deliveries to see your earnings here</p>
-                </div>
-            `;
+    hideCreditRequestModal() {
+        console.log('💰 Closing credit request modal');
+        const modal = document.getElementById('creditRequestModal');
+        modal.classList.remove('show');
+    }
+
+    handleScreenshotUpload(event) {
+        const file = event.target.files[0];
+        const fileName = document.getElementById('fileName');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                this.showNotification('Invalid File', 'Please select an image file', 'error');
+                return;
+            }
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                this.showNotification('File Too Large', 'Please select an image smaller than 5MB', 'error');
+                return;
+            }
+
+            fileName.textContent = file.name;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            console.log('📷 Screenshot selected:', file.name);
+        }
+    }
+
+    async handleCreditRequestSubmit(event) {
+        event.preventDefault();
+        
+        const amount = document.getElementById('creditAmount').value;
+        const screenshot = document.getElementById('paymentScreenshot').files[0];
+
+        if (!amount || parseFloat(amount) <= 0) {
+            this.showNotification('Invalid Amount', 'Please enter a valid amount', 'error');
             return;
         }
 
-        // Show last 10 delivered orders as transactions
-        const recentTransactions = orders
-            .filter(order => order.status === 'delivered')
-            .sort((a, b) => new Date(b.deliveredAt || b.createdAt) - new Date(a.deliveredAt || a.createdAt))
-            .slice(0, 10);
-
-        if (recentTransactions.length === 0) {
-            transactionsList.innerHTML = `
-                <div class="no-transactions">
-                    <div class="no-transactions-icon">💳</div>
-                    <h3>No Completed Deliveries</h3>
-                    <p>Complete deliveries to earn money and see transactions</p>
-                </div>
-            `;
+        if (!screenshot) {
+            this.showNotification('Screenshot Required', 'Please upload a payment screenshot', 'error');
             return;
         }
 
-        transactionsList.innerHTML = recentTransactions.map(order => {
-            const date = new Date(order.deliveredAt || order.createdAt);
-            const formattedDate = date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+        console.log('💰 Submitting credit request:', amount, 'ETB');
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitCreditBtn');
+        submitBtn.classList.add('loading');
+        submitBtn.textContent = 'Submitting...';
+
+        try {
+            // Create form data
+            const formData = new FormData();
+            formData.append('amount', amount);
+            formData.append('screenshot', screenshot);
+
+            const response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
+                method: 'POST',
+                body: formData
             });
 
-            return `
-                <div class="transaction-item">
-                    <div class="transaction-details">
-                        <div class="transaction-title">Delivery - ${order.orderNumber}</div>
-                        <div class="transaction-date">${formattedDate}</div>
-                    </div>
-                    <div>
-                        <div class="transaction-amount positive">+${(order.driverEarnings || 0).toFixed(2)} ETB</div>
-                        <div class="transaction-status completed">Completed</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('✅ Credit request submitted successfully');
+                this.showNotification('Request Submitted!', 'Your credit request has been sent for approval', 'success');
+                this.hideCreditRequestModal();
+                
+                // Refresh credit balance
+                await this.loadCreditBalance();
+            } else {
+                console.error('❌ Credit request failed:', result);
+                this.showNotification('Request Failed', result.message || 'Could not submit request', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error submitting credit request:', error);
+            this.showNotification('Network Error', 'Could not connect to server', 'error');
+        } finally {
+            // Reset button state
+            submitBtn.classList.remove('loading');
+            submitBtn.textContent = '💰 Submit Request';
+        }
     }
 
     async handleWithdrawRequest() {
