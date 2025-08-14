@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map, Filter, Phone, Mail, Calendar, Star, TrendingUp, Award, Copy, Send } from 'lucide-react';
 import { DriverLocationMap } from '@/components/DriverLocationMap';
+import { DriverCreditManager } from '@/components/DriverCreditManager';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -73,6 +74,7 @@ interface Driver {
   vehicleType: string;
   vehiclePlate: string;
   licenseImageUrl?: string;
+  creditBalance?: number;
   vehicleImageUrl?: string;
   idCardImageUrl?: string;
   governmentIdFrontUrl?: string;
@@ -2074,6 +2076,9 @@ function SuperAdminDashboardContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Driver Credit Management */}
+          <DriverCreditManager drivers={drivers} />
 
           {/* Live Driver Map */}
           <Card>

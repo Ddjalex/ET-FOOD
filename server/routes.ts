@@ -890,6 +890,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver Credit Management API
+  app.post('/api/superadmin/drivers/:id/credit', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { amount, operation } = req.body;
+
+      if (!amount || typeof amount !== 'number') {
+        return res.status(400).json({ message: 'Valid amount is required' });
+      }
+
+      if (!operation || !['add', 'deduct'].includes(operation)) {
+        return res.status(400).json({ message: 'Operation must be "add" or "deduct"' });
+      }
+
+      let updatedDriver;
+      if (operation === 'add') {
+        updatedDriver = await storage.updateDriverCreditBalance(id, amount);
+      } else {
+        updatedDriver = await storage.deductDriverCredit(id, amount);
+      }
+
+      res.json({ 
+        message: `Credit ${operation === 'add' ? 'added' : 'deducted'} successfully`,
+        driver: updatedDriver 
+      });
+    } catch (error) {
+      console.error('Error updating driver credit:', error);
+      res.status(500).json({ message: 'Failed to update driver credit' });
+    }
+  });
+
+  // Get driver credit balance
+  app.get('/api/drivers/:id/credit', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const driver = await storage.getDriver(id);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      res.json({ 
+        driverId: id,
+        creditBalance: (driver as any).creditBalance || 0
+      });
+    } catch (error) {
+      console.error('Error getting driver credit:', error);
+      res.status(500).json({ message: 'Failed to get driver credit' });
+    }
+  });
+
+  // Calculate delivery fee based on distance
+  app.post('/api/orders/calculate-delivery-fee', async (req, res) => {
+    try {
+      const { restaurantLat, restaurantLng, customerLat, customerLng } = req.body;
+
+      if (!restaurantLat || !restaurantLng || !customerLat || !customerLng) {
+        return res.status(400).json({ message: 'All coordinates are required' });
+      }
+
+      const { DistanceService } = await import('./services/distanceService');
+      const calculation = await DistanceService.calculateAccurateDistanceAndFee(
+        parseFloat(restaurantLat),
+        parseFloat(restaurantLng),
+        parseFloat(customerLat),
+        parseFloat(customerLng)
+      );
+
+      res.json({
+        distanceKm: calculation.distanceKm,
+        deliveryFee: calculation.deliveryFee,
+        estimatedDuration: calculation.estimatedDuration,
+        baseFee: 15,
+        ratePerKm: 5
+      });
+    } catch (error) {
+      console.error('Error calculating delivery fee:', error);
+      res.status(500).json({ message: 'Failed to calculate delivery fee' });
+    }
+  });
+
   // Restaurant Admin Routes
   app.post('/api/admin/kitchen-staff', requireSession, requireRestaurantAdmin, async (req, res) => {
     try {
@@ -1785,11 +1866,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedOrder = await storage.updateOrderStatus(orderId, status);
       
-      // Update delivery time for completed deliveries
+      // Update delivery time for completed deliveries and handle COD
       if (status === 'delivered') {
         await storage.updateOrder(orderId, {
           actualDeliveryTime: new Date()
         });
+        
+        // If this is a Cash on Delivery order with an assigned driver, deduct from driver credit
+        if (updatedOrder.paymentMethod === 'cash' && updatedOrder.driverId) {
+          try {
+            console.log(`💰 COD Order delivered - deducting ${updatedOrder.total} ETB from driver ${updatedOrder.driverId}`);
+            await storage.deductDriverCredit(updatedOrder.driverId, parseFloat(updatedOrder.total));
+            console.log('✅ Driver credit deducted successfully for COD order');
+          } catch (creditError) {
+            console.error('❌ Error deducting driver credit:', creditError);
+            // Continue with order completion even if credit deduction fails
+          }
+        }
       }
       
       broadcast('order_status_updated', updatedOrder);
@@ -3742,12 +3835,34 @@ Use the buttons below to get started:`;
       
       console.log(`✅ Marking order ${orderId} as delivered`);
       
+      // Get the order first to check if it's COD
+      const existingOrder = await storage.getOrder(orderId);
+      if (!existingOrder) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Order not found' 
+        });
+      }
+      
       // Update order status to delivered
-      await orderService.updateOrderStatus(orderId, 'delivered');
+      const updatedOrder = await orderService.updateOrderStatus(orderId, 'delivered');
+      
+      // If this is a Cash on Delivery order with an assigned driver, deduct from driver credit
+      if (existingOrder.paymentMethod === 'cash' && existingOrder.driverId) {
+        try {
+          console.log(`💰 COD Order delivered - deducting ${existingOrder.total} ETB from driver ${existingOrder.driverId}`);
+          await storage.deductDriverCredit(existingOrder.driverId, parseFloat(existingOrder.total));
+          console.log('✅ Driver credit deducted successfully for COD order');
+        } catch (creditError) {
+          console.error('❌ Error deducting driver credit:', creditError);
+          // Still mark order as delivered even if credit deduction fails
+        }
+      }
       
       res.json({ 
         success: true, 
-        message: 'Order delivered successfully' 
+        message: 'Order delivered successfully',
+        order: updatedOrder
       });
     } catch (error) {
       console.error('❌ Error marking delivery:', error);

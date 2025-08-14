@@ -32,6 +32,16 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - **Kitchen Staff Dashboard Fix (August 7, 2025)**: Fixed "Start Prepare" button functionality by correcting order status logic - button now appears for 'confirmed' orders instead of 'preparing' orders, enhanced real-time notifications for both customers and drivers when orders are prepared and ready for pickup
 - **Enhanced Driver Assignment (August 7, 2025)**: Improved "Start Preparing" workflow to automatically find and assign nearest available driver when order preparation begins, implemented immediate WebSocket notifications to driver app with visual popups and sound alerts, added proper socket authentication for reliable real-time communication
 
+**Driver Credit System Implementation (August 14, 2025)**: ✅ Implemented comprehensive Driver Credit System allowing Superadmin to manage driver finances by adding or deducting credits. Features include:
+- MongoDB creditBalance field added to Driver model with automatic credit tracking
+- DriverCreditManager component in Superadmin dashboard for credit operations
+- Cash-on-Delivery (COD) order support with automatic credit deduction upon delivery completion
+- Distance-based delivery fee calculation service using OpenStreetMap data
+- API endpoints for credit management (/api/superadmin/drivers/:id/credit)
+- Delivery fee calculation endpoint (/api/orders/calculate-delivery-fee)
+- Automatic credit deduction when drivers complete COD orders - they keep the cash and "pay" platform through credit balance
+- Enhanced driver interfaces showing current credit balances and transaction history
+
 **Native Location Sharing Implementation (August 11, 2025)**: ✅ Replaced automatic location sharing with Telegram's native location sharing system. Driver bot now provides clear step-by-step instructions for sharing live location through Telegram's attachment menu. Removed web app location sharing dialog in favor of Telegram's "Share My Live Location for... until I turn it off" feature. This provides better integration with Telegram ecosystem and more reliable location tracking.
 
 **Driver Status Automation (August 11, 2025)**: ✅ Driver online/offline status now depends entirely on Telegram live location sharing. When drivers share live location, they automatically go online and available. When live location stops, they go offline. Removed manual toggle buttons - location sharing controls everything. Added handlers for live location updates and stop events.

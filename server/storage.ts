@@ -73,6 +73,8 @@ export interface IStorage {
   getDriverByTelegramId(telegramId: string): Promise<Driver | undefined>;
   createDriver(driver: InsertDriver): Promise<Driver>;
   updateDriver(id: string, driver: Partial<InsertDriver>): Promise<Driver>;
+  updateDriverCreditBalance(driverId: string, amount: number): Promise<Driver>;
+  deductDriverCredit(driverId: string, amount: number): Promise<Driver>;
   updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<Driver>;
   updateDriverLocation(id: string, location: { lat: number; lng: number }): Promise<Driver>;
   updateDriverEarnings(id: string, earnings: number): Promise<Driver>;

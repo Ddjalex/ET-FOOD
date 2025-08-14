@@ -35,6 +35,7 @@ export interface IDriver extends Document {
   totalEarnings: string;
   todayEarnings: string;
   weeklyEarnings: string;
+  creditBalance: number;
   zone?: string;
   lastOnline?: Date;
   createdAt: Date;
@@ -79,6 +80,7 @@ const DriverSchema = new Schema<IDriver>({
   totalEarnings: { type: String, default: '0.00' },
   todayEarnings: { type: String, default: '0.00' },
   weeklyEarnings: { type: String, default: '0.00' },
+  creditBalance: { type: Number, default: 0 },
   zone: String,
   lastOnline: Date,
 }, {
@@ -88,14 +90,14 @@ const DriverSchema = new Schema<IDriver>({
   toJSON: { 
     transform: (doc, ret) => {
       ret.id = ret._id.toString();
-      delete ret._id;
+      delete (ret as any)._id;
       return ret;
     }
   },
   toObject: {
     transform: (doc, ret) => {
       ret.id = ret._id.toString();
-      delete ret._id;
+      delete (ret as any)._id;
       return ret;
     }
   }

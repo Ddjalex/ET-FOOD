@@ -1,0 +1,42 @@
+Driver Credit System
+This feature allows the Superadmin to manage driver finances by adding or deducting credit, which drivers use to "pay" the platform for orders they accept.
+
+Backend Changes (MongoDB):
+
+Add a new field, creditBalance (as a numerical value), to each document in the drivers collection.
+
+Create a new, secure API endpoint (e.g., /admin/updateDriverCredit) that only Superadmins can access. This endpoint will take a driverId and an amount to update the driver's credit balance.
+
+Front-End Changes (Superadmin Dashboard):
+
+Add a user interface on the driver management page to display each driver's creditBalance.
+
+Include an input field and a button that allows Superadmins to easily add credit to a driver's account.
+
+2. Cash-on-Delivery (COD) with Distance-Based Fee
+This feature will give customers a COD payment option and dynamically calculate a delivery fee.
+
+Backend Changes (API Logic):
+
+Add logic to the order processing system to calculate a deliveryFee based on the estimated distance between the restaurant and the customer. Use a service like OpenStreetMap's routing API to get the distance.
+
+Implement a fee structure (e.g., a base fee + a price per kilometer) to calculate the deliveryFee.
+
+Add a paymentMethod field to the order document in MongoDB, which will be set to "Cash on Delivery" if the customer chooses this option.
+
+Add a deliveryFee field to the order document to save the calculated amount.
+
+Front-End Changes (Customer Bot Mini-App):
+
+Display Estimated Fee: When the customer reaches the checkout page, the bot must use the distance between the restaurant and the customer to calculate and display the estimated deliveryFee immediately.
+
+Show Order Breakdown: On the checkout screen, clearly show the order subtotal, the deliveryFee, and the totalAmount the customer will pay in cash.
+
+COD Option: Add a visible option for "Cash on Delivery" that customers can select.
+
+3. Integrating COD with the Driver Credit System
+This final step connects the two features to create a complete system.
+
+Backend Changes:
+
+When an order with paymentMethod: 'Cash on Delivery' is completed by a driver, the system must automatically deduct the totalAmount (subtotal + delivery fee) from the driver's creditBalance. The driver effectively pays the platform for the order and keeps the cash.

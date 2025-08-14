@@ -32,7 +32,7 @@ const OrderSchema = new mongoose.Schema({
   // Human-readable address names for better UX
   restaurantAddressName: { type: String },
   customerAddressName: { type: String },
-  paymentMethod: { type: String, required: true },
+  paymentMethod: { type: String, required: true, enum: ['card', 'cash_on_delivery'], default: 'card' },
   status: { 
     type: String, 
     enum: ['pending', 'confirmed', 'preparing', 'ready', 'ready_for_pickup', 'assigned', 'driver_assigned', 'picked_up', 'out_for_delivery', 'delivered', 'cancelled'],

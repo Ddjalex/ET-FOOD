@@ -499,6 +499,36 @@ export class MongoStorage implements IStorage {
     }
   }
 
+  async updateDriverCreditBalance(driverId: string, amount: number): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
+        { $inc: { creditBalance: amount } },
+        { new: true }
+      ).lean();
+      if (!driver) throw new Error('Driver not found');
+      return { ...driver, id: driver._id.toString() } as DriverType;
+    } catch (error) {
+      console.error('Error updating driver credit balance:', error);
+      throw error;
+    }
+  }
+
+  async deductDriverCredit(driverId: string, amount: number): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
+        { $inc: { creditBalance: -amount } },
+        { new: true }
+      ).lean();
+      if (!driver) throw new Error('Driver not found');
+      return { ...driver, id: driver._id.toString() } as DriverType;
+    } catch (error) {
+      console.error('Error deducting driver credit:', error);
+      throw error;
+    }
+  }
+
   async approveDriver(driverId: string): Promise<DriverType> {
     try {
       const driver = await DriverModel.findByIdAndUpdate(
