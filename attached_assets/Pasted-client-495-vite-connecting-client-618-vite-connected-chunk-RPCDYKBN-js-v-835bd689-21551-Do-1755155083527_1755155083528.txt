@@ -1,0 +1,174 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-RPCDYKBN.js?v=835bd689:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+SuperAdminDashboard.tsx:301 Drivers data: []
+chunk-RPCDYKBN.js?v=835bd689:18625 [Violation] 'setTimeout' handler took 50ms
+queryClient.ts:32  GET https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/api/auth/user 401 (Unauthorized)
+(anonymous) @ queryClient.ts:32
+fetchFn @ @tanstack_react-query.js?v=835bd689:840
+run @ @tanstack_react-query.js?v=835bd689:494
+start @ @tanstack_react-query.js?v=835bd689:536
+fetch @ @tanstack_react-query.js?v=835bd689:926
+executeFetch_fn @ @tanstack_react-query.js?v=835bd689:2211
+onSubscribe @ @tanstack_react-query.js?v=835bd689:1898
+subscribe @ @tanstack_react-query.js?v=835bd689:24
+(anonymous) @ @tanstack_react-query.js?v=835bd689:3022
+subscribeToStore @ chunk-RPCDYKBN.js?v=835bd689:11984
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=835bd689:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=835bd689:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=835bd689:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=835bd689:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=835bd689:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=835bd689:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=835bd689:19447
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18868
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+commitRootImpl @ chunk-RPCDYKBN.js?v=835bd689:19432
+commitRoot @ chunk-RPCDYKBN.js?v=835bd689:19277
+finishConcurrentRender @ chunk-RPCDYKBN.js?v=835bd689:18805
+performConcurrentWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18718
+workLoop @ chunk-RPCDYKBN.js?v=835bd689:197
+flushWork @ chunk-RPCDYKBN.js?v=835bd689:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=835bd689:384
+SuperAdminDashboard.tsx:301 Drivers data: []
+SuperAdminDashboard.tsx:301 Drivers data: []
+SuperAdminDashboard.tsx:301 Drivers data: []
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:965 WebSocket connected
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:977 WebSocket authenticated: {success: true, user: {…}}
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:2745 Uncaught ReferenceError: CreditCard is not defined
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:2745:16)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=835bd689:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=835bd689:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=835bd689:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=835bd689:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=835bd689:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=835bd689:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=835bd689:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=835bd689:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=835bd689:19137:13)
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:2745
+renderWithHooks @ chunk-RPCDYKBN.js?v=835bd689:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=835bd689:14582
+beginWork @ chunk-RPCDYKBN.js?v=835bd689:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=835bd689:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=835bd689:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=835bd689:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=835bd689:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=835bd689:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=835bd689:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=835bd689:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=835bd689:18627
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:301 Drivers data: [{…}]
+SuperAdminDashboard.tsx:303 First driver: {id: '6894917ecb6d9925e5402f1c', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:304 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:305 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:306 Driver user: undefined
+SuperAdminDashboard.tsx:2745 Uncaught ReferenceError: CreditCard is not defined
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:2745:16)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=835bd689:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=835bd689:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=835bd689:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=835bd689:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=835bd689:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=835bd689:3733:39)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=835bd689:19765:15)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=835bd689:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=835bd689:19137:13)
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:2745
+renderWithHooks @ chunk-RPCDYKBN.js?v=835bd689:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=835bd689:14582
+beginWork @ chunk-RPCDYKBN.js?v=835bd689:15924
+callCallback2 @ chunk-RPCDYKBN.js?v=835bd689:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=835bd689:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=835bd689:3733
+beginWork$1 @ chunk-RPCDYKBN.js?v=835bd689:19765
+performUnitOfWork @ chunk-RPCDYKBN.js?v=835bd689:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=835bd689:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=835bd689:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=835bd689:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=835bd689:18627
+chunk-RPCDYKBN.js?v=835bd689:14032 The above error occurred in the <SuperAdminDashboardContent> component:
+
+    at SuperAdminDashboardContent (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/src/pages/SuperAdminDashboard.tsx:90:20)
+    at SuperAdminDashboard (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/src/pages/SuperAdminDashboard.tsx:7942:48)
+    at Route (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=835bd689:323:16)
+    at Switch (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=835bd689:379:17)
+    at Router (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/src/App.tsx?v=2xmM98E-fS6XvAb_pafeE:51:42)
+    at Provider (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-7SUNRGEF.js?v=835bd689:38:15)
+    at TooltipProvider (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=835bd689:59:5)
+    at QueryClientProvider (https://da05cfe4-fd57-460f-9558-55517e2fe679-00-1d6y7c3tx40wf.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=835bd689:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=835bd689:14032
+update.callback @ chunk-RPCDYKBN.js?v=835bd689:14052
+callCallback @ chunk-RPCDYKBN.js?v=835bd689:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=835bd689:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=835bd689:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=835bd689:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=835bd689:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=835bd689:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=835bd689:19353
+commitRoot @ chunk-RPCDYKBN.js?v=835bd689:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=835bd689:18627
+chunk-RPCDYKBN.js?v=835bd689:9129 Uncaught ReferenceError: CreditCard is not defined
+    at SuperAdminDashboardContent (SuperAdminDashboard.tsx:2745:16)
+    at renderWithHooks (chunk-RPCDYKBN.js?v=835bd689:11548:26)
+    at updateFunctionComponent (chunk-RPCDYKBN.js?v=835bd689:14582:28)
+    at beginWork (chunk-RPCDYKBN.js?v=835bd689:15924:22)
+    at beginWork$1 (chunk-RPCDYKBN.js?v=835bd689:19753:22)
+    at performUnitOfWork (chunk-RPCDYKBN.js?v=835bd689:19198:20)
+    at workLoopSync (chunk-RPCDYKBN.js?v=835bd689:19137:13)
+    at renderRootSync (chunk-RPCDYKBN.js?v=835bd689:19116:15)
+    at recoverFromConcurrentError (chunk-RPCDYKBN.js?v=835bd689:18736:28)
+    at performSyncWorkOnRoot (chunk-RPCDYKBN.js?v=835bd689:18879:28)
+SuperAdminDashboardContent @ SuperAdminDashboard.tsx:2745
+renderWithHooks @ chunk-RPCDYKBN.js?v=835bd689:11548
+updateFunctionComponent @ chunk-RPCDYKBN.js?v=835bd689:14582
+beginWork @ chunk-RPCDYKBN.js?v=835bd689:15924
+beginWork$1 @ chunk-RPCDYKBN.js?v=835bd689:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=835bd689:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=835bd689:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=835bd689:19116
+recoverFromConcurrentError @ chunk-RPCDYKBN.js?v=835bd689:18736
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=835bd689:18879
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=835bd689:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=835bd689:18627
+SuperAdminDashboard.tsx:973 WebSocket disconnected

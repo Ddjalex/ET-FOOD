@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map, Filter, Phone, Mail, Calendar, Star, TrendingUp, Award, Copy, Send } from 'lucide-react';
+import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map, Filter, Phone, Mail, Calendar, Star, TrendingUp, Award, Copy, Send, CreditCard } from 'lucide-react';
 import { DriverLocationMap } from '@/components/DriverLocationMap';
 import { DriverCreditManager } from '@/components/DriverCreditManager';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -68,7 +68,7 @@ interface AdminUser {
 interface Driver {
   id: string;
   userId: string;
-  name?: string;
+  name: string;
   phoneNumber?: string;
   licenseNumber?: string;
   vehicleType?: string;
@@ -78,7 +78,6 @@ interface Driver {
   profileImageUrl?: string;
   telegramId?: string;
   licenseImageUrl?: string;
-  creditBalance?: number;
   vehicleImageUrl?: string;
   idCardImageUrl?: string;
   governmentIdFrontUrl?: string;
