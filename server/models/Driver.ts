@@ -36,6 +36,11 @@ export interface IDriver extends Document {
   todayEarnings: string;
   weeklyEarnings: string;
   creditBalance: number;
+  // Credit request fields
+  creditRequestPending: boolean;
+  requestedCreditAmount?: number;
+  creditRequestScreenshotUrl?: string;
+  creditRequestCreatedAt?: Date;
   zone?: string;
   lastOnline?: Date;
   createdAt: Date;
@@ -81,6 +86,11 @@ const DriverSchema = new Schema<IDriver>({
   todayEarnings: { type: String, default: '0.00' },
   weeklyEarnings: { type: String, default: '0.00' },
   creditBalance: { type: Number, default: 0 },
+  // Credit request fields
+  creditRequestPending: { type: Boolean, default: false },
+  requestedCreditAmount: Number,
+  creditRequestScreenshotUrl: String,
+  creditRequestCreatedAt: Date,
   zone: String,
   lastOnline: Date,
 }, {

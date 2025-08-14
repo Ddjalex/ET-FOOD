@@ -1103,6 +1103,7 @@ function SuperAdminDashboardContent() {
           { id: 'restaurants', label: 'Restaurants' },
           { id: 'admins', label: 'Admins' },
           { id: 'drivers', label: 'Drivers' },
+          { id: 'credit-requests', label: 'Credit Requests' },
           { id: 'broadcast', label: 'Broadcast Messages' },
           { id: 'settings', label: 'System Settings' }
         ].map((tab) => (
@@ -2726,6 +2727,42 @@ function SuperAdminDashboardContent() {
               )}
             </DialogContent>
           </Dialog>
+        </div>
+      )}
+
+      {/* Credit Requests Tab */}
+      {selectedTab === 'credit-requests' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Driver Credit Requests</h2>
+              <p className="text-muted-foreground">Review and approve driver credit requests with payment proof</p>
+            </div>
+            <Button
+              onClick={() => navigate('/superadmin/credit-requests')}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Open Full Credit Manager
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Credit Request Management</h3>
+                <p className="text-gray-600 mb-4">
+                  Manage driver credit requests with payment proof verification in the dedicated interface.
+                </p>
+                <Button
+                  onClick={() => navigate('/superadmin/credit-requests')}
+                  variant="outline"
+                >
+                  View Credit Requests
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

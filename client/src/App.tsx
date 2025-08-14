@@ -27,6 +27,8 @@ import DriverPanel from "@/pages/DriverPanel";
 import DriverLogin from "@/pages/DriverLogin";
 import DriverRegistration from "@/pages/DriverRegistration";
 import { CustomerApp } from "@/pages/CustomerApp";
+import DriverCreditRequest from "@/pages/DriverCreditRequest";
+import SuperadminCreditRequests from "@/pages/SuperadminCreditRequests";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -54,6 +56,8 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/driver-panel" component={DriverPanel} />
+      <Route path="/driver-credit-request" component={DriverCreditRequest} />
+      <Route path="/superadmin/credit-requests" component={SuperadminCreditRequests} />
       <Route path="/customer" component={CustomerApp} />
       
       {/* Regular routes with Replit Auth */}

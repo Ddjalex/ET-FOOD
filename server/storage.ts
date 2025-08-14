@@ -118,6 +118,7 @@ export interface IStorage {
   unblockDriver(driverId: string): Promise<Driver>;
   deleteDriver(driverId: string): Promise<void>;
   saveLiveLocation(driverId: string, location: any): Promise<void>;
+  updateDriverCreditRequest(driverId: string, data: any): Promise<Driver>;
 
   // Analytics operations
   getDashboardStats(): Promise<any>;

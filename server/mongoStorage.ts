@@ -920,6 +920,22 @@ export class MongoStorage implements IStorage {
     return Math.max(baseEarnings, minEarnings).toFixed(2);
   }
 
+  async updateDriverCreditRequest(driverId: string, data: any): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
+        { ...data, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
+    } catch (error) {
+      console.error('Error updating driver credit request:', error);
+      throw error;
+    }
+  }
+
   // Delivery operations (stub implementations)
   async getDeliveries(): Promise<Delivery[]> { return []; }
   async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }

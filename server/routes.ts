@@ -8,7 +8,7 @@ import { setupTelegramBots } from "./telegram/bot";
 import { orderService } from "./services/orderService";
 import { driverService } from "./services/driverService";
 import { restaurantService } from "./services/restaurantService";
-import { uploadMiddleware } from "./middleware/upload";
+import { uploadCreditScreenshot, getFileUrl } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
 import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast, notifyDriver } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
@@ -1198,7 +1198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/restaurants/:id/menu-items', isAuthenticated, uploadMiddleware.single('image'), async (req, res) => {
+  app.post('/api/restaurants/:id/menu-items', isAuthenticated, upload.single('image'), async (req, res) => {
     try {
       const validatedData = insertMenuItemSchema.parse({
         ...req.body,
@@ -1344,7 +1344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/drivers', uploadMiddleware.fields([
+  app.post('/api/drivers', upload.fields([
     { name: 'licenseImage', maxCount: 1 },
     { name: 'vehicleImage', maxCount: 1 },
     { name: 'idCardImage', maxCount: 1 }
@@ -2113,7 +2113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Logo upload endpoint
-  app.post('/api/upload/logo', requireSession, uploadMiddleware.single('logo'), async (req, res) => {
+  app.post('/api/upload/logo', requireSession, upload.single('logo'), async (req, res) => {
     try {
       const user = req.session.user;
       if (!user || user.role !== 'superadmin') {
@@ -2862,7 +2862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files statically
+  // Serve uploaded files statically including credit request screenshots
   app.use('/uploads', express.static('uploads'));
 
   // Debug endpoint to completely replace fake customers with real telegram user
@@ -3916,6 +3916,238 @@ Use the buttons below to get started:`;
       res.status(500).json({ 
         success: false, 
         message: 'Failed to mark delivery' 
+      });
+    }
+  });
+
+  // Driver Credit Request API endpoints (with screenshot upload)
+  // Request credit with screenshot upload
+  app.post('/api/drivers/:driverId/credit-request', uploadCreditScreenshot.single('screenshot'), async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      const { amount } = req.body;
+
+      if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: 'Valid amount is required' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'Screenshot is required for credit request' });
+      }
+
+      // Get the file URL
+      const screenshotUrl = getFileUrl(req.file.filename);
+
+      console.log(`💰 Credit request from driver ${driverId}: ${amount} ETB with screenshot ${req.file.filename}`);
+
+      // Update driver with credit request data
+      const driver = await storage.updateDriverCreditRequest(driverId, {
+        creditRequestPending: true,
+        requestedCreditAmount: parseFloat(amount),
+        creditRequestScreenshotUrl: screenshotUrl,
+        creditRequestCreatedAt: new Date()
+      });
+
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      // Broadcast real-time notification to superadmin dashboard
+      broadcast('credit_request_received', {
+        driverId: driver.id,
+        driverName: driver.name,
+        requestedAmount: parseFloat(amount),
+        screenshotUrl: screenshotUrl,
+        timestamp: new Date().toISOString()
+      });
+
+      console.log(`✅ Credit request submitted successfully for driver ${driverId}`);
+
+      res.json({
+        success: true,
+        message: 'Credit request submitted successfully',
+        request: {
+          amount: parseFloat(amount),
+          screenshotUrl: screenshotUrl,
+          status: 'pending'
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Error processing credit request:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to process credit request' 
+      });
+    }
+  });
+
+  // Get driver's current credit request status
+  app.get('/api/drivers/:driverId/credit-request/status', async (req, res) => {
+    try {
+      const { driverId } = req.params;
+      
+      const driver = await storage.getDriverById(driverId);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      res.json({
+        success: true,
+        creditRequest: {
+          pending: driver.creditRequestPending || false,
+          amount: driver.requestedCreditAmount || null,
+          screenshotUrl: driver.creditRequestScreenshotUrl || null,
+          createdAt: driver.creditRequestCreatedAt || null
+        },
+        currentBalance: driver.creditBalance || 0
+      });
+
+    } catch (error) {
+      console.error('❌ Error getting credit request status:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to get credit request status' 
+      });
+    }
+  });
+
+  // Superadmin endpoints for credit request management
+  app.get('/api/superadmin/credit-requests', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Get all drivers with pending credit requests
+      const allDrivers = await storage.getAllDrivers();
+      const pendingRequests = allDrivers
+        .filter(driver => driver.creditRequestPending)
+        .map(driver => ({
+          id: driver.id,
+          driverName: driver.name,
+          phoneNumber: driver.phoneNumber,
+          requestedAmount: driver.requestedCreditAmount,
+          screenshotUrl: driver.creditRequestScreenshotUrl,
+          createdAt: driver.creditRequestCreatedAt,
+          currentBalance: driver.creditBalance
+        }));
+
+      res.json({
+        success: true,
+        requests: pendingRequests
+      });
+
+    } catch (error) {
+      console.error('❌ Error getting credit requests:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to get credit requests' 
+      });
+    }
+  });
+
+  // Approve credit request
+  app.post('/api/superadmin/credit-requests/:driverId/approve', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { driverId } = req.params;
+      
+      const driver = await storage.getDriverById(driverId);
+      if (!driver || !driver.creditRequestPending) {
+        return res.status(404).json({ message: 'No pending credit request found for this driver' });
+      }
+
+      const requestedAmount = driver.requestedCreditAmount || 0;
+      const newBalance = (driver.creditBalance || 0) + requestedAmount;
+
+      // Update driver: add credit and clear request
+      await storage.updateDriverCreditRequest(driverId, {
+        creditBalance: newBalance,
+        creditRequestPending: false,
+        requestedCreditAmount: null,
+        creditRequestScreenshotUrl: null,
+        creditRequestCreatedAt: null
+      });
+
+      console.log(`✅ Credit request approved for driver ${driverId}: +${requestedAmount} ETB (new balance: ${newBalance})`);
+
+      // Broadcast approval notification
+      broadcast('credit_request_approved', {
+        driverId: driverId,
+        driverName: driver.name,
+        approvedAmount: requestedAmount,
+        newBalance: newBalance,
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        message: 'Credit request approved successfully',
+        approvedAmount: requestedAmount,
+        newBalance: newBalance
+      });
+
+    } catch (error) {
+      console.error('❌ Error approving credit request:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to approve credit request' 
+      });
+    }
+  });
+
+  // Reject credit request
+  app.post('/api/superadmin/credit-requests/:driverId/reject', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { driverId } = req.params;
+      const { reason } = req.body;
+      
+      const driver = await storage.getDriverById(driverId);
+      if (!driver || !driver.creditRequestPending) {
+        return res.status(404).json({ message: 'No pending credit request found for this driver' });
+      }
+
+      // Clear credit request without adding credit
+      await storage.updateDriverCreditRequest(driverId, {
+        creditRequestPending: false,
+        requestedCreditAmount: null,
+        creditRequestScreenshotUrl: null,
+        creditRequestCreatedAt: null
+      });
+
+      console.log(`❌ Credit request rejected for driver ${driverId}. Reason: ${reason || 'No reason provided'}`);
+
+      // Broadcast rejection notification
+      broadcast('credit_request_rejected', {
+        driverId: driverId,
+        driverName: driver.name,
+        reason: reason || 'No reason provided',
+        timestamp: new Date().toISOString()
+      });
+
+      res.json({
+        success: true,
+        message: 'Credit request rejected successfully',
+        reason: reason || 'No reason provided'
+      });
+
+    } catch (error) {
+      console.error('❌ Error rejecting credit request:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to reject credit request' 
       });
     }
   });

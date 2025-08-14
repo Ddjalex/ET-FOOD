@@ -1,0 +1,35 @@
+Description to Add Driver Credit Request System with Screenshot Upload
+The goal is to enhance the driver credit request feature by allowing drivers to upload a screenshot as proof of payment (e.g., a bank transfer receipt). The Superadmin should then be able to view this screenshot in real-time on their dashboard before approving the credit request.
+
+Proposed Solution
+The Replit AI agent needs to modify the existing system to handle file uploads and display them instantly on the Superadmin dashboard.
+
+1. Database Changes (MongoDB)
+New Fields: Add a new string field, creditRequestScreenshotUrl, to the driver's document in the drivers collection. This field will store the URL of the uploaded screenshot. The previously discussed fields, creditRequestPending (boolean) and requestedCreditAmount (number), will also be used.
+
+2. Frontend Changes (Driver Mini-WebApp)
+Request Form: The existing credit request form needs to be updated to include an option to upload an image.
+
+Add a standard file input field (<input type="file" accept="image/*">) to allow drivers to select a screenshot.
+
+The "Request Credit" button's logic must be updated to handle both the credit amount and the image file as a single submission using a FormData object.
+
+Real-Time Feedback: After the driver sends the request, the app should display a "Request Sent" or "Pending Approval" message and disable the form until the request is resolved.
+
+3. Backend Changes (API & Real-Time Logic)
+New Endpoint Logic: The existing /driver/requestCredit API endpoint must be modified to handle the file upload.
+
+Upon receiving the request, the backend will validate the uploaded image.
+
+It will then save the image to a persistent storage solution (like a cloud storage service) and generate a public URL for the image.
+
+The backend will then update the driver's MongoDB document, setting creditRequestPending to true, storing the requestedCreditAmount, and saving the new creditRequestScreenshotUrl.
+
+Real-Time Broadcast: After updating the database, the backend will use WebSockets to broadcast a credit_request_received event to the Superadmin dashboard. This broadcast's payload must now include the creditRequestScreenshotUrl along with the driver's ID and the requested amount.
+
+4. Frontend Changes (Superadmin Dashboard)
+Real-Time Display: The Superadmin dashboard's real-time listener will receive the credit_request_received event.
+
+Display Screenshot: The UI will immediately update to show a new credit request entry. This entry will prominently display the driver's name and requested amount, and most importantly, it will show a thumbnail of the screenshot using the creditRequestScreenshotUrl or a link to view it.
+
+Action Buttons: The "Approve" and "Reject" buttons will be present, allowing the Superadmin to review the screenshot and then approve or deny the request, updating the driver's credit balance and clearing the pending request fields from the database.
