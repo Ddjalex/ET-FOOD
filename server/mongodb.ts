@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
-// Use the hardcoded MongoDB Atlas connection string since it contains production data
-const MONGODB_URI = 'mongodb+srv://almeseged:A1l2m3e4s5@cluster0.t6sz6bo.mongodb.net/test?retryWrites=true&w=majority';
+// Use environment variable for MongoDB URI (secure approach)
+const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI;
 
 export async function connectToMongoDB() {
   try {

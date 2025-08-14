@@ -96,6 +96,11 @@ export class MongoStorage implements IStorage {
       todayEarnings: driver.todayEarnings?.toString() || null,
       weeklyEarnings: driver.weeklyEarnings?.toString() || null,
       creditBalance: driver.creditBalance || 0,
+      // Credit request fields
+      creditRequestPending: driver.creditRequestPending || false,
+      requestedCreditAmount: driver.requestedCreditAmount || null,
+      creditRequestScreenshotUrl: driver.creditRequestScreenshotUrl || null,
+      creditRequestCreatedAt: driver.creditRequestCreatedAt || null,
       zone: driver.zone || null,
       lastOnline: driver.lastOnline || null,
       createdAt: driver.createdAt || null,

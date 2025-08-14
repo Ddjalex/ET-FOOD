@@ -167,6 +167,12 @@ export const drivers = pgTable("drivers", {
   totalEarnings: decimal("total_earnings", { precision: 10, scale: 2 }).default("0.00"),
   todayEarnings: decimal("today_earnings", { precision: 10, scale: 2 }).default("0.00"),
   weeklyEarnings: decimal("weekly_earnings", { precision: 10, scale: 2 }).default("0.00"),
+  creditBalance: decimal("credit_balance", { precision: 10, scale: 2 }).default("0.00"),
+  // Credit request fields
+  creditRequestPending: boolean("credit_request_pending").default(false),
+  requestedCreditAmount: decimal("requested_credit_amount", { precision: 10, scale: 2 }),
+  creditRequestScreenshotUrl: varchar("credit_request_screenshot_url"),
+  creditRequestCreatedAt: timestamp("credit_request_created_at"),
   zone: varchar("zone"), // delivery zone assignment
   lastOnline: timestamp("last_online"),
   createdAt: timestamp("created_at").defaultNow(),
