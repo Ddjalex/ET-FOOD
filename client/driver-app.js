@@ -1071,7 +1071,7 @@ class DriverApp {
         const amount = document.getElementById('creditAmount').value;
         const screenshot = document.getElementById('paymentScreenshot').files[0];
 
-        if (!amount || parseFloat(amount) <= 0) {
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
             this.showNotification('Invalid Amount', 'Please enter a valid amount', 'error');
             return;
         }
