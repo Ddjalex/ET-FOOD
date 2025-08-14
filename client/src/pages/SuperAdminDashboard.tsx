@@ -70,9 +70,13 @@ interface Driver {
   userId: string;
   name?: string;
   phoneNumber?: string;
-  licenseNumber: string;
-  vehicleType: string;
-  vehiclePlate: string;
+  licenseNumber?: string;
+  vehicleType?: string;
+  vehiclePlate?: string;
+  status: string;
+  creditBalance?: number;
+  profileImageUrl?: string;
+  telegramId?: string;
   licenseImageUrl?: string;
   creditBalance?: number;
   vehicleImageUrl?: string;
@@ -2122,7 +2126,7 @@ function SuperAdminDashboardContent() {
                                 }
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {driver.user?.email || driver.user?.telegramUsername || 'N/A'} • {driver.phoneNumber || driver.user?.phoneNumber || 'N/A'}
+                                {driver.user?.email || 'N/A'} • {driver.phoneNumber || driver.user?.phoneNumber || 'N/A'}
                               </p>
                             </div>
                           </div>

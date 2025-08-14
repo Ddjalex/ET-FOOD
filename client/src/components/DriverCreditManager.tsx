@@ -32,17 +32,15 @@ export function DriverCreditManager({ drivers }: DriverCreditManagerProps) {
 
   const updateCreditMutation = useMutation({
     mutationFn: async ({ driverId, amount, operation }: { driverId: string; amount: number; operation: 'add' | 'deduct' }) => {
-      return apiRequest(`/api/superadmin/drivers/${driverId}/credit`, {
-        method: 'POST',
-        body: JSON.stringify({ amount, operation }),
-      });
+      const response = await apiRequest('POST', `/api/superadmin/drivers/${driverId}/credit`, { amount, operation });
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: 'Success',
         description: data.message,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
       setAmount('');
       setSelectedDriverId('');
     },
