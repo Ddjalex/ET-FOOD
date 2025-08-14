@@ -4166,5 +4166,157 @@ Use the buttons below to get started:`;
     }
   });
 
+  // Special Offers Routes
+  // Create special offer (Kitchen Staff)
+  app.post('/api/restaurant/offers', requireSession, upload.single('offerImage'), async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || (user.role !== 'kitchen_staff' && user.role !== 'restaurant_admin' && user.role !== 'superadmin')) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { offerTitle, originalPrice, discountedPrice } = req.body;
+      const offerImage = req.file;
+
+      if (!offerTitle || !originalPrice || !discountedPrice || !offerImage) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: offerTitle, originalPrice, discountedPrice, offerImage' 
+        });
+      }
+
+      const originalPriceNum = parseFloat(originalPrice);
+      const discountedPriceNum = parseFloat(discountedPrice);
+      
+      if (originalPriceNum <= 0 || discountedPriceNum <= 0 || discountedPriceNum >= originalPriceNum) {
+        return res.status(400).json({ 
+          message: 'Invalid pricing: discounted price must be less than original price and both must be positive' 
+        });
+      }
+
+      const discountPercentage = Math.round(((originalPriceNum - discountedPriceNum) / originalPriceNum) * 100);
+      
+      // Save offer image
+      const imageUrl = getFileUrl(offerImage.filename);
+      
+      // For demo purposes, use user's restaurant ID or default
+      const restaurantId = user.restaurantId || 'demo-restaurant';
+
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const newOffer = new SpecialOffer({
+        restaurantId,
+        offerTitle,
+        offerImageURL: imageUrl,
+        originalPrice: originalPriceNum,
+        discountedPrice: discountedPriceNum,
+        discountPercentage,
+        isLive: false
+      });
+
+      await newOffer.save();
+
+      res.json({
+        success: true,
+        message: 'Special offer created successfully',
+        offer: newOffer
+      });
+
+    } catch (error) {
+      console.error('Error creating special offer:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to create special offer' 
+      });
+    }
+  });
+
+  // Get restaurant's special offers (Kitchen Staff)
+  app.get('/api/restaurant/offers', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || (user.role !== 'kitchen_staff' && user.role !== 'restaurant_admin' && user.role !== 'superadmin')) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const restaurantId = user.restaurantId || 'demo-restaurant';
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const offers = await SpecialOffer.find({ restaurantId }).sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        offers
+      });
+
+    } catch (error) {
+      console.error('Error fetching restaurant offers:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch offers' 
+      });
+    }
+  });
+
+  // Toggle offer live status (Kitchen Staff)
+  app.patch('/api/restaurant/offers/:offerId/toggle', requireSession, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user || (user.role !== 'kitchen_staff' && user.role !== 'restaurant_admin' && user.role !== 'superadmin')) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      const { offerId } = req.params;
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const offer = await SpecialOffer.findById(offerId);
+      if (!offer) {
+        return res.status(404).json({ message: 'Offer not found' });
+      }
+
+      // Check if user owns this offer
+      const restaurantId = user.restaurantId || 'demo-restaurant';
+      if (offer.restaurantId !== restaurantId && user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      offer.isLive = !offer.isLive;
+      await offer.save();
+
+      res.json({
+        success: true,
+        message: `Offer ${offer.isLive ? 'activated' : 'deactivated'} successfully`,
+        offer
+      });
+
+    } catch (error) {
+      console.error('Error toggling offer status:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to toggle offer status' 
+      });
+    }
+  });
+
+  // Get all live special offers (Customer)
+  app.get('/api/customer/offers', async (req, res) => {
+    try {
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const liveOffers = await SpecialOffer.find({ isLive: true }).sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        offers: liveOffers
+      });
+
+    } catch (error) {
+      console.error('Error fetching customer offers:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch offers' 
+      });
+    }
+  });
+
   return httpServer;
 }

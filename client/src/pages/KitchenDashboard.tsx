@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import SpecialOffersManager from '@/components/SpecialOffersManager';
 
 // Type definitions to match our database schema
 interface MenuCategory {
@@ -847,6 +848,16 @@ export function KitchenDashboard() {
             >
               Menu Management
             </button>
+            <button
+              onClick={() => setSelectedTab('offers')}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                selectedTab === 'offers'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              Special Offers
+            </button>
           </div>
         </div>
 
@@ -1025,6 +1036,13 @@ export function KitchenDashboard() {
                 No menu categories found
               </div>
             )}
+          </div>
+        )}
+
+        {/* Special Offers Tab */}
+        {selectedTab === 'offers' && (
+          <div className="space-y-6">
+            <SpecialOffersManager />
           </div>
         )}
 

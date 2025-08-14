@@ -172,12 +172,17 @@ function DriverPanel() {
     enabled: !!currentDriverId,
   });
 
-  // Fetch available orders for approved drivers
-  const { data: availableOrders = [], isLoading: ordersLoading } = useQuery<Order[]>({
+  // Fetch available orders for approved drivers - filter out upcoming orders
+  const { data: rawAvailableOrders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['/api/drivers/available-orders'],
     enabled: driver?.isApproved, // Remove isOnline requirement - let drivers see orders even when not available
     refetchInterval: 10000, // Refresh every 10 seconds for faster updates
   });
+
+  // Filter out upcoming delivery orders (only show ready orders)
+  const availableOrders = rawAvailableOrders.filter(order => 
+    order.status === 'ready_for_pickup' || order.status === 'ready'
+  );
 
   // Fetch assigned orders - try to get real orders first, fallback to driver-specific
   const { data: assignedOrders = [], isLoading: assignedLoading } = useQuery<Order[]>({

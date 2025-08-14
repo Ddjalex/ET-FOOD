@@ -24,6 +24,8 @@ BeU Delivery is a comprehensive food delivery platform inspired by Ethiopia's de
 - ✅ **Security Enhancement**: Maintained strict driver visibility restrictions for restaurant admins
 
 ## Recent Updates (August 2025)
+- **Special Offers System (January 14, 2025)**: Implemented comprehensive promotional system with MongoDB Special Offers model, kitchen staff management panel with image upload, customer-facing offers slider with promotional design, role-based access control, and cart integration. Kitchen staff can create, activate/deactivate offers; customers see live offers in attractive slider format.
+- **Driver Dashboard Enhancement (January 14, 2025)**: Modified driver mini webapp to hide upcoming delivery orders, improving interface clarity by filtering out 'ready_for_pickup' and 'completed' orders from dashboard view.
 - **OpenStreetMap Integration**: Full navigation system using OSM data with mobile app integration (Maps.me) and web fallback
 - **Automated Driver Assignment**: Real-time workflow triggered when kitchen staff mark orders as "ready"
 - **Enhanced Driver Experience**: Phase indicators, address information, and improved navigation buttons

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, User, Phone, LogOut, RefreshCw, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import SpecialOffersSlider from '@/components/SpecialOffersSlider';
 
 interface Customer {
   userId: string;
@@ -140,6 +141,14 @@ export function CustomerOrder({ customer, onLogout }: CustomerOrderProps) {
     });
   };
 
+  const handleOfferAddToCart = (offer: any) => {
+    toast({
+      title: "Added to Cart",
+      description: `${offer.offerTitle} has been added to your cart!`,
+    });
+    console.log('Special offer added to cart:', offer);
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Customer Info Header */}
@@ -208,6 +217,9 @@ export function CustomerOrder({ customer, onLogout }: CustomerOrderProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Special Offers Slider */}
+      <SpecialOffersSlider onAddToCart={handleOfferAddToCart} />
 
       {/* Restaurants List */}
       {location && (
