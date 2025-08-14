@@ -34,7 +34,7 @@ export default function SpecialOffersSlider({ onAddToCart }: SpecialOffersSlider
       const data = await response.json();
       return data.offers;
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds to show live status changes
   });
 
   const nextSlide = () => {
@@ -129,13 +129,13 @@ export default function SpecialOffersSlider({ onAddToCart }: SpecialOffersSlider
                         </h3>
                         <div className="flex items-center gap-3 mb-3">
                           <span className="text-sm line-through text-gray-500">
-                            ${offer.originalPrice.toFixed(2)}
+                            {offer.originalPrice.toFixed(2)} ETB
                           </span>
                           <span className="text-xl font-bold text-green-600">
-                            ${offer.discountedPrice.toFixed(2)}
+                            {offer.discountedPrice.toFixed(2)} ETB
                           </span>
                           <span className="text-sm text-green-600 font-medium">
-                            Save ${(offer.originalPrice - offer.discountedPrice).toFixed(2)}
+                            Save {(offer.originalPrice - offer.discountedPrice).toFixed(2)} ETB
                           </span>
                         </div>
                       </div>

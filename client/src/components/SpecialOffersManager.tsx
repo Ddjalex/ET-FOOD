@@ -286,23 +286,16 @@ export default function SpecialOffersManager() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {offers.map((offer) => (
             <Card key={offer._id} className="overflow-hidden">
-              <div className="aspect-video relative">
-                <img
-                  src={offer.offerImageURL}
-                  alt={offer.offerTitle}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
+              <div className="p-4 border-b bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="bg-red-500 text-white">
+                    {offer.discountPercentage}% OFF
+                  </Badge>
                   <Badge
                     variant={offer.isLive ? "default" : "secondary"}
                     className={offer.isLive ? "bg-green-500" : ""}
                   >
                     {offer.isLive ? 'Live' : 'Inactive'}
-                  </Badge>
-                </div>
-                <div className="absolute top-2 left-2">
-                  <Badge variant="secondary" className="bg-red-500 text-white">
-                    {offer.discountPercentage}% OFF
                   </Badge>
                 </div>
               </div>
@@ -312,8 +305,8 @@ export default function SpecialOffersManager() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-gray-500" />
-                    <span className="line-through text-gray-500">${offer.originalPrice.toFixed(2)}</span>
-                    <span className="font-bold text-green-600">${offer.discountedPrice.toFixed(2)}</span>
+                    <span className="line-through text-gray-500">{offer.originalPrice.toFixed(2)} ETB</span>
+                    <span className="font-bold text-green-600">{offer.discountedPrice.toFixed(2)} ETB</span>
                   </div>
                 </div>
               </CardHeader>
