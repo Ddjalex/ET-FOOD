@@ -243,7 +243,7 @@ class DriverApp {
             this.loadWalletData();
         });
 
-        
+
     }
 
     switchTab(tabName) {
@@ -961,7 +961,7 @@ class DriverApp {
         }
     }
 
-    
+
 
     updateWalletBalance(balance) {
         const walletBalance = document.getElementById('walletBalance');
@@ -1088,7 +1088,7 @@ class DriverApp {
         }
     }
 
-    
+
 }
 
 // Initialize the app when the page loads
