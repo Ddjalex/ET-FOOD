@@ -288,9 +288,13 @@ export default function SpecialOffersManager() {
             <Card key={offer._id} className="overflow-hidden">
               <div className="aspect-video relative">
                 <img
-                  src={offer.offerImageURL}
+                  src={offer.offerImageURL ? offer.offerImageURL : '/placeholder-food.jpg'}
                   alt={offer.offerTitle}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder-food.jpg';
+                  }}
                 />
                 <div className="absolute top-2 right-2">
                   <Badge

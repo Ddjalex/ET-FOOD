@@ -185,6 +185,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IMPORTANT: Define specific customer routes BEFORE mounting general customerRoutes
+  // Get all live special offers (Customer) - must be before /customer/:userId
+  app.get('/api/customer/offers', async (req, res) => {
+    try {
+      const { SpecialOffer } = await import('./models/SpecialOffer');
+      
+      const liveOffers = await SpecialOffer.find({ isLive: true }).sort({ createdAt: -1 });
+
+      res.json({
+        success: true,
+        offers: liveOffers
+      });
+
+    } catch (error) {
+      console.error('Error fetching customer offers:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch offers' 
+      });
+    }
+  });
+
   // Customer routes (public access for Telegram mini-apps)
   app.use('/api', customerRoutes);
 
@@ -4297,26 +4319,7 @@ Use the buttons below to get started:`;
     }
   });
 
-  // Get all live special offers (Customer)
-  app.get('/api/customer/offers', async (req, res) => {
-    try {
-      const { SpecialOffer } = await import('./models/SpecialOffer');
-      
-      const liveOffers = await SpecialOffer.find({ isLive: true }).sort({ createdAt: -1 });
 
-      res.json({
-        success: true,
-        offers: liveOffers
-      });
-
-    } catch (error) {
-      console.error('Error fetching customer offers:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to fetch offers' 
-      });
-    }
-  });
 
   return httpServer;
 }

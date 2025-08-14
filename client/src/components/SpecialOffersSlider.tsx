@@ -110,9 +110,13 @@ export default function SpecialOffersSlider({ onAddToCart }: SpecialOffersSlider
                     {/* Image Section */}
                     <div className="w-1/3 relative">
                       <img
-                        src={offer.offerImageURL}
+                        src={offer.offerImageURL ? offer.offerImageURL : '/placeholder-food.jpg'}
                         alt={offer.offerTitle}
                         className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder-food.jpg';
+                        }}
                       />
                       <div className="absolute top-2 left-2">
                         <Badge className="bg-red-500 text-white font-bold">
