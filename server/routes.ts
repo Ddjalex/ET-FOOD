@@ -3562,7 +3562,7 @@ Use the buttons below to get started:`;
         return res.status(400).json({ message: 'Latitude and longitude are required' });
       }
 
-      await storage.saveLiveLocation(req.params.id, latitude, longitude);
+      await storage.saveLiveLocation(req.params.id, { lat: latitude, lng: longitude });
       res.json({ message: 'Live location saved successfully' });
     } catch (error) {
       console.error('Failed to save live location:', error);
@@ -3726,7 +3726,7 @@ Use the buttons below to get started:`;
       
       // Sort by creation date (most recent first) and limit
       const recentOrders = driverOrders
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort((a, b) => (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0))
         .slice(0, limit);
 
       // Transform orders into history format
@@ -3736,15 +3736,15 @@ Use the buttons below to get started:`;
         return {
           id: order.id,
           orderNumber: order.orderNumber,
-          restaurantName: order.restaurantName || restaurant?.name || 'Unknown Restaurant',
-          customerName: order.customerName || 'Customer',
+          restaurantName: restaurant?.name || 'Unknown Restaurant',
+          customerName: 'Customer',
           status: order.status,
-          total: order.total || order.totalAmount || 0,
-          earnings: calculateDriverEarnings(order.total || order.totalAmount || 0), // 15% of order value
-          deliveryAddress: order.deliveryAddress?.address || 'N/A',
+          total: order.total || '0',
+          earnings: calculateDriverEarnings(parseFloat(order.total || '0')), // 15% of order value
+          deliveryAddress: order.deliveryAddress || 'N/A',
           completedAt: order.actualDeliveryTime || order.updatedAt,
           createdAt: order.createdAt,
-          items: order.items?.length || 0,
+          items: Array.isArray(order.items) ? order.items.length : 0,
           rating: 5 // Default rating for completed orders
         };
       }));
@@ -3783,7 +3783,7 @@ Use the buttons below to get started:`;
       
       // Calculate total earnings (15% commission on delivered orders)
       const totalEarnings = deliveredOrders.reduce((sum, order) => {
-        const orderTotal = order.total || order.totalAmount || 0;
+        const orderTotal = parseFloat(order.total || '0');
         return sum + calculateDriverEarnings(orderTotal);
       }, 0);
       

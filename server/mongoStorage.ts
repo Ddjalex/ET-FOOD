@@ -1,5 +1,4 @@
 import { IStorage } from './storage';
-import { geocodingService } from './services/geocodingService';
 import { User } from './models/User';
 import { Restaurant } from './models/Restaurant';  
 import { Driver as DriverModel } from './models/Driver';
@@ -8,7 +7,6 @@ import { SystemSettings } from './models/SystemSettings';
 import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
 import { MenuItem as MenuItemModel } from './models/MenuItem';
 import { Order as OrderModel } from './models/Order';
-import { mongoose } from './mongodb';
 import { ObjectId } from 'mongodb';
 import {
   type User as UserType,
@@ -30,33 +28,113 @@ import {
 } from "@shared/schema";
 
 export class MongoStorage implements IStorage {
-  private get db() {
-    return mongoose.connection.db;
-  }
   
-  // User operations (mandatory for Replit Auth)
+  // Helper function to convert MongoDB document to schema type
+  private convertMongoUser(user: any): UserType {
+    return {
+      id: user._id.toString(),
+      email: user.email || null,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      profileImageUrl: user.profileImageUrl || null,
+      role: user.role || null,
+      phoneNumber: user.phoneNumber || null,
+      telegramUserId: user.telegramUserId || null,
+      telegramUsername: user.telegramUsername || null,
+      password: user.password || null,
+      isActive: user.isActive ?? true,
+      restaurantId: user.restaurantId || null,
+      createdBy: user.createdBy || null,
+      createdAt: user.createdAt || null,
+      updatedAt: user.updatedAt || null,
+    };
+  }
+
+  private convertMongoRestaurant(restaurant: any): RestaurantType {
+    return {
+      id: restaurant._id.toString(),
+      name: restaurant.name,
+      description: restaurant.description || null,
+      address: restaurant.address,
+      phoneNumber: restaurant.phoneNumber,
+      email: restaurant.email || null,
+      location: restaurant.location ? [restaurant.location.latitude, restaurant.location.longitude] as [number, number] : null,
+      imageUrl: restaurant.imageUrl || null,
+      isActive: restaurant.isActive,
+      isApproved: restaurant.isApproved,
+      rating: restaurant.rating?.toString() || null,
+      totalOrders: restaurant.totalOrders || null,
+      createdAt: restaurant.createdAt || null,
+      updatedAt: restaurant.updatedAt || null,
+    };
+  }
+
+  private convertMongoDriver(driver: any): DriverType {
+    return {
+      id: driver._id.toString(),
+      userId: driver.userId,
+      telegramId: driver.telegramId || null,
+      phoneNumber: driver.phoneNumber || null,
+      name: driver.name || null,
+      profileImageUrl: driver.profileImageUrl || null,
+      governmentIdFrontUrl: driver.governmentIdFrontUrl || null,
+      governmentIdBackUrl: driver.governmentIdBackUrl || null,
+      licenseNumber: driver.licenseNumber || null,
+      vehicleType: driver.vehicleType || null,
+      vehiclePlate: driver.vehiclePlate || null,
+      licenseImageUrl: driver.licenseImageUrl || null,
+      vehicleImageUrl: driver.vehicleImageUrl || null,
+      idCardImageUrl: driver.idCardImageUrl || null,
+      currentLocation: driver.currentLocation ? [driver.currentLocation.lat, driver.currentLocation.lng] as [number, number] : null,
+      status: driver.status || null,
+      isOnline: driver.isOnline || false,
+      isAvailable: driver.isAvailable || false,
+      isApproved: driver.isApproved || false,
+      rating: driver.rating?.toString() || null,
+      totalDeliveries: driver.totalDeliveries || null,
+      totalEarnings: driver.totalEarnings?.toString() || null,
+      todayEarnings: driver.todayEarnings?.toString() || null,
+      weeklyEarnings: driver.weeklyEarnings?.toString() || null,
+      zone: driver.zone || null,
+      lastOnline: driver.lastOnline || null,
+      createdAt: driver.createdAt || null,
+      updatedAt: driver.updatedAt || null,
+    };
+  }
+
+  private convertMongoOrder(order: any): Order {
+    return {
+      id: order._id.toString(),
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      restaurantId: order.restaurantId,
+      driverId: order.driverId || null,
+      status: order.status || null,
+      unavailableItems: order.unavailableItems || null,
+      items: order.items,
+      subtotal: order.subtotal?.toString() || "0.00",
+      deliveryFee: order.deliveryFee?.toString() || "0.00",
+      tax: order.tax?.toString() || "0.00",
+      total: order.total?.toString() || "0.00",
+      paymentStatus: order.paymentStatus || null,
+      paymentMethod: order.paymentMethod || null,
+      deliveryAddress: order.deliveryAddress,
+      deliveryLocation: order.deliveryLocation ? [order.deliveryLocation.lat, order.deliveryLocation.lng] as [number, number] : null,
+      restaurantAddressName: order.restaurantAddressName || null,
+      customerAddressName: order.customerAddressName || null,
+      customerNotes: order.customerNotes || null,
+      estimatedDeliveryTime: order.estimatedDeliveryTime || null,
+      actualDeliveryTime: order.actualDeliveryTime || null,
+      createdAt: order.createdAt || null,
+      updatedAt: order.updatedAt || null,
+    };
+  }
+
+  // User operations
   async getUser(id: string): Promise<UserType | undefined> {
     try {
       const user = await User.findById(id).lean();
-      if (!user) return undefined;
-      
-      return {
-        id: user._id.toString(),
-        email: user.email || null,
-        firstName: user.firstName || null,
-        lastName: user.lastName || null,
-        profileImageUrl: user.profileImageUrl || null,
-        role: user.role || null,
-        phoneNumber: user.phoneNumber || null,
-        telegramUserId: user.telegramUserId || null,
-        telegramUsername: user.telegramUsername || null,
-        password: user.password || null,
-        isActive: user.isActive ?? true,
-        restaurantId: user.restaurantId || null,
-        createdBy: user.createdBy || null,
-        createdAt: user.createdAt || null,
-        updatedAt: user.updatedAt || null,
-      } as UserType;
+      return user ? this.convertMongoUser(user) : undefined;
     } catch (error) {
       console.error('Error getting user:', error);
       return undefined;
@@ -71,23 +149,7 @@ export class MongoStorage implements IStorage {
         { upsert: true, new: true, runValidators: true }
       ).lean();
       
-      return {
-        id: user._id.toString(),
-        email: user.email || null,
-        firstName: user.firstName || null,
-        lastName: user.lastName || null,
-        profileImageUrl: user.profileImageUrl || null,
-        role: user.role || null,
-        phoneNumber: user.phoneNumber || null,
-        telegramUserId: user.telegramUserId || null,
-        telegramUsername: user.telegramUsername || null,
-        password: user.password || null,
-        isActive: user.isActive ?? true,
-        restaurantId: user.restaurantId || null,
-        createdBy: user.createdBy || null,
-        createdAt: user.createdAt || null,
-        updatedAt: user.updatedAt || null,
-      } as UserType;
+      return this.convertMongoUser(user);
     } catch (error) {
       console.error('Error upserting user:', error);
       throw error;
@@ -97,7 +159,7 @@ export class MongoStorage implements IStorage {
   async getUserByTelegramId(telegramUserId: string): Promise<UserType | undefined> {
     try {
       const user = await User.findOne({ telegramUserId }).lean();
-      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+      return user ? this.convertMongoUser(user) : undefined;
     } catch (error) {
       console.error('Error getting user by telegram ID:', error);
       return undefined;
@@ -107,7 +169,7 @@ export class MongoStorage implements IStorage {
   async getUserByEmail(email: string): Promise<UserType | undefined> {
     try {
       const user = await User.findOne({ email }).lean();
-      return user ? { ...user, id: user._id.toString() } as UserType : undefined;
+      return user ? this.convertMongoUser(user) : undefined;
     } catch (error) {
       console.error('Error getting user by email:', error);
       return undefined;
@@ -118,11 +180,12 @@ export class MongoStorage implements IStorage {
     try {
       const user = await User.findByIdAndUpdate(
         userId,
-        { role },
-        { new: true, runValidators: true }
+        { role, updatedAt: new Date() },
+        { new: true }
       ).lean();
+      
       if (!user) throw new Error('User not found');
-      return { ...user, id: user._id.toString() } as UserType;
+      return this.convertMongoUser(user);
     } catch (error) {
       console.error('Error updating user role:', error);
       throw error;
@@ -131,40 +194,28 @@ export class MongoStorage implements IStorage {
 
   async createAdminUser(userData: any): Promise<UserType> {
     try {
-      // Remove any id field that might cause conflicts
-      const cleanUserData = { ...userData };
-      delete cleanUserData.id;
-      
-      const user = new User(cleanUserData);
+      const user = new User(userData);
       const savedUser = await user.save();
-      const userObj = savedUser.toObject();
-      return {
-        id: userObj._id.toString(),
-        email: userObj.email || null,
-        firstName: userObj.firstName || null,
-        lastName: userObj.lastName || null,
-        profileImageUrl: userObj.profileImageUrl || null,
-        role: userObj.role || null,
-        phoneNumber: userObj.phoneNumber || null,
-        telegramUserId: userObj.telegramUserId || null,
-        telegramUsername: userObj.telegramUsername || null,
-        password: userObj.password || null,
-        isActive: userObj.isActive ?? true,
-        restaurantId: userObj.restaurantId || null,
-        createdBy: userObj.createdBy || null,
-        createdAt: userObj.createdAt || null,
-        updatedAt: userObj.updatedAt || null,
-      } as UserType;
+      return this.convertMongoUser(savedUser.toObject());
     } catch (error) {
       console.error('Error creating admin user:', error);
       throw error;
     }
   }
 
+  async getUsersByRole(role: string): Promise<UserType[]> {
+    try {
+      const users = await User.find({ role }).lean();
+      return users.map(user => this.convertMongoUser(user));
+    } catch (error) {
+      console.error('Error getting users by role:', error);
+      return [];
+    }
+  }
+
   async deleteUser(id: string): Promise<void> {
     try {
       await User.findByIdAndDelete(id);
-      console.log(`✅ Deleted user with ID: ${id}`);
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
@@ -175,7 +226,7 @@ export class MongoStorage implements IStorage {
   async getRestaurants(): Promise<RestaurantType[]> {
     try {
       const restaurants = await Restaurant.find({}).lean();
-      return restaurants.map(r => ({ ...r, id: r._id.toString() })) as RestaurantType[];
+      return restaurants.map(r => this.convertMongoRestaurant(r));
     } catch (error) {
       console.error('Error getting restaurants:', error);
       return [];
@@ -189,7 +240,7 @@ export class MongoStorage implements IStorage {
   async getRestaurant(id: string): Promise<RestaurantType | undefined> {
     try {
       const restaurant = await Restaurant.findById(id).lean();
-      return restaurant ? { ...restaurant, id: restaurant._id.toString() } as RestaurantType : undefined;
+      return restaurant ? this.convertMongoRestaurant(restaurant) : undefined;
     } catch (error) {
       console.error('Error getting restaurant:', error);
       return undefined;
@@ -198,29 +249,9 @@ export class MongoStorage implements IStorage {
 
   async createRestaurant(restaurantData: InsertRestaurant): Promise<RestaurantType> {
     try {
-      // Remove any id field that might cause conflicts
-      const cleanRestaurantData = { ...restaurantData };
-      delete cleanRestaurantData.id;
-      
-      const restaurant = new Restaurant(cleanRestaurantData);
+      const restaurant = new Restaurant(restaurantData);
       const savedRestaurant = await restaurant.save();
-      const restaurantObj = savedRestaurant.toObject();
-      return {
-        id: restaurantObj._id.toString(),
-        name: restaurantObj.name,
-        description: restaurantObj.description || null,
-        address: restaurantObj.address,
-        phoneNumber: restaurantObj.phoneNumber,
-        email: restaurantObj.email || null,
-        location: restaurantObj.location || null,
-        imageUrl: restaurantObj.imageUrl || null,
-        isActive: restaurantObj.isActive,
-        isApproved: restaurantObj.isApproved,
-        rating: restaurantObj.rating,
-        totalOrders: restaurantObj.totalOrders,
-        createdAt: restaurantObj.createdAt,
-        updatedAt: restaurantObj.updatedAt
-      } as RestaurantType;
+      return this.convertMongoRestaurant(savedRestaurant.toObject());
     } catch (error) {
       console.error('Error creating restaurant:', error);
       throw error;
@@ -231,11 +262,12 @@ export class MongoStorage implements IStorage {
     try {
       const restaurant = await Restaurant.findByIdAndUpdate(
         id,
-        restaurantData,
-        { new: true, runValidators: true }
+        { ...restaurantData, updatedAt: new Date() },
+        { new: true }
       ).lean();
+      
       if (!restaurant) throw new Error('Restaurant not found');
-      return { ...restaurant, id: restaurant._id.toString() } as RestaurantType;
+      return this.convertMongoRestaurant(restaurant);
     } catch (error) {
       console.error('Error updating restaurant:', error);
       throw error;
@@ -255,11 +287,12 @@ export class MongoStorage implements IStorage {
     try {
       const restaurant = await Restaurant.findByIdAndUpdate(
         id,
-        { isApproved: true },
+        { isApproved: true, updatedAt: new Date() },
         { new: true }
       ).lean();
+      
       if (!restaurant) throw new Error('Restaurant not found');
-      return { ...restaurant, id: restaurant._id.toString() } as RestaurantType;
+      return this.convertMongoRestaurant(restaurant);
     } catch (error) {
       console.error('Error approving restaurant:', error);
       throw error;
@@ -270,9 +303,9 @@ export class MongoStorage implements IStorage {
   async getAllAdminUsers(): Promise<UserType[]> {
     try {
       const users = await User.find({ 
-        role: { $in: ['superadmin', 'restaurant_admin', 'kitchen_staff'] } 
+        role: { $in: ['superadmin', 'restaurant_admin', 'kitchen_staff'] }
       }).lean();
-      return users.map(u => ({ ...u, id: u._id.toString() })) as UserType[];
+      return users.map(user => this.convertMongoUser(user));
     } catch (error) {
       console.error('Error getting admin users:', error);
       return [];
@@ -280,364 +313,24 @@ export class MongoStorage implements IStorage {
   }
 
   async deleteAdminUser(id: string): Promise<void> {
-    try {
-      await User.findByIdAndDelete(id);
-    } catch (error) {
-      console.error('Error deleting admin user:', error);
-      throw error;
-    }
+    await this.deleteUser(id);
   }
 
-  // System settings methods
-  async getSystemSettings(): Promise<any> {
-    try {
-      console.log('🔍 Fetching system settings from MongoDB...');
-      let settings = await SystemSettings.findOne({}).lean();
-      if (!settings) {
-        console.log('🆕 No settings found, creating default settings');
-        // Create default settings if none exist
-        const defaultSettings = new SystemSettings({});
-        settings = await defaultSettings.save();
-      }
-      console.log('📋 Settings retrieved:', settings);
-      return { ...settings, id: settings._id.toString() };
-    } catch (error) {
-      console.error('❌ Error getting system settings:', error);
-      return {
-        companyName: 'BeU Delivery',
-        supportEmail: 'support@beu-delivery.com',
-        supportPhone: '+251-911-123456',
-        deliveryFee: 25.00,
-        maxDeliveryDistance: 10,
-        orderTimeout: 30,
-        enableSMSNotifications: true,
-        enableEmailNotifications: true,
-        maintenanceMode: false
-      };
-    }
-  }
-
-  async updateSystemSettings(settingsData: any): Promise<any> {
-    try {
-      console.log('📝 Updating settings with data:', settingsData);
-      let settings = await SystemSettings.findOne({});
-      if (!settings) {
-        console.log('🆕 Creating new settings document');
-        settings = new SystemSettings(settingsData);
-      } else {
-        console.log('📊 Updating existing settings document');
-        Object.assign(settings, settingsData);
-      }
-      const savedSettings = await settings.save();
-      console.log('✅ Settings saved successfully:', savedSettings.toObject());
-      return { ...savedSettings.toObject(), id: savedSettings._id.toString() };
-    } catch (error) {
-      console.error('❌ Error updating system settings:', error);
-      throw error;
-    }
-  }
-
-  async updateCompanyLogo(logoUrl: string): Promise<void> {
-    try {
-      await this.updateSystemSettings({ companyLogo: logoUrl });
-    } catch (error) {
-      console.error('Error updating company logo:', error);
-      throw error;
-    }
-  }
-
-  // Cleanup method for problematic driver documents
-  private async cleanupProblematicDrivers(): Promise<void> {
-    try {
-      // Remove documents with null or undefined id fields
-      const deleteResult = await mongoose.connection.db.collection('drivers').deleteMany({
-        $or: [
-          { id: null },
-          { id: undefined },
-          { id: { $exists: false } },
-          { id: "" }
-        ]
-      });
-      
-      if (deleteResult.deletedCount > 0) {
-        console.log(`🧹 Cleaned up ${deleteResult.deletedCount} problematic driver documents`);
-      }
-      
-      // Drop problematic id index if it exists
-      try {
-        await mongoose.connection.db.collection('drivers').dropIndex('id_1');
-        console.log('✅ Dropped problematic id_1 index');
-      } catch (indexError: any) {
-        if (indexError.code !== 27) { // 27 = IndexNotFound
-          console.log('⚠️  Could not drop id index:', indexError.message);
-        }
-      }
-    } catch (error) {
-      console.log('⚠️  Cleanup failed:', (error as Error).message);
-    }
-  }
-
-  // Driver operations
-  async getDrivers(): Promise<DriverType[]> {
-    try {
-      const drivers = await DriverModel.find({}).lean();
-      return drivers.map(d => ({ ...d, id: d._id.toString() })) as DriverType[];
-    } catch (error) {
-      console.error('Error getting drivers:', error);
-      return [];
-    }
-  }
-
-  async getAllDrivers(): Promise<any[]> {
-    try {
-      console.log('🔍 MongoDB getAllDrivers() called - ENHANCED VERSION v3');
-      
-      // First fetch all drivers using aggregation to include user data
-      const driversWithUsers = await DriverModel.aggregate([
-        {
-          $addFields: {
-            userObjectId: { 
-              $cond: {
-                if: { $eq: [{ $type: "$userId" }, "string"] },
-                then: { $toObjectId: "$userId" },
-                else: "$userId"
-              }
-            }
-          }
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userObjectId',
-            foreignField: '_id',
-            as: 'userInfo'
-          }
-        },
-        {
-          $unwind: {
-            path: '$userInfo',
-            preserveNullAndEmptyArrays: true
-          }
-        }
-      ]);
-      
-      console.log('📊 Raw driver count:', driversWithUsers.length);
-      if (driversWithUsers.length > 0) {
-        console.log('📊 First driver raw:', JSON.stringify(driversWithUsers[0], null, 2));
-        console.log('📊 UserInfo in first driver:', JSON.stringify(driversWithUsers[0]?.userInfo, null, 2));
-      }
-      
-      const result = driversWithUsers.map(d => {
-        // Convert MongoDB location object to array format expected by frontend
-        let currentLocation = null;
-        if (d.currentLocation) {
-          if (d.currentLocation.lat && d.currentLocation.lng) {
-            currentLocation = [d.currentLocation.lat, d.currentLocation.lng];
-          } else if (Array.isArray(d.currentLocation)) {
-            currentLocation = d.currentLocation;
-          }
-        }
-        
-        // Create user object with proper structure for frontend
-        const userObject = d.userInfo ? {
-          firstName: d.userInfo.firstName,
-          lastName: d.userInfo.lastName,
-          email: d.userInfo.email,
-          phoneNumber: d.userInfo.phoneNumber
-        } : null;
-        
-        const driverResult = {
-          id: d._id.toString(),
-          userId: d.userId?.toString(),
-          telegramId: d.telegramId,
-          name: d.name || (d.userInfo ? `${d.userInfo.firstName || ''} ${d.userInfo.lastName || ''}`.trim() : null) || 'Driver',
-          phoneNumber: d.phoneNumber || d.userInfo?.phoneNumber || null,
-          profileImageUrl: d.profileImageUrl || d.userInfo?.profileImageUrl,
-          governmentIdFrontUrl: d.governmentIdFrontUrl,
-          governmentIdBackUrl: d.governmentIdBackUrl,
-          licenseNumber: d.licenseNumber,
-          vehicleType: d.vehicleType,
-          vehiclePlate: d.vehiclePlate,
-          licenseImageUrl: d.licenseImageUrl,
-          vehicleImageUrl: d.vehicleImageUrl,
-          idCardImageUrl: d.idCardImageUrl,
-          currentLocation: currentLocation,
-          status: d.status,
-          isOnline: d.isOnline || false,
-          isAvailable: d.isAvailable || false,
-          isApproved: d.isApproved || false,
-          isBlocked: d.isBlocked || false,
-          rating: d.rating || "0.00",
-          totalDeliveries: d.totalDeliveries || 0,
-          totalEarnings: d.totalEarnings || "0.00",
-          todayEarnings: d.todayEarnings || "0.00",
-          weeklyEarnings: d.weeklyEarnings || "0.00",
-          zone: d.zone,
-          lastOnline: d.lastOnline,
-          createdAt: d.createdAt,
-          updatedAt: d.updatedAt,
-          user: userObject
-        };
-        
-        console.log('✅ Driver processed:', { 
-          id: driverResult.id,
-          driverName: driverResult.name, 
-          userFirstName: userObject?.firstName,
-          userLastName: userObject?.lastName,
-          userEmail: userObject?.email,
-          phoneNumber: driverResult.phoneNumber
-        });
-        
-        return driverResult;
-      });
-      
-      console.log('📋 Total drivers returned:', result.length);
-      return result;
-    } catch (error) {
-      console.error('❌ Error getting all drivers:', error);
-      return [];
-    }
-  }
-
-  async updateDriverCreditBalance(driverId: string, amount: number): Promise<DriverType> {
-    try {
-      const driver = await DriverModel.findByIdAndUpdate(
-        driverId,
-        { $inc: { creditBalance: amount } },
-        { new: true }
-      ).lean();
-      if (!driver) throw new Error('Driver not found');
-      return { ...driver, id: driver._id.toString() } as DriverType;
-    } catch (error) {
-      console.error('Error updating driver credit balance:', error);
-      throw error;
-    }
-  }
-
-  async deductDriverCredit(driverId: string, amount: number): Promise<DriverType> {
-    try {
-      const driver = await DriverModel.findByIdAndUpdate(
-        driverId,
-        { $inc: { creditBalance: -amount } },
-        { new: true }
-      ).lean();
-      if (!driver) throw new Error('Driver not found');
-      return { ...driver, id: driver._id.toString() } as DriverType;
-    } catch (error) {
-      console.error('Error deducting driver credit:', error);
-      throw error;
-    }
-  }
-
-  async approveDriver(driverId: string): Promise<DriverType> {
-    try {
-      const driver = await DriverModel.findByIdAndUpdate(
-        driverId,
-        { isApproved: true },
-        { new: true }
-      ).lean();
-      if (!driver) throw new Error('Driver not found');
-      return { ...driver, id: driver._id.toString() } as DriverType;
-    } catch (error) {
-      console.error('Error approving driver:', error);
-      throw error;
-    }
-  }
-
-  async rejectDriver(driverId: string): Promise<void> {
-    try {
-      await DriverModel.findByIdAndDelete(driverId);
-    } catch (error) {
-      console.error('Error rejecting driver:', error);
-      throw error;
-    }
-  }
-
-  // Password management methods
-  async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
-    // This would use bcrypt in a real implementation
-    return true;
-  }
-
-  async updateAdminPassword(adminId: string, newHashedPassword: string): Promise<void> {
-    try {
-      await User.findByIdAndUpdate(adminId, { password: newHashedPassword });
-    } catch (error) {
-      console.error('Error updating admin password:', error);
-      throw error;
-    }
-  }
-
-  async updateAdminProfile(adminId: string, profileData: { email: string; firstName: string; lastName: string }): Promise<UserType> {
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        adminId,
-        {
-          email: profileData.email,
-          firstName: profileData.firstName,
-          lastName: profileData.lastName
-        },
-        { new: true }
-      ).lean();
-      
-      if (!updatedUser) {
-        throw new Error('User not found');
-      }
-      
-      return {
-        ...updatedUser,
-        id: updatedUser._id.toString()
-      } as UserType;
-    } catch (error) {
-      console.error('Error updating admin profile:', error);
-      throw error;
-    }
-  }
-
-  // Analytics operations
-  async getDashboardStats(): Promise<any> {
-    try {
-      const totalRestaurants = await Restaurant.countDocuments({});
-      const activeRestaurants = await Restaurant.countDocuments({ isActive: true });
-      const totalDrivers = await DriverModel.countDocuments({});
-      const activeDrivers = await DriverModel.countDocuments({ isApproved: true, isOnline: true });
-      const pendingDrivers = await DriverModel.countDocuments({ isApproved: false });
-
-      return {
-        totalRestaurants,
-        activeRestaurants,
-        totalDrivers,
-        activeDrivers,
-        pendingDrivers,
-        totalOrders: 0, // TODO: Implement orders collection
-        revenue: 0,
-      };
-    } catch (error) {
-      console.error('Error getting dashboard stats:', error);
-      return {
-        totalRestaurants: 0,
-        activeRestaurants: 0,
-        totalDrivers: 0,
-        activeDrivers: 0,
-        pendingDrivers: 0,
-        totalOrders: 0,
-        revenue: 0,
-      };
-    }
-  }
-
-  // Menu Category operations
+  // Menu operations
   async getMenuCategories(restaurantId: string): Promise<MenuCategory[]> {
     try {
-      const categories = await MenuCategoryModel.find({ restaurantId }).sort({ sortOrder: 1 });
-      return categories.map((cat: any) => ({
-        id: cat._id.toString(),
-        restaurantId: cat.restaurantId,
-        name: cat.name,
-        description: cat.description || null,
-        isActive: cat.isActive,
-        sortOrder: cat.sortOrder,
-        createdAt: cat.createdAt
+      const categories = await MenuCategoryModel.find({ restaurantId }).lean();
+      return categories.map((category: any) => ({
+        id: category._id.toString(),
+        restaurantId: category.restaurantId,
+        name: category.name,
+        description: category.description || null,
+        isActive: category.isActive,
+        status: category.status || 'active',
+        lastModifiedBy: category.lastModifiedBy || null,
+        sortOrder: category.sortOrder || null,
+        createdAt: category.createdAt || null,
+        updatedAt: category.updatedAt || null,
       }));
     } catch (error) {
       console.error('Error getting menu categories:', error);
@@ -645,44 +338,51 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async createMenuCategory(category: InsertMenuCategory): Promise<MenuCategory> {
+  async createMenuCategory(categoryData: InsertMenuCategory): Promise<MenuCategory> {
     try {
-      // Remove any id field that might cause conflicts
-      const cleanCategoryData = { ...category };
-      delete cleanCategoryData.id;
+      const category = new MenuCategoryModel(categoryData);
+      const savedCategory = await category.save();
+      const categoryObj = savedCategory.toObject();
       
-      const newCategory = new MenuCategoryModel(cleanCategoryData);
-      await newCategory.save();
       return {
-        id: newCategory._id.toString(),
-        restaurantId: newCategory.restaurantId,
-        name: newCategory.name,
-        description: newCategory.description || null,
-        isActive: newCategory.isActive,
-        status: 'active',
-        lastModifiedBy: null,
-        sortOrder: newCategory.sortOrder,
-        createdAt: newCategory.createdAt,
-        updatedAt: newCategory.createdAt
-      } as MenuCategory;
+        id: categoryObj._id.toString(),
+        restaurantId: categoryObj.restaurantId,
+        name: categoryObj.name,
+        description: categoryObj.description || null,
+        isActive: categoryObj.isActive,
+        status: categoryObj.status || 'active',
+        lastModifiedBy: categoryObj.lastModifiedBy || null,
+        sortOrder: categoryObj.sortOrder || null,
+        createdAt: categoryObj.createdAt || null,
+        updatedAt: categoryObj.updatedAt || null,
+      };
     } catch (error) {
       console.error('Error creating menu category:', error);
       throw error;
     }
   }
 
-  async updateMenuCategory(id: string, category: Partial<InsertMenuCategory>): Promise<MenuCategory> {
+  async updateMenuCategory(id: string, categoryData: Partial<InsertMenuCategory>): Promise<MenuCategory> {
     try {
-      const updated = await MenuCategoryModel.findByIdAndUpdate(id, category, { new: true });
-      if (!updated) throw new Error('Category not found');
+      const category = await MenuCategoryModel.findByIdAndUpdate(
+        id,
+        { ...categoryData, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!category) throw new Error('Category not found');
+      
       return {
-        id: updated._id.toString(),
-        restaurantId: updated.restaurantId,
-        name: updated.name,
-        description: updated.description || null,
-        isActive: updated.isActive,
-        sortOrder: updated.sortOrder,
-        createdAt: updated.createdAt
+        id: category._id.toString(),
+        restaurantId: category.restaurantId,
+        name: category.name,
+        description: category.description || null,
+        isActive: category.isActive,
+        status: category.status || 'active',
+        lastModifiedBy: category.lastModifiedBy || null,
+        sortOrder: category.sortOrder || null,
+        createdAt: category.createdAt || null,
+        updatedAt: category.updatedAt || null,
       };
     } catch (error) {
       console.error('Error updating menu category:', error);
@@ -699,10 +399,9 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  // Menu Item operations
   async getMenuItems(restaurantId: string): Promise<MenuItem[]> {
     try {
-      const items = await MenuItemModel.find({ restaurantId });
+      const items = await MenuItemModel.find({ restaurantId }).lean();
       return items.map((item: any) => ({
         id: item._id.toString(),
         restaurantId: item.restaurantId,
@@ -712,16 +411,16 @@ export class MongoStorage implements IStorage {
         price: item.price.toString(),
         imageUrl: item.imageUrl || null,
         isAvailable: item.isAvailable,
-        status: 'active',
-        lastModifiedBy: null,
+        status: item.status || 'active',
+        lastModifiedBy: item.lastModifiedBy || null,
         preparationTime: item.preparationTime || null,
         ingredients: item.ingredients || [],
-        isVegetarian: item.isVegetarian,
-        isVegan: item.isVegan,
-        spicyLevel: item.spicyLevel,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-      } as MenuItem));
+        isVegetarian: item.isVegetarian || false,
+        isVegan: item.isVegan || false,
+        spicyLevel: item.spicyLevel || null,
+        createdAt: item.createdAt || null,
+        updatedAt: item.updatedAt || null,
+      }));
     } catch (error) {
       console.error('Error getting menu items:', error);
       return [];
@@ -730,7 +429,7 @@ export class MongoStorage implements IStorage {
 
   async getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
     try {
-      const items = await MenuItemModel.find({ categoryId });
+      const items = await MenuItemModel.find({ categoryId }).lean();
       return items.map((item: any) => ({
         id: item._id.toString(),
         restaurantId: item.restaurantId,
@@ -740,78 +439,82 @@ export class MongoStorage implements IStorage {
         price: item.price.toString(),
         imageUrl: item.imageUrl || null,
         isAvailable: item.isAvailable,
-        status: 'active',
-        lastModifiedBy: null,
+        status: item.status || 'active',
+        lastModifiedBy: item.lastModifiedBy || null,
         preparationTime: item.preparationTime || null,
         ingredients: item.ingredients || [],
-        isVegetarian: item.isVegetarian,
-        isVegan: item.isVegan,
-        spicyLevel: item.spicyLevel,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-      } as MenuItem));
+        isVegetarian: item.isVegetarian || false,
+        isVegan: item.isVegan || false,
+        spicyLevel: item.spicyLevel || null,
+        createdAt: item.createdAt || null,
+        updatedAt: item.updatedAt || null,
+      }));
     } catch (error) {
       console.error('Error getting menu items by category:', error);
       return [];
     }
   }
 
-  async createMenuItem(item: InsertMenuItem): Promise<MenuItem> {
+  async createMenuItem(itemData: InsertMenuItem): Promise<MenuItem> {
     try {
-      // Remove any id field that might cause conflicts
-      const cleanItemData = { ...item };
-      delete cleanItemData.id;
+      const item = new MenuItemModel(itemData);
+      const savedItem = await item.save();
+      const itemObj = savedItem.toObject();
       
-      const newItem = new MenuItemModel(cleanItemData);
-      await newItem.save();
       return {
-        id: newItem._id.toString(),
-        restaurantId: newItem.restaurantId,
-        categoryId: newItem.categoryId,
-        name: newItem.name,
-        description: newItem.description || null,
-        price: newItem.price.toString(),
-        imageUrl: newItem.imageUrl || null,
-        isAvailable: newItem.isAvailable,
-        status: 'active',
-        lastModifiedBy: null,
-        preparationTime: newItem.preparationTime || null,
-        ingredients: newItem.ingredients || [],
-        isVegetarian: newItem.isVegetarian,
-        isVegan: newItem.isVegan,
-        spicyLevel: newItem.spicyLevel,
-        createdAt: newItem.createdAt,
-        updatedAt: newItem.updatedAt
-      } as MenuItem;
+        id: itemObj._id.toString(),
+        restaurantId: itemObj.restaurantId,
+        categoryId: itemObj.categoryId,
+        name: itemObj.name,
+        description: itemObj.description || null,
+        price: itemObj.price.toString(),
+        imageUrl: itemObj.imageUrl || null,
+        isAvailable: itemObj.isAvailable,
+        status: itemObj.status || 'active',
+        lastModifiedBy: itemObj.lastModifiedBy || null,
+        preparationTime: itemObj.preparationTime || null,
+        ingredients: itemObj.ingredients || [],
+        isVegetarian: itemObj.isVegetarian || false,
+        isVegan: itemObj.isVegan || false,
+        spicyLevel: itemObj.spicyLevel || null,
+        createdAt: itemObj.createdAt || null,
+        updatedAt: itemObj.updatedAt || null,
+      };
     } catch (error) {
       console.error('Error creating menu item:', error);
       throw error;
     }
   }
 
-  async updateMenuItem(id: string, item: Partial<InsertMenuItem>): Promise<MenuItem> {
+  async updateMenuItem(id: string, itemData: Partial<InsertMenuItem>): Promise<MenuItem> {
     try {
-      const updated = await MenuItemModel.findByIdAndUpdate(id, item, { new: true });
-      if (!updated) throw new Error('Menu item not found');
+      const item = await MenuItemModel.findByIdAndUpdate(
+        id,
+        { ...itemData, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!item) throw new Error('Menu item not found');
+      
       return {
-        id: updated._id.toString(),
-        restaurantId: updated.restaurantId,
-        categoryId: updated.categoryId,
-        name: updated.name,
-        description: updated.description || null,
-        price: updated.price.toString(),
-        imageUrl: updated.imageUrl || null,
-        isAvailable: updated.isAvailable,
-        status: 'active',
-        lastModifiedBy: null,
-        preparationTime: updated.preparationTime || null,
-        ingredients: updated.ingredients || [],
-        isVegetarian: updated.isVegetarian,
-        isVegan: updated.isVegan,
-        spicyLevel: updated.spicyLevel,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt
-      } as MenuItem;
+        id: item._id.toString(),
+        restaurantId: item.restaurantId,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description || null,
+        price: item.price.toString(),
+        imageUrl: item.imageUrl || null,
+        isAvailable: item.isAvailable,
+        status: item.status || 'active',
+        lastModifiedBy: item.lastModifiedBy || null,
+        preparationTime: item.preparationTime || null,
+        ingredients: item.ingredients || [],
+        isVegetarian: item.isVegetarian || false,
+        isVegan: item.isVegan || false,
+        spicyLevel: item.spicyLevel || null,
+        createdAt: item.createdAt || null,
+        updatedAt: item.updatedAt || null,
+      };
     } catch (error) {
       console.error('Error updating menu item:', error);
       throw error;
@@ -826,296 +529,89 @@ export class MongoStorage implements IStorage {
       throw error;
     }
   }
+
+  // Order operations  
   async getOrders(): Promise<Order[]> {
     try {
-      const orders = await OrderModel.find().sort({ createdAt: -1 });
-      return orders.map((order: any) => ({
-        id: order._id.toString(),
-        orderNumber: order.orderNumber,
-        customerId: order.customerId,
-        customerName: order.customerName || null,
-        customerPhone: order.customerPhone || null,
-        restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || null,
-        driverId: order.driverId || null,
-        items: order.items || [],
-        total: order.total || order.totalAmount || 0,
-        totalAmount: order.totalAmount || order.total || 0,
-        deliveryFee: order.deliveryFee || 0,
-        subtotal: order.subtotal || 0,
-        tax: order.tax || 0,
-        status: order.status,
-        deliveryAddress: order.deliveryAddress,
-        restaurantAddressName: order.restaurantAddressName || null,
-        customerAddressName: order.customerAddressName || null,
-        specialInstructions: order.specialInstructions || null,
-        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
-        actualDeliveryTime: order.actualDeliveryTime || null,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
-      }));
+      const orders = await OrderModel.find({}).lean();
+      return orders.map(order => this.convertMongoOrder(order));
     } catch (error) {
       console.error('Error getting orders:', error);
       return [];
     }
   }
+
   async getOrder(id: string): Promise<Order | undefined> {
     try {
-      console.log(`🔍 MongoDB getOrder called for ID: ${id}`);
       const order = await OrderModel.findById(id).lean();
-      if (!order) {
-        console.log(`❌ Order not found in MongoDB: ${id}`);
-        return undefined;
-      }
-      
-      console.log(`✅ Order found: ${order.orderNumber} (${order.status})`);
-      return {
-        id: order._id.toString(),
-        orderNumber: order.orderNumber,
-        customerId: order.customerId?.toString() || null,
-        customerName: order.customerName || null,
-        customerPhone: order.customerPhone || null,
-        restaurantId: order.restaurantId?.toString() || null,
-        restaurantName: order.restaurantName || null,
-        driverId: order.driverId?.toString() || null,
-        items: order.items || [],
-        total: order.total || 0,
-        totalAmount: order.totalAmount || order.total || 0,
-        deliveryFee: order.deliveryFee || 50,
-        subtotal: order.subtotal || 0,
-        tax: order.tax || 0,
-        status: order.status || 'pending',
-        deliveryAddress: order.deliveryAddress || null,
-        restaurantAddressName: order.restaurantAddressName || null,
-        customerAddressName: order.customerAddressName || null,
-        specialInstructions: order.specialInstructions || null,
-        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
-        actualDeliveryTime: order.actualDeliveryTime || null,
-        createdAt: order.createdAt || null,
-        updatedAt: order.updatedAt || null,
-      } as Order;
+      return order ? this.convertMongoOrder(order) : undefined;
     } catch (error) {
-      console.error('❌ Error getting order from MongoDB:', error);
+      console.error('Error getting order:', error);
       return undefined;
     }
   }
+
   async getOrdersByStatus(status: string): Promise<Order[]> {
     try {
-      const orders = await OrderModel.find({ status }).sort({ createdAt: -1 });
-      return orders.map((order: any) => ({
-        id: order._id.toString(),
-        orderNumber: order.orderNumber,
-        customerId: order.customerId,
-        customerName: order.customerName || null,
-        customerPhone: order.customerPhone || null,
-        restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || null,
-        driverId: order.driverId || null,
-        items: order.items || [],
-        total: order.total || order.totalAmount || 0,
-        totalAmount: order.totalAmount || order.total || 0,
-        deliveryFee: order.deliveryFee || 0,
-        subtotal: order.subtotal || 0,
-        tax: order.tax || 0,
-        status: order.status,
-        deliveryAddress: order.deliveryAddress,
-        restaurantAddressName: order.restaurantAddressName || null,
-        customerAddressName: order.customerAddressName || null,
-        specialInstructions: order.specialInstructions || null,
-        estimatedDeliveryTime: order.estimatedDeliveryTime || null,
-        actualDeliveryTime: order.actualDeliveryTime || null,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
-      }));
+      const orders = await OrderModel.find({ status }).lean();
+      return orders.map(order => this.convertMongoOrder(order));
     } catch (error) {
       console.error('Error getting orders by status:', error);
       return [];
     }
   }
+
   async getOrdersByRestaurant(restaurantId: string): Promise<Order[]> {
     try {
-      const orders = await OrderModel.find({ restaurantId }).sort({ createdAt: -1 }).lean();
-      
-      return orders.map((order: any) => ({
-        id: order._id.toString(),
-        orderNumber: order.orderNumber,
-        customerId: order.customerId,
-        restaurantId: order.restaurantId,
-        items: order.items,
-        subtotal: order.subtotal,
-        total: order.total,
-        deliveryAddress: order.deliveryAddress,
-        paymentMethod: order.paymentMethod,
-        status: order.status,
-        specialInstructions: order.specialInstructions,
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt
-      }));
+      const orders = await OrderModel.find({ restaurantId }).lean();
+      return orders.map(order => this.convertMongoOrder(order));
     } catch (error) {
       console.error('Error getting orders by restaurant:', error);
       return [];
     }
   }
-  async getOrdersByCustomer(customerId: string): Promise<Order[]> { return []; }
-  async createOrder(orderData: any): Promise<any> {
+
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> {
     try {
-      console.log('🔄 Creating order with reverse geocoding...');
-      
-      // Get restaurant information for geocoding
-      const restaurant = await Restaurant.findById(orderData.restaurantId);
-      let restaurantAddressName = 'Restaurant Address';
-      let customerAddressName = 'Delivery Address';
-      
-      // Perform reverse geocoding if we have locations
-      if (restaurant?.location && orderData.deliveryAddress?.latitude && orderData.deliveryAddress?.longitude) {
-        console.log('📍 Performing reverse geocoding for addresses...');
-        try {
-          const locationInfo = await geocodingService.getOrderLocationInfo(
-            { lat: restaurant.location.latitude, lng: restaurant.location.longitude },
-            { lat: orderData.deliveryAddress.latitude, lng: orderData.deliveryAddress.longitude }
-          );
-          
-          restaurantAddressName = locationInfo.restaurantAddressName;
-          customerAddressName = locationInfo.customerAddressName;
-          console.log(`✅ Geocoded addresses: Restaurant: ${restaurantAddressName}, Customer: ${customerAddressName}`);
-        } catch (geocodingError) {
-          console.warn('⚠️ Geocoding failed, using fallback addresses:', geocodingError);
-          restaurantAddressName = restaurant.address || 'Restaurant Address';
-          customerAddressName = orderData.deliveryAddress.address || 'Delivery Address';
-        }
-      }
-
-      const order = new OrderModel({
-        customerId: orderData.customerId,
-        restaurantId: orderData.restaurantId,
-        orderNumber: orderData.orderNumber,
-        items: orderData.items,
-        subtotal: orderData.subtotal,
-        total: orderData.total,
-        deliveryAddress: orderData.deliveryAddress,
-        paymentMethod: orderData.paymentMethod,
-        status: orderData.status || 'pending',
-        specialInstructions: orderData.specialInstructions || '',
-        // Add human-readable address names
-        restaurantAddressName,
-        customerAddressName
-      });
-
-      const savedOrder = await order.save();
-      
-      return {
-        id: savedOrder._id.toString(),
-        orderNumber: savedOrder.orderNumber,
-        customerId: savedOrder.customerId,
-        restaurantId: savedOrder.restaurantId,
-        items: savedOrder.items,
-        subtotal: savedOrder.subtotal,
-        total: savedOrder.total,
-        deliveryAddress: savedOrder.deliveryAddress,
-        paymentMethod: savedOrder.paymentMethod,
-        status: savedOrder.status,
-        specialInstructions: savedOrder.specialInstructions,
-        restaurantAddressName: savedOrder.restaurantAddressName,
-        customerAddressName: savedOrder.customerAddressName,
-        createdAt: savedOrder.createdAt,
-        updatedAt: savedOrder.updatedAt
-      };
+      const orders = await OrderModel.find({ customerId }).lean();
+      return orders.map(order => this.convertMongoOrder(order));
     } catch (error) {
-      console.error('Error creating order in MongoDB:', error);
-      
-      // If this is a duplicate key error on the 'id' field, try to drop the collection and recreate
-      if (error.code === 11000 && error.message.includes('id_1')) {
-        console.log('Attempting to fix duplicate key error by clearing collection...');
-        try {
-          await OrderModel.collection.drop();
-          console.log('Cleared orders collection, retrying order creation...');
-          
-          // Retry the order creation with geocoding
-          const order = new OrderModel({
-            customerId: orderData.customerId,
-            restaurantId: orderData.restaurantId,
-            orderNumber: orderData.orderNumber,
-            items: orderData.items,
-            subtotal: orderData.subtotal,
-            total: orderData.total,
-            deliveryAddress: orderData.deliveryAddress,
-            paymentMethod: orderData.paymentMethod,
-            status: orderData.status || 'pending',
-            specialInstructions: orderData.specialInstructions || '',
-            restaurantAddressName,
-            customerAddressName
-          });
+      console.error('Error getting orders by customer:', error);
+      return [];
+    }
+  }
 
-          const savedOrder = await order.save();
-          
-          return {
-            id: savedOrder._id.toString(),
-            orderNumber: savedOrder.orderNumber,
-            customerId: savedOrder.customerId,
-            restaurantId: savedOrder.restaurantId,
-            items: savedOrder.items,
-            subtotal: savedOrder.subtotal,
-            total: savedOrder.total,
-            deliveryAddress: savedOrder.deliveryAddress,
-            paymentMethod: savedOrder.paymentMethod,
-            status: savedOrder.status,
-            specialInstructions: savedOrder.specialInstructions,
-            restaurantAddressName: savedOrder.restaurantAddressName,
-            customerAddressName: savedOrder.customerAddressName,
-            createdAt: savedOrder.createdAt,
-            updatedAt: savedOrder.updatedAt
-          };
-        } catch (retryError) {
-          console.error('Retry failed:', retryError);
-          throw retryError;
-        }
-      }
-      
+  async getOrdersByDriver(driverId: string): Promise<Order[]> {
+    try {
+      const orders = await OrderModel.find({ driverId }).lean();
+      return orders.map(order => this.convertMongoOrder(order));
+    } catch (error) {
+      console.error('Error getting orders by driver:', error);
+      return [];
+    }
+  }
+
+  async createOrder(orderData: InsertOrder): Promise<Order> {
+    try {
+      const order = new OrderModel(orderData);
+      const savedOrder = await order.save();
+      return this.convertMongoOrder(savedOrder.toObject());
+    } catch (error) {
+      console.error('Error creating order:', error);
       throw error;
     }
   }
-  async updateOrder(id: string, orderUpdate: Partial<InsertOrder>): Promise<Order> {
+
+  async updateOrder(id: string, orderData: Partial<InsertOrder>): Promise<Order> {
     try {
-      console.log(`🔧 MongoDB updateOrder - updating order ${id} with:`, orderUpdate);
-      
-      const updatedOrder = await OrderModel.findByIdAndUpdate(
+      const order = await OrderModel.findByIdAndUpdate(
         id,
-        { 
-          ...orderUpdate,
-          updatedAt: new Date()
-        },
+        { ...orderData, updatedAt: new Date() },
         { new: true }
-      );
+      ).lean();
       
-      console.log(`✅ MongoDB updateOrder - result:`, updatedOrder ? { id: updatedOrder._id.toString(), driverId: updatedOrder.driverId, status: updatedOrder.status } : 'null');
-
-      if (!updatedOrder) {
-        throw new Error('Order not found');
-      }
-
-      return {
-        id: updatedOrder._id.toString(),
-        orderNumber: updatedOrder.orderNumber,
-        customerId: updatedOrder.customerId,
-        customerName: updatedOrder.customerName || null,
-        customerPhone: updatedOrder.customerPhone || null,
-        restaurantId: updatedOrder.restaurantId,
-        restaurantName: updatedOrder.restaurantName || null,
-        driverId: updatedOrder.driverId || null,
-        items: updatedOrder.items || [],
-        total: updatedOrder.total || updatedOrder.totalAmount || 0,
-        totalAmount: updatedOrder.totalAmount || updatedOrder.total || 0,
-        deliveryFee: updatedOrder.deliveryFee || 0,
-        subtotal: updatedOrder.subtotal || 0,
-        tax: updatedOrder.tax || 0,
-        status: updatedOrder.status,
-        deliveryAddress: updatedOrder.deliveryAddress,
-        specialInstructions: updatedOrder.specialInstructions || null,
-        estimatedDeliveryTime: updatedOrder.estimatedDeliveryTime || null,
-        actualDeliveryTime: updatedOrder.actualDeliveryTime || null,
-        createdAt: updatedOrder.createdAt,
-        updatedAt: updatedOrder.updatedAt
-      };
+      if (!order) throw new Error('Order not found');
+      return this.convertMongoOrder(order);
     } catch (error) {
       console.error('Error updating order:', error);
       throw error;
@@ -1124,57 +620,35 @@ export class MongoStorage implements IStorage {
 
   async updateOrderStatus(id: string, status: string): Promise<Order> {
     try {
-      console.log(`🔍 Attempting to update order with ID: ${id} to status: ${status}`);
-      
-      // Try to find the order first to debug
-      const existingOrder = await OrderModel.findById(id);
-      if (!existingOrder) {
-        console.log(`❌ Order not found with ID: ${id}`);
-        // Try to find orders that might match
-        const allOrders = await OrderModel.find().limit(5);
-        console.log(`📋 Available orders (first 5):`, allOrders.map(o => ({ id: o._id.toString(), orderNumber: o.orderNumber, status: o.status })));
-        throw new Error(`Order not found with ID: ${id}`);
-      }
-
-      console.log(`✅ Found order: ${existingOrder.orderNumber} with current status: ${existingOrder.status}`);
-
-      const updatedOrder = await OrderModel.findByIdAndUpdate(
+      const order = await OrderModel.findByIdAndUpdate(
         id,
-        { 
-          status,
-          updatedAt: new Date()
-        },
+        { status, updatedAt: new Date() },
         { new: true }
-      );
-
-      if (!updatedOrder) {
-        throw new Error('Order not found');
-      }
-
-      return {
-        id: updatedOrder._id.toString(),
-        orderNumber: updatedOrder.orderNumber,
-        customerId: updatedOrder.customerId,
-        restaurantId: updatedOrder.restaurantId,
-        items: updatedOrder.items,
-        subtotal: updatedOrder.subtotal,
-        total: updatedOrder.total,
-        deliveryAddress: updatedOrder.deliveryAddress,
-        paymentMethod: updatedOrder.paymentMethod,
-        status: updatedOrder.status,
-        specialInstructions: updatedOrder.specialInstructions,
-        createdAt: updatedOrder.createdAt,
-        updatedAt: updatedOrder.updatedAt
-      };
+      ).lean();
+      
+      if (!order) throw new Error('Order not found');
+      return this.convertMongoOrder(order);
     } catch (error) {
       console.error('Error updating order status:', error);
       throw error;
     }
   }
+
+  // Driver operations
+  async getDrivers(): Promise<DriverType[]> {
+    try {
+      const drivers = await DriverModel.find({}).lean();
+      return drivers.map(driver => this.convertMongoDriver(driver));
+    } catch (error) {
+      console.error('Error getting drivers:', error);
+      return [];
+    }
+  }
+
   async getDriver(id: string): Promise<DriverType | undefined> {
     try {
-      const driver = await DriverModel.findById(id);
-      return driver ? this.convertDriverDocument(driver) : undefined;
+      const driver = await DriverModel.findById(id).lean();
+      return driver ? this.convertMongoDriver(driver) : undefined;
     } catch (error) {
       console.error('Error getting driver:', error);
       return undefined;
@@ -1187,117 +661,89 @@ export class MongoStorage implements IStorage {
 
   async getDriverByUserId(userId: string): Promise<DriverType | undefined> {
     try {
-      const driver = await DriverModel.findOne({ userId });
-      return driver ? this.convertDriverDocument(driver) : undefined;
+      const driver = await DriverModel.findOne({ userId }).lean();
+      return driver ? this.convertMongoDriver(driver) : undefined;
     } catch (error) {
-      console.error('Error getting driver by userId:', error);
+      console.error('Error getting driver by user ID:', error);
       return undefined;
     }
   }
 
   async getDriverByTelegramId(telegramId: string): Promise<DriverType | undefined> {
     try {
-      const driver = await DriverModel.findOne({ telegramId });
-      return driver ? this.convertDriverDocument(driver) : undefined;
+      const driver = await DriverModel.findOne({ telegramId }).lean();
+      return driver ? this.convertMongoDriver(driver) : undefined;
     } catch (error) {
-      console.error('Error getting driver by telegramId:', error);
+      console.error('Error getting driver by telegram ID:', error);
       return undefined;
     }
   }
 
   async createDriver(driverData: InsertDriver): Promise<DriverType> {
     try {
-      console.log('💾 MongoDB createDriver called with data:', driverData);
-      
-      // First, clean up any problematic documents if they exist
-      try {
-        await this.cleanupProblematicDrivers();
-      } catch (cleanupError) {
-        console.log('⚠️  Cleanup attempt failed, proceeding with creation:', cleanupError.message);
-      }
-      
-      // Remove any id field that might cause conflicts with MongoDB _id
-      const cleanDriverData = { ...driverData };
-      delete (cleanDriverData as any).id;
-      
-      const driver = new DriverModel(cleanDriverData);
+      const driver = new DriverModel(driverData);
       const savedDriver = await driver.save();
-      console.log('✅ Driver saved to MongoDB:', {
-        id: savedDriver._id,
-        name: savedDriver.name,
-        phoneNumber: savedDriver.phoneNumber,
-        telegramId: savedDriver.telegramId
-      });
-      return this.convertDriverDocument(savedDriver);
+      return this.convertMongoDriver(savedDriver.toObject());
     } catch (error) {
-      console.error('❌ Error creating driver in MongoDB:', error);
-      
-      // If it's a duplicate key error on the id field, try cleanup and retry once
-      if ((error as any).code === 11000 && (error as any).keyPattern?.id) {
-        console.log('🔧 Attempting cleanup and retry due to id conflict...');
-        try {
-          await this.cleanupProblematicDrivers();
-          
-          // Retry the creation
-          const cleanDriverData = { ...driverData };
-          delete (cleanDriverData as any).id;
-          
-          const driver = new DriverModel(cleanDriverData);
-          const savedDriver = await driver.save();
-          console.log('✅ Driver saved after cleanup retry:', {
-            id: savedDriver._id,
-            name: savedDriver.name,
-            phoneNumber: savedDriver.phoneNumber,
-            telegramId: savedDriver.telegramId
-          });
-          return this.convertDriverDocument(savedDriver);
-        } catch (retryError) {
-          console.error('❌ Retry after cleanup also failed:', retryError);
-          throw retryError;
-        }
-      }
-      
+      console.error('Error creating driver:', error);
       throw error;
     }
   }
 
-  async updateDriver(id: string, driverUpdate: Partial<InsertDriver>): Promise<DriverType> {
+  async updateDriver(id: string, driverData: Partial<InsertDriver>): Promise<DriverType> {
     try {
-      const updatedDriver = await DriverModel.findByIdAndUpdate(
+      const driver = await DriverModel.findByIdAndUpdate(
         id,
-        { ...driverUpdate, updatedAt: new Date() },
+        { ...driverData, updatedAt: new Date() },
         { new: true }
-      );
-
-      if (!updatedDriver) {
-        throw new Error('Driver not found');
-      }
-
-      return this.convertDriverDocument(updatedDriver);
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error updating driver:', error);
       throw error;
     }
   }
 
-  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<DriverType> {
+  async updateDriverCreditBalance(driverId: string, amount: number): Promise<DriverType> {
     try {
-      const updatedDriver = await DriverModel.findByIdAndUpdate(
-        id,
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
         { 
-          isOnline, 
-          isAvailable,
-          lastOnline: new Date(),
-          updatedAt: new Date() 
+          $inc: { creditBalance: amount },
+          updatedAt: new Date()
         },
         { new: true }
-      );
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
+    } catch (error) {
+      console.error('Error updating driver credit balance:', error);
+      throw error;
+    }
+  }
 
-      if (!updatedDriver) {
-        throw new Error('Driver not found');
-      }
+  async deductDriverCredit(driverId: string, amount: number): Promise<DriverType> {
+    return this.updateDriverCreditBalance(driverId, -amount);
+  }
 
-      return this.convertDriverDocument(updatedDriver);
+  async updateDriverStatus(id: string, isOnline: boolean, isAvailable: boolean): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findByIdAndUpdate(
+        id,
+        { 
+          isOnline,
+          isAvailable,
+          lastOnline: isOnline ? new Date() : undefined,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error updating driver status:', error);
       throw error;
@@ -1306,24 +752,18 @@ export class MongoStorage implements IStorage {
 
   async updateDriverLocation(id: string, location: { lat: number; lng: number }): Promise<DriverType> {
     try {
-      const updatedDriver = await DriverModel.findByIdAndUpdate(
+      const driver = await DriverModel.findByIdAndUpdate(
         id,
         { 
-          currentLocation: {
-            lat: location.lat,
-            lng: location.lng
-          },
-          lastLocationUpdate: new Date(),
-          updatedAt: new Date() 
+          currentLocation: location,
+          lastOnline: new Date(),
+          updatedAt: new Date()
         },
         { new: true }
-      );
-
-      if (!updatedDriver) {
-        throw new Error('Driver not found');
-      }
-
-      return this.convertDriverDocument(updatedDriver);
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error updating driver location:', error);
       throw error;
@@ -1332,28 +772,22 @@ export class MongoStorage implements IStorage {
 
   async updateDriverEarnings(id: string, earnings: number): Promise<DriverType> {
     try {
-      const driver = await DriverModel.findById(id);
-      if (!driver) {
-        throw new Error('Driver not found');
-      }
-
-      const currentTotal = parseFloat(driver.totalEarnings || '0');
-      const currentToday = parseFloat(driver.todayEarnings || '0');
-      const currentWeekly = parseFloat(driver.weeklyEarnings || '0');
-
-      const updatedDriver = await DriverModel.findByIdAndUpdate(
+      const driver = await DriverModel.findByIdAndUpdate(
         id,
         { 
-          totalEarnings: (currentTotal + earnings).toFixed(2),
-          todayEarnings: (currentToday + earnings).toFixed(2),
-          weeklyEarnings: (currentWeekly + earnings).toFixed(2),
-          totalDeliveries: driver.totalDeliveries + 1,
-          updatedAt: new Date() 
+          $inc: { 
+            totalEarnings: earnings,
+            todayEarnings: earnings,
+            weeklyEarnings: earnings
+          },
+          $inc: { totalDeliveries: 1 },
+          updatedAt: new Date()
         },
         { new: true }
-      );
-
-      return this.convertDriverDocument(updatedDriver!);
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error updating driver earnings:', error);
       throw error;
@@ -1362,21 +796,18 @@ export class MongoStorage implements IStorage {
 
   async approveDriver(id: string): Promise<DriverType> {
     try {
-      const updatedDriver = await DriverModel.findByIdAndUpdate(
+      const driver = await DriverModel.findByIdAndUpdate(
         id,
         { 
-          status: 'active',
           isApproved: true,
-          updatedAt: new Date() 
+          status: 'active',
+          updatedAt: new Date()
         },
         { new: true }
-      );
-
-      if (!updatedDriver) {
-        throw new Error('Driver not found');
-      }
-
-      return this.convertDriverDocument(updatedDriver);
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error approving driver:', error);
       throw error;
@@ -1388,10 +819,10 @@ export class MongoStorage implements IStorage {
       await DriverModel.findByIdAndUpdate(
         id,
         { 
-          status: 'rejected',
           isApproved: false,
+          status: 'rejected',
           rejectionReason: reason,
-          updatedAt: new Date() 
+          updatedAt: new Date()
         }
       );
     } catch (error) {
@@ -1403,11 +834,11 @@ export class MongoStorage implements IStorage {
   async getAvailableDrivers(): Promise<DriverType[]> {
     try {
       const drivers = await DriverModel.find({ 
-        status: 'active',
+        isApproved: true,
         isOnline: true,
-        isAvailable: true 
-      });
-      return drivers.map(driver => this.convertDriverDocument(driver));
+        isAvailable: true
+      }).lean();
+      return drivers.map(driver => this.convertMongoDriver(driver));
     } catch (error) {
       console.error('Error getting available drivers:', error);
       return [];
@@ -1416,8 +847,10 @@ export class MongoStorage implements IStorage {
 
   async getPendingDrivers(): Promise<DriverType[]> {
     try {
-      const drivers = await DriverModel.find({ status: 'pending_approval' });
-      return drivers.map(driver => this.convertDriverDocument(driver));
+      const drivers = await DriverModel.find({ 
+        status: 'pending_approval'
+      }).lean();
+      return drivers.map(driver => this.convertMongoDriver(driver));
     } catch (error) {
       console.error('Error getting pending drivers:', error);
       return [];
@@ -1428,10 +861,9 @@ export class MongoStorage implements IStorage {
     try {
       const orders = await OrderModel.find({ 
         status: 'ready_for_pickup',
-        driverId: { $exists: false }
-      }).limit(10);
-      
-      return orders.map(order => this.convertOrderDocument(order));
+        driverId: null
+      }).lean();
+      return orders.map(order => this.convertMongoOrder(order));
     } catch (error) {
       console.error('Error getting available orders for driver:', error);
       return [];
@@ -1440,21 +872,18 @@ export class MongoStorage implements IStorage {
 
   async assignOrderToDriver(orderId: string, driverId: string): Promise<Order> {
     try {
-      const updatedOrder = await OrderModel.findByIdAndUpdate(
+      const order = await OrderModel.findByIdAndUpdate(
         orderId,
         { 
           driverId,
           status: 'driver_assigned',
-          updatedAt: new Date() 
+          updatedAt: new Date()
         },
         { new: true }
-      );
-
-      if (!updatedOrder) {
-        throw new Error('Order not found');
-      }
-
-      return this.convertOrderDocument(updatedOrder);
+      ).lean();
+      
+      if (!order) throw new Error('Order not found');
+      return this.convertMongoOrder(order);
     } catch (error) {
       console.error('Error assigning order to driver:', error);
       throw error;
@@ -1465,14 +894,19 @@ export class MongoStorage implements IStorage {
     try {
       const orders = await OrderModel.find({ 
         driverId,
-        status: 'delivered' 
-      }).sort({ updatedAt: -1 }).limit(20);
+        status: 'delivered'
+      }).lean();
       
       return orders.map(order => ({
+        orderId: order._id.toString(),
         orderNumber: order.orderNumber,
-        deliveryTime: order.updatedAt,
+        restaurantName: order.restaurantName || 'Unknown Restaurant',
+        customerName: order.customerName || 'Unknown Customer',
+        deliveryAddress: order.deliveryAddress,
+        total: order.total || order.totalAmount,
         earnings: this.calculateDeliveryEarnings(order),
-        distance: '2.5' // Mock distance for now
+        deliveredAt: order.actualDeliveryTime || order.updatedAt,
+        rating: order.rating || null
       }));
     } catch (error) {
       console.error('Error getting driver delivery history:', error);
@@ -1480,379 +914,57 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  private convertOrderDocument(order: any): any {
-    return {
-      id: order._id.toString(),
-      orderNumber: order.orderNumber,
-      customerId: order.customerId,
-      restaurantId: order.restaurantId,
-      driverId: order.driverId,
-      items: order.items || [],
-      totalAmount: order.totalAmount || order.total,
-      deliveryAddress: order.deliveryAddress,
-      customerName: order.customerName,
-      restaurantName: order.restaurantName,
-      status: order.status,
-      orderTime: order.orderTime || order.createdAt,
-      estimatedDeliveryTime: order.estimatedDeliveryTime,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt
-    };
-  }
-
-  private convertDriverDocument(driver: any): DriverType {
-    return {
-      id: driver._id.toString(),
-      userId: driver.userId,
-      telegramId: driver.telegramId,
-      phoneNumber: driver.phoneNumber,
-      name: driver.name,
-      governmentIdFrontUrl: driver.governmentIdFrontUrl,
-      governmentIdBackUrl: driver.governmentIdBackUrl,
-      licenseNumber: driver.licenseNumber,
-      vehicleType: driver.vehicleType,
-      vehiclePlate: driver.vehiclePlate,
-      licenseImageUrl: driver.licenseImageUrl,
-      vehicleImageUrl: driver.vehicleImageUrl,
-      idCardImageUrl: driver.idCardImageUrl,
-      currentLocation: driver.currentLocation && driver.currentLocation.lat ? driver.currentLocation : null,
-      status: driver.status,
-      isOnline: driver.isOnline,
-      isAvailable: driver.isAvailable,
-      isApproved: driver.isApproved,
-      rating: driver.rating,
-      totalDeliveries: driver.totalDeliveries,
-      totalEarnings: driver.totalEarnings,
-      todayEarnings: driver.todayEarnings,
-      weeklyEarnings: driver.weeklyEarnings,
-      zone: driver.zone,
-      lastOnline: driver.lastOnline,
-      createdAt: driver.createdAt,
-      updatedAt: driver.updatedAt
-    };
-  }
-
   private calculateDeliveryEarnings(order: any): string {
-    const baseEarnings = parseFloat(order.total) * 0.15; // 15% of order total
-    const minEarnings = 2.50; // Minimum earnings per delivery
+    const baseEarnings = parseFloat(order.total || order.totalAmount || '0') * 0.15;
+    const minEarnings = 2.50;
     return Math.max(baseEarnings, minEarnings).toFixed(2);
   }
+
+  // Delivery operations (stub implementations)
   async getDeliveries(): Promise<Delivery[]> { return []; }
   async getDelivery(id: string): Promise<Delivery | undefined> { return undefined; }
   async getDeliveriesByDriver(driverId: string): Promise<Delivery[]> { return []; }
   async createDelivery(delivery: InsertDelivery): Promise<Delivery> {
-    try {
-      // For now, we'll just return a mock delivery since the delivery tracking is not fully implemented
-      // In a full implementation, this would create a delivery record in MongoDB
-      const deliveryRecord: Delivery = {
-        id: new ObjectId().toString(),
-        orderId: delivery.orderId,
-        driverId: delivery.driverId,
-        pickupTime: delivery.pickupTime || null,
-        deliveredTime: delivery.deliveredTime || null,
-        status: delivery.status || 'pending',
-        estimatedDeliveryTime: delivery.estimatedDeliveryTime || null,
-        actualDeliveryTime: delivery.actualDeliveryTime || null,
-        deliveryNotes: delivery.deliveryNotes || null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      return deliveryRecord;
-    } catch (error) {
-      console.error('Error creating delivery:', error);
-      throw error;
-    }
+    const deliveryRecord: Delivery = {
+      id: new ObjectId().toString(),
+      orderId: delivery.orderId,
+      driverId: delivery.driverId,
+      status: delivery.status || 'assigned',
+      pickupTime: delivery.pickupTime || null,
+      deliveryTime: delivery.deliveryTime || null,
+      distance: delivery.distance || null,
+      earnings: delivery.earnings || null,
+      tips: delivery.tips || null,
+      notes: delivery.notes || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    return deliveryRecord;
   }
-  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { throw new Error('Not implemented'); }
+  async updateDelivery(id: string, delivery: Partial<InsertDelivery>): Promise<Delivery> { 
+    throw new Error('Not implemented'); 
+  }
+
+  // Notification operations (stub implementations)  
   async getNotifications(userId: string): Promise<Notification[]> { return []; }
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    try {
-      // For now, we'll just return a mock notification since the notification system is not fully implemented
-      // In a full implementation, this would create a notification record in MongoDB
-      const notificationRecord: Notification = {
-        id: new ObjectId().toString(),
-        userId: notification.userId,
-        type: notification.type || 'info',
-        title: notification.title || 'Notification',
-        message: notification.message || '',
-        isRead: notification.isRead || false,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      return notificationRecord;
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      throw error;
-    }
+    const notificationRecord: Notification = {
+      id: new ObjectId().toString(),
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data || null,
+      isRead: notification.isRead || false,
+      createdAt: new Date(),
+    };
+    return notificationRecord;
   }
-  async markNotificationAsRead(id: string): Promise<Notification> { throw new Error('Not implemented'); }
-  async getOrderAnalytics(): Promise<any> { return {}; }
-
-  // Missing interface methods
-  async getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]> {
-    try {
-      const items = await MenuItemModel.find({ restaurantId, status });
-      return items.map((item: any) => ({
-        id: item._id.toString(),
-        restaurantId: item.restaurantId,
-        categoryId: item.categoryId,
-        name: item.name,
-        description: item.description || null,
-        price: item.price.toString(),
-        imageUrl: item.imageUrl || null,
-        isAvailable: item.isAvailable,
-        status: item.status || 'active',
-        lastModifiedBy: null,
-        preparationTime: item.preparationTime || null,
-        ingredients: item.ingredients || [],
-        isVegetarian: item.isVegetarian,
-        isVegan: item.isVegan,
-        spicyLevel: item.spicyLevel,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-      } as MenuItem));
-    } catch (error) {
-      console.error('Error getting menu items by status:', error);
-      return [];
-    }
+  async markNotificationAsRead(id: string): Promise<Notification> { 
+    throw new Error('Not implemented'); 
   }
 
-  async getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]> {
-    try {
-      const categories = await MenuCategoryModel.find({ restaurantId, status });
-      return categories.map((category: any) => ({
-        id: category._id.toString(),
-        restaurantId: category.restaurantId,
-        name: category.name,
-        description: category.description || null,
-        isActive: category.isActive,
-        status: category.status || 'active',
-        lastModifiedBy: null,
-        sortOrder: category.sortOrder,
-        createdAt: category.createdAt,
-        updatedAt: category.updatedAt
-      } as MenuCategory));
-    } catch (error) {
-      console.error('Error getting menu categories by status:', error);
-      return [];
-    }
-  }
-
-  async getRestaurantMenu(restaurantId: string): Promise<{ categories: MenuCategory[], items: MenuItem[] }> {
-    try {
-      const categories = await this.getMenuCategories(restaurantId);
-      const items = await this.getMenuItems(restaurantId);
-      return { categories, items };
-    } catch (error) {
-      console.error('Error getting restaurant menu:', error);
-      return { categories: [], items: [] };
-    }
-  }
-
-  // Customer operations implementation
-  async getCustomer(userId: string): Promise<any | undefined> {
-    try {
-      console.log('🔍 MongoDB getCustomer() called with userId:', userId);
-      const customer = await Customer.findOne({ userId }).lean();
-      
-      if (!customer) {
-        console.log('❌ Customer not found for userId:', userId);
-        return undefined;
-      }
-
-      console.log('✅ Customer found:', {
-        userId: customer.userId,
-        phoneNumber: customer.phoneNumber,
-        firstName: customer.firstName,
-        lastName: customer.lastName
-      });
-
-      return {
-        id: customer._id.toString(),
-        userId: customer.userId,
-        phoneNumber: customer.phoneNumber,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        telegramUserId: customer.telegramUserId,
-        telegramUsername: customer.telegramUsername,
-        isActive: customer.isActive,
-        orderHistory: customer.orderHistory || [],
-        defaultAddress: customer.defaultAddress,
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt
-      };
-    } catch (error) {
-      console.error('❌ Error getting customer:', error);
-      return undefined;
-    }
-  }
-
-  async getCustomerByPhone(phoneNumber: string): Promise<any | undefined> {
-    try {
-      console.log('🔍 MongoDB getCustomerByPhone() called with phone:', phoneNumber);
-      const customer = await Customer.findOne({ phoneNumber }).lean();
-      
-      if (!customer) {
-        console.log('❌ Customer not found for phone:', phoneNumber);
-        return undefined;
-      }
-
-      console.log('✅ Customer found by phone:', {
-        userId: customer.userId,
-        phoneNumber: customer.phoneNumber
-      });
-
-      return {
-        id: customer._id.toString(),
-        userId: customer.userId,
-        phoneNumber: customer.phoneNumber,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        telegramUserId: customer.telegramUserId,
-        telegramUsername: customer.telegramUsername,
-        isActive: customer.isActive,
-        orderHistory: customer.orderHistory || [],
-        defaultAddress: customer.defaultAddress,
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt
-      };
-    } catch (error) {
-      console.error('❌ Error getting customer by phone:', error);
-      return undefined;
-    }
-  }
-
-  async createCustomer(customerData: any): Promise<any> {
-    try {
-      console.log('🆕 MongoDB createCustomer() called with data:', customerData);
-      
-      const customer = new Customer(customerData);
-      const savedCustomer = await customer.save();
-      
-      console.log('✅ Customer created successfully:', {
-        userId: savedCustomer.userId,
-        phoneNumber: savedCustomer.phoneNumber
-      });
-
-      return {
-        id: savedCustomer._id.toString(),
-        userId: savedCustomer.userId,
-        phoneNumber: savedCustomer.phoneNumber,
-        firstName: savedCustomer.firstName,
-        lastName: savedCustomer.lastName,
-        telegramUserId: savedCustomer.telegramUserId,
-        telegramUsername: savedCustomer.telegramUsername,
-        isActive: savedCustomer.isActive,
-        orderHistory: savedCustomer.orderHistory || [],
-        defaultAddress: savedCustomer.defaultAddress,
-        createdAt: savedCustomer.createdAt,
-        updatedAt: savedCustomer.updatedAt
-      };
-    } catch (error) {
-      console.error('❌ Error creating customer:', error);
-      throw error;
-    }
-  }
-
-  async updateCustomer(userId: string, customerData: any): Promise<any> {
-    try {
-      console.log('🔄 MongoDB updateCustomer() called:', { userId, customerData });
-      
-      const updatedCustomer = await Customer.findOneAndUpdate(
-        { userId },
-        { ...customerData, updatedAt: new Date() },
-        { new: true, runValidators: true }
-      ).lean();
-
-      if (!updatedCustomer) {
-        throw new Error(`Customer not found: ${userId}`);
-      }
-
-      console.log('✅ Customer updated successfully');
-
-      return {
-        id: updatedCustomer._id.toString(),
-        userId: updatedCustomer.userId,
-        phoneNumber: updatedCustomer.phoneNumber,
-        firstName: updatedCustomer.firstName,
-        lastName: updatedCustomer.lastName,
-        telegramUserId: updatedCustomer.telegramUserId,
-        telegramUsername: updatedCustomer.telegramUsername,
-        isActive: updatedCustomer.isActive,
-        orderHistory: updatedCustomer.orderHistory || [],
-        defaultAddress: updatedCustomer.defaultAddress,
-        createdAt: updatedCustomer.createdAt,
-        updatedAt: updatedCustomer.updatedAt
-      };
-    } catch (error) {
-      console.error('❌ Error updating customer:', error);
-      throw error;
-    }
-  }
-
-  async generateUniqueUserId(): Promise<string> {
-    try {
-      const crypto = await import('crypto');
-      let userId: string;
-      let isUnique = false;
-      let attempts = 0;
-      const maxAttempts = 10;
-
-      while (!isUnique && attempts < maxAttempts) {
-        // Generate a unique ID using crypto.randomUUID() and take first 12 chars
-        userId = crypto.randomUUID().replace(/-/g, '').substring(0, 12);
-        
-        // Check if this userId already exists
-        const existingCustomer = await Customer.findOne({ userId });
-        if (!existingCustomer) {
-          isUnique = true;
-          console.log('✅ Generated unique userId:', userId);
-          return userId;
-        }
-        attempts++;
-      }
-
-      // Fallback: use timestamp + random string
-      const timestamp = Date.now().toString(36);
-      const randomStr = Math.random().toString(36).substring(2, 8);
-      userId = `${timestamp}${randomStr}`;
-      console.log('⚠️ Fallback userId generated:', userId);
-      return userId;
-    } catch (error) {
-      console.error('❌ Error generating unique userId:', error);
-      // Ultimate fallback
-      return `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    }
-  }
-
-  async getAllAdminUsers(): Promise<UserType[]> {
-    try {
-      const users = await User.find({ 
-        role: { $in: ['superadmin', 'restaurant_admin', 'kitchen_staff'] } 
-      }).lean();
-      return users.map(user => ({
-        id: user._id.toString(),
-        email: user.email || null,
-        firstName: user.firstName || null,
-        lastName: user.lastName || null,
-        profileImageUrl: user.profileImageUrl || null,
-        role: user.role || null,
-        phoneNumber: user.phoneNumber || null,
-        telegramUserId: user.telegramUserId || null,
-        telegramUsername: user.telegramUsername || null,
-        password: user.password || null,
-        isActive: user.isActive ?? true,
-        restaurantId: user.restaurantId || null,
-        createdBy: user.createdBy || null,
-        createdAt: user.createdAt || null,
-        updatedAt: user.updatedAt || null,
-      } as UserType));
-    } catch (error) {
-      console.error('Error getting admin users:', error);
-      return [];
-    }
-  }
-
+  // System settings and additional methods
   async getSystemSettings(): Promise<any> {
     try {
       const settings = await SystemSettings.findOne().lean();
@@ -1863,14 +975,14 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  async updateSystemSettings(settingsData: any): Promise<any> {
+  async updateSystemSettings(settings: any): Promise<any> {
     try {
-      const settings = await SystemSettings.findOneAndUpdate(
+      const updatedSettings = await SystemSettings.findOneAndUpdate(
         {},
-        settingsData,
-        { upsert: true, new: true, runValidators: true }
+        settings,
+        { upsert: true, new: true }
       ).lean();
-      return settings;
+      return updatedSettings;
     } catch (error) {
       console.error('Error updating system settings:', error);
       throw error;
@@ -1878,59 +990,102 @@ export class MongoStorage implements IStorage {
   }
 
   async updateCompanyLogo(logoUrl: string): Promise<void> {
-    try {
-      await SystemSettings.findOneAndUpdate(
-        {},
-        { companyLogo: logoUrl },
-        { upsert: true }
-      );
-    } catch (error) {
-      console.error('Error updating company logo:', error);
-      throw error;
-    }
+    await this.updateSystemSettings({ companyLogo: logoUrl });
   }
 
   async verifyAdminPassword(adminId: string, password: string): Promise<boolean> {
-    // Implementation would depend on your password hashing strategy
-    return false;
+    try {
+      const user = await User.findById(adminId);
+      if (!user || !user.password) return false;
+      // In a real implementation, you'd use bcrypt.compare here
+      return user.password === password;
+    } catch (error) {
+      console.error('Error verifying admin password:', error);
+      return false;
+    }
   }
 
   async updateAdminPassword(adminId: string, newPassword: string): Promise<void> {
     try {
-      await User.findByIdAndUpdate(adminId, { password: newPassword });
+      await User.findByIdAndUpdate(adminId, { 
+        password: newPassword, // In a real implementation, you'd hash this
+        updatedAt: new Date()
+      });
     } catch (error) {
       console.error('Error updating admin password:', error);
       throw error;
     }
   }
 
-
-
-  async rejectDriver(driverId: string): Promise<void> {
+  async updateAdminProfile(adminId: string, profileData: { email: string; firstName: string; lastName: string }): Promise<UserType> {
     try {
-      await DriverModel.findByIdAndUpdate(driverId, { isApproved: false });
+      const user = await User.findByIdAndUpdate(
+        adminId,
+        { ...profileData, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!user) throw new Error('Admin user not found');
+      return this.convertMongoUser(user);
     } catch (error) {
-      console.error('Error rejecting driver:', error);
+      console.error('Error updating admin profile:', error);
       throw error;
     }
   }
 
-  async blockDriver(driverId: string): Promise<void> {
+  async updateAdminUser(id: string, data: Partial<UserType>): Promise<UserType> {
     try {
-      await DriverModel.findByIdAndUpdate(driverId, { 
-        isBlocked: true,
-        isOnline: false,
-        isAvailable: false 
-      });
+      const user = await User.findByIdAndUpdate(
+        id,
+        { ...data, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!user) throw new Error('Admin user not found');
+      return this.convertMongoUser(user);
+    } catch (error) {
+      console.error('Error updating admin user:', error);
+      throw error;
+    }
+  }
+
+  async getAllDrivers(): Promise<DriverType[]> {
+    return this.getDrivers();
+  }
+
+  async blockDriver(driverId: string): Promise<DriverType> {
+    try {
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
+        { 
+          isBlocked: true,
+          isAvailable: false,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error blocking driver:', error);
       throw error;
     }
   }
 
-  async unblockDriver(driverId: string): Promise<void> {
+  async unblockDriver(driverId: string): Promise<DriverType> {
     try {
-      await DriverModel.findByIdAndUpdate(driverId, { isBlocked: false });
+      const driver = await DriverModel.findByIdAndUpdate(
+        driverId,
+        { 
+          isBlocked: false,
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).lean();
+      
+      if (!driver) throw new Error('Driver not found');
+      return this.convertMongoDriver(driver);
     } catch (error) {
       console.error('Error unblocking driver:', error);
       throw error;
@@ -1948,14 +1103,14 @@ export class MongoStorage implements IStorage {
 
   async saveLiveLocation(driverId: string, location: any): Promise<void> {
     try {
-      await DriverModel.findByIdAndUpdate(driverId, { 
-        liveLocation: {
-          lat: location.lat,
-          lng: location.lng,
-          timestamp: location.timestamp || new Date().toISOString()
-        },
-        lastLocationUpdate: new Date()
-      });
+      await DriverModel.findByIdAndUpdate(
+        driverId,
+        { 
+          currentLocation: location,
+          lastOnline: new Date(),
+          updatedAt: new Date()
+        }
+      );
     } catch (error) {
       console.error('Error saving live location:', error);
       throw error;
@@ -1964,75 +1119,141 @@ export class MongoStorage implements IStorage {
 
   async getDashboardStats(): Promise<any> {
     try {
-      const totalRestaurants = await Restaurant.countDocuments();
-      const totalDrivers = await DriverModel.countDocuments();
-      const totalUsers = await User.countDocuments();
-      
+      const [totalOrders, totalDrivers, totalRestaurants, totalRevenue] = await Promise.all([
+        OrderModel.countDocuments(),
+        DriverModel.countDocuments(),
+        Restaurant.countDocuments(),
+        OrderModel.aggregate([
+          { $group: { _id: null, total: { $sum: { $toDouble: "$total" } } } }
+        ])
+      ]);
+
       return {
-        totalRestaurants,
+        totalOrders,
         totalDrivers,
-        totalUsers,
-        totalOrders: 0, // Would implement with Order model
-        totalRevenue: 0
+        totalRestaurants,
+        totalRevenue: totalRevenue[0]?.total || 0
       };
     } catch (error) {
       console.error('Error getting dashboard stats:', error);
-      return {};
+      return {
+        totalOrders: 0,
+        totalDrivers: 0,
+        totalRestaurants: 0,
+        totalRevenue: 0
+      };
     }
   }
 
-  async getUsersByRole(role: string): Promise<UserType[]> {
+  async getOrderAnalytics(): Promise<any> {
+    return {};
+  }
+
+  // Customer operations
+  async getCustomer(userId: string): Promise<any | undefined> {
     try {
-      const users = await User.find({ role }).lean();
-      return users.map(user => ({
-        id: user._id.toString(),
-        email: user.email || null,
-        firstName: user.firstName || null,
-        lastName: user.lastName || null,
-        profileImageUrl: user.profileImageUrl || null,
-        role: user.role || null,
-        phoneNumber: user.phoneNumber || null,
-        telegramUserId: user.telegramUserId || null,
-        telegramUsername: user.telegramUsername || null,
-        password: user.password || null,
-        isActive: user.isActive ?? true,
-        restaurantId: user.restaurantId || null,
-        createdBy: user.createdBy || null,
-        createdAt: user.createdAt || null,
-        updatedAt: user.updatedAt || null,
+      const customer = await Customer.findOne({ userId }).lean();
+      return customer ? { ...customer, id: customer._id.toString() } : undefined;
+    } catch (error) {
+      console.error('Error getting customer:', error);
+      return undefined;
+    }
+  }
+
+  async getCustomerByPhone(phoneNumber: string): Promise<any | undefined> {
+    try {
+      const customer = await Customer.findOne({ phoneNumber }).lean();
+      return customer ? { ...customer, id: customer._id.toString() } : undefined;
+    } catch (error) {
+      console.error('Error getting customer by phone:', error);
+      return undefined;
+    }
+  }
+
+  async createCustomer(customerData: any): Promise<any> {
+    try {
+      const customer = new Customer(customerData);
+      const savedCustomer = await customer.save();
+      return { ...savedCustomer.toObject(), id: savedCustomer._id.toString() };
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomer(userId: string, customerData: any): Promise<any> {
+    try {
+      const customer = await Customer.findOneAndUpdate(
+        { userId },
+        { ...customerData, updatedAt: new Date() },
+        { new: true }
+      ).lean();
+      
+      if (!customer) throw new Error('Customer not found');
+      return { ...customer, id: customer._id.toString() };
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  }
+
+  async generateUniqueUserId(): Promise<string> {
+    return new ObjectId().toString();
+  }
+
+  // Kitchen operations
+  async getMenuItemsByStatus(restaurantId: string, status: string): Promise<MenuItem[]> {
+    try {
+      const items = await MenuItemModel.find({ restaurantId, status }).lean();
+      return items.map((item: any) => ({
+        id: item._id.toString(),
+        restaurantId: item.restaurantId,
+        categoryId: item.categoryId,
+        name: item.name,
+        description: item.description || null,
+        price: item.price.toString(),
+        imageUrl: item.imageUrl || null,
+        isAvailable: item.isAvailable,
+        status: item.status || 'active',
+        lastModifiedBy: item.lastModifiedBy || null,
+        preparationTime: item.preparationTime || null,
+        ingredients: item.ingredients || [],
+        isVegetarian: item.isVegetarian || false,
+        isVegan: item.isVegan || false,
+        spicyLevel: item.spicyLevel || null,
+        createdAt: item.createdAt || null,
+        updatedAt: item.updatedAt || null,
       }));
     } catch (error) {
-      console.error('Error getting users by role:', error);
+      console.error('Error getting menu items by status:', error);
       return [];
     }
   }
 
-  async updateAdminUser(id: string, data: Partial<User>): Promise<User> {
+  async getMenuCategoriesByStatus(restaurantId: string, status: string): Promise<MenuCategory[]> {
     try {
-      const updatedUser = await User.findByIdAndUpdate(id, data, { new: true }).lean();
-      if (!updatedUser) {
-        throw new Error('Admin user not found');
-      }
-      return {
-        id: updatedUser._id.toString(),
-        email: updatedUser.email || null,
-        firstName: updatedUser.firstName || null,
-        lastName: updatedUser.lastName || null,
-        profileImageUrl: updatedUser.profileImageUrl || null,
-        role: updatedUser.role || null,
-        phoneNumber: updatedUser.phoneNumber || null,
-        telegramUserId: updatedUser.telegramUserId || null,
-        telegramUsername: updatedUser.telegramUsername || null,
-        password: updatedUser.password || null,
-        isActive: updatedUser.isActive ?? true,
-        restaurantId: updatedUser.restaurantId || null,
-        createdBy: updatedUser.createdBy || null,
-        createdAt: updatedUser.createdAt || null,
-        updatedAt: updatedUser.updatedAt || null,
-      } as User;
+      const categories = await MenuCategoryModel.find({ restaurantId, status }).lean();
+      return categories.map((category: any) => ({
+        id: category._id.toString(),
+        restaurantId: category.restaurantId,
+        name: category.name,
+        description: category.description || null,
+        isActive: category.isActive,
+        status: category.status || 'active',
+        lastModifiedBy: category.lastModifiedBy || null,
+        sortOrder: category.sortOrder || null,
+        createdAt: category.createdAt || null,
+        updatedAt: category.updatedAt || null,
+      }));
     } catch (error) {
-      console.error('Error updating admin user:', error);
-      throw error;
+      console.error('Error getting menu categories by status:', error);
+      return [];
     }
+  }
+
+  async getRestaurantMenu(restaurantId: string): Promise<{ categories: MenuCategory[], items: MenuItem[] }> {
+    const categories = await this.getMenuCategories(restaurantId);
+    const items = await this.getMenuItems(restaurantId);
+    return { categories, items };
   }
 }
