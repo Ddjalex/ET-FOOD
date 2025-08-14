@@ -1068,10 +1068,15 @@ class DriverApp {
     async handleCreditRequestSubmit(event) {
         event.preventDefault();
         
-        const amount = document.getElementById('creditAmount').value;
+        const amount = document.getElementById('creditAmount').value.trim();
         const screenshot = document.getElementById('paymentScreenshot').files[0];
 
-        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+        console.log('💰 Form validation - Amount:', amount, 'Type:', typeof amount, 'ParseFloat:', parseFloat(amount));
+
+        // Convert to number and validate
+        const numericAmount = parseFloat(amount);
+        if (!amount || isNaN(numericAmount) || numericAmount <= 0) {
+            console.log('❌ Validation failed - Amount:', amount, 'Numeric:', numericAmount);
             this.showNotification('Invalid Amount', 'Please enter a valid amount', 'error');
             return;
         }
