@@ -38,7 +38,7 @@ export function CustomerOrder({ customer, onLogout }: CustomerOrderProps) {
   const { toast } = useToast();
 
   // Fetch restaurants
-  const { data: restaurants = [], isLoading: isLoadingRestaurants, refetch: refetchRestaurants } = useQuery({
+  const { data: restaurants = [], isLoading: isLoadingRestaurants, refetch: refetchRestaurants } = useQuery<Restaurant[]>({
     queryKey: ['/api/telegram/restaurants'],
     enabled: !!location, // Only fetch when location is available
   });
