@@ -20,7 +20,7 @@ Key features include:
 - **Driver Management**: Automated assignment, real-time location tracking, credit management, and performance history.
 - **Restaurant Administration**: Order oversight, menu management, and special offers creation.
 - **Customer Experience**: Telegram bot ordering, real-time notifications, and an intuitive Mini Web App.
-- **Special Offers System**: Kitchen staff management panel for creating and activating promotional offers, displayed to customers via a responsive slider with real-time data from all restaurants.
+- **Special Offers System**: Complete CRUD operations for kitchen staff including create, edit, delete, and toggle functionality. Customer mini webapp displays real-time data with uploaded images from all active kitchen staff restaurants via responsive slider interface.
 
 ### System Design Choices
 The architecture is component-based, utilizing `wouter` for lightweight client-side routing. Real-time communication is established via WebSockets for targeted notifications. Authentication is session-based with role-based access control. The backend is built with **Node.js and Express.js**, providing RESTful APIs and WebSocket support. A dedicated service layer separates business logic for orders, drivers, and restaurants.
