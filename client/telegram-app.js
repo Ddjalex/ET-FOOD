@@ -260,10 +260,26 @@ class TelegramFoodApp {
         // Add event listeners for order buttons
         document.querySelectorAll('.order-offer-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const offerId = e.target.closest('.order-offer-btn').dataset.offerId;
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Order button clicked!', e.target);
+                
+                const button = e.target.closest('.order-offer-btn');
+                if (!button) {
+                    console.error('Could not find order button');
+                    return;
+                }
+                
+                const offerId = button.dataset.offerId;
+                console.log('Order ID:', offerId);
+                
                 const offer = this.specialOffers.find(o => o._id === offerId);
+                console.log('Found offer:', offer);
+                
                 if (offer) {
                     this.addOfferToCart(offer);
+                } else {
+                    console.error('Offer not found for ID:', offerId);
                 }
             });
         });
@@ -277,6 +293,8 @@ class TelegramFoodApp {
     }
 
     addOfferToCart(offer) {
+        console.log('Adding offer to cart:', offer);
+        
         // Add offer to cart
         const cartItem = {
             id: offer._id,
@@ -285,18 +303,25 @@ class TelegramFoodApp {
             originalPrice: offer.originalPrice,
             quantity: 1,
             isSpecialOffer: true,
-            restaurantId: offer.restaurantId
+            restaurantId: offer.restaurantId,
+            image: offer.offerImageURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDIwMCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjY1IiByPSIyNSIgZmlsbD0iI0Y1OTU0NCIvPgo8cGF0aCBkPSJNODUgNzVoMzBjNSAwIDkgNCA5IDl2MTFIODV2LTExYzAtNSA0LTkgOS05eiIgZmlsbD0iI0Y1OTU0NCIvPgo8Y2lyY2xlIGN4PSI5NSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwNSIgY3k9IjU4IiByPSI0IiBmaWxsPSIjRkY2QjZCIi8+CjxjaXJjbGUgY3g9IjEwMCIgY3k9IjczIiByPSIzIiBmaWxsPSIjRkY2QjZCIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTM5Mzk2IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPkZvb2QgSW1hZ2U8L3RleHQ+Cjwvc3ZnPg=='
         };
+        
+        console.log('Cart item to add:', cartItem);
         
         // Check if item already exists in cart
         const existingItemIndex = this.cart.findIndex(item => item.id === cartItem.id);
         if (existingItemIndex > -1) {
             this.cart[existingItemIndex].quantity += 1;
+            console.log('Updated existing item quantity');
         } else {
             this.cart.push(cartItem);
+            console.log('Added new item to cart');
         }
         
-        this.updateCartDisplay();
+        console.log('Current cart:', this.cart);
+        
+        this.updateCartUI();
         
         // Show feedback
         this.showSuccessMessage(`${offer.offerTitle} added to cart!`);
