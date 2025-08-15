@@ -152,6 +152,47 @@ function DriverPanel() {
         queryClient.invalidateQueries({ queryKey: ['/api/drivers/assigned-orders'] });
       });
 
+      // Listen for driver approval notifications
+      newSocket.on('driver-approval-notification', (data) => {
+        console.log('📢 Driver approval notification received:', data);
+        if (data.driverId === currentDriverId) {
+          // Show success toast
+          toast({
+            title: "Application Approved! 🎉",
+            description: data.message || 'Your driver application has been approved!',
+            duration: 8000,
+          });
+          
+          // Refresh driver profile to update approval status
+          queryClient.invalidateQueries({ queryKey: ['/api/drivers/profile', currentDriverId] });
+          
+          // Auto-navigate to main dashboard after 3 seconds
+          if (data.shouldNavigate) {
+            setTimeout(() => {
+              window.location.reload(); // Refresh to show the approved driver dashboard
+            }, 3000);
+          }
+        }
+      });
+
+      // Listen for driver status updates (including rejections)
+      newSocket.on('driver-status-update', (data) => {
+        console.log('Driver status update received:', data);
+        if (data.driverId === currentDriverId) {
+          const isRejected = data.status === 'rejected';
+          
+          toast({
+            title: isRejected ? "Application Status Update" : "Status Update",
+            description: data.message,
+            variant: isRejected ? 'destructive' : 'default',
+            duration: isRejected ? 10000 : 5000,
+          });
+          
+          // Refresh driver profile
+          queryClient.invalidateQueries({ queryKey: ['/api/drivers/profile', currentDriverId] });
+        }
+      });
+
       newSocket.on('disconnect', () => {
         console.log('Socket.IO disconnected');
       });

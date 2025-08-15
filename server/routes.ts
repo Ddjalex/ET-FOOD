@@ -2173,14 +2173,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
+      // Get driver details before approval
+      const driverBeforeApproval = await storage.getDriverById(req.params.id);
+      if (!driverBeforeApproval) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
       const driver = await storage.approveDriver(req.params.id);
       
-      // Broadcast driver approval to connected clients
-      io.emit('driver-approved', {
+      console.log(`📢 Broadcasting driver approval for: ${driver.name} (${driver.id})`);
+      
+      // Real-time WebSocket notifications for approval
+      // 1. Broadcast to all superadmin dashboards for real-time list update
+      broadcast('driver-approved', {
+        driverId: driver.id,
+        driverName: driver.name,
+        telegramId: driver.telegramId,
+        status: 'approved',
+        message: 'Driver has been approved and can now access the dashboard',
+        timestamp: new Date().toISOString()
+      });
+
+      // 2. Send targeted notification to the specific driver
+      broadcast('driver-approval-notification', {
         driverId: driver.id,
         telegramId: driver.telegramId,
         name: driver.name,
-        status: 'approved'
+        status: 'approved',
+        message: '✅ Congratulations! Your driver application has been approved. You can now access your dashboard.',
+        timestamp: new Date().toISOString(),
+        shouldNavigate: true
+      });
+
+      // 3. Update dashboard stats in real-time
+      broadcast('dashboard-stats-update', {
+        type: 'driver_approved',
+        driverId: driver.id
       });
       
       // Send approval notification to driver via Telegram
