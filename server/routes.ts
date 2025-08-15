@@ -3098,23 +3098,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Driver registration endpoint
   app.post('/api/drivers/register', upload.fields([
-    { name: 'profilePicture', maxCount: 1 },
-    { name: 'idFront', maxCount: 1 },
-    { name: 'idBack', maxCount: 1 },
-    { name: 'license', maxCount: 1 }
+    { name: 'profileImage', maxCount: 1 },
+    { name: 'governmentIdFront', maxCount: 1 },
+    { name: 'governmentIdBack', maxCount: 1 }
   ]), async (req, res) => {
     try {
       const {
-        telegramUserId,
-        fullName,
+        telegramId,
+        name,
         phoneNumber,
         vehicleType,
         vehiclePlate
       } = req.body;
 
       console.log('🚗 Driver registration request:', {
-        telegramUserId,
-        fullName,
+        telegramId,
+        name,
         phoneNumber,
         vehicleType,
         vehiclePlate,
@@ -3122,37 +3121,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Validate required fields
-      if (!telegramUserId || !fullName || !phoneNumber || !vehicleType || !vehiclePlate) {
+      if (!telegramId || !name || !phoneNumber || !vehicleType) {
         return res.status(400).json({ 
-          message: 'Missing required fields: telegramUserId, fullName, phoneNumber, vehicleType, vehiclePlate' 
+          message: 'Missing required fields: telegramId, name, phoneNumber, vehicleType' 
+        });
+      }
+
+      // Validate vehicle plate for motorcycles only
+      if (vehicleType === 'motorcycle' && !vehiclePlate) {
+        return res.status(400).json({ 
+          message: 'Vehicle plate number is required for motorcycles' 
         });
       }
 
       // Check if driver already exists
-      const existingDriver = await storage.getDriverByTelegramId(telegramUserId);
+      const existingDriver = await storage.getDriverByTelegramId(telegramId);
       if (existingDriver) {
         return res.status(409).json({ message: 'Driver already registered' });
       }
 
       // Ensure user exists or create one
-      let user = await storage.getUserByTelegramId(telegramUserId);
+      let user = await storage.getUserByTelegramId(telegramId);
       if (!user) {
         user = await storage.upsertUser({
-          telegramUserId,
+          telegramUserId: telegramId,
           role: 'driver',
-          firstName: fullName.split(' ')[0] || fullName,
-          lastName: fullName.split(' ').slice(1).join(' ') || ''
+          firstName: name.split(' ')[0] || name,
+          lastName: name.split(' ').slice(1).join(' ') || ''
         });
       }
 
       // Prepare driver data
       const driverData: any = {
         userId: user.id,
-        telegramId: telegramUserId,
-        name: fullName,
+        telegramId: telegramId,
+        name: name,
         phoneNumber,
         vehicleType,
-        vehiclePlate,
+        vehiclePlate: vehicleType === 'motorcycle' ? vehiclePlate : null,
         isApproved: false,
         isOnline: false,
         isAvailable: false,
@@ -3167,17 +3173,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add file paths if uploaded
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      if (files?.profilePicture?.[0]) {
-        driverData.profileImageUrl = `/uploads/${files.profilePicture[0].filename}`;
+      if (files?.profileImage?.[0]) {
+        driverData.profileImageUrl = `/uploads/${files.profileImage[0].filename}`;
       }
-      if (files?.idFront?.[0]) {
-        driverData.idFrontImageUrl = `/uploads/${files.idFront[0].filename}`;
+      if (files?.governmentIdFront?.[0]) {
+        driverData.idFrontImageUrl = `/uploads/${files.governmentIdFront[0].filename}`;
       }
-      if (files?.idBack?.[0]) {
-        driverData.idBackImageUrl = `/uploads/${files.idBack[0].filename}`;
-      }
-      if (files?.license?.[0]) {
-        driverData.licenseImageUrl = `/uploads/${files.license[0].filename}`;
+      if (files?.governmentIdBack?.[0]) {
+        driverData.idBackImageUrl = `/uploads/${files.governmentIdBack[0].filename}`;
       }
 
       // Create driver record
