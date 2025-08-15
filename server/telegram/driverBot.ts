@@ -71,30 +71,29 @@ export async function setupDriverBot(bot: Telegraf) {
     const existingDriver = await storage.getDriverByTelegramId(telegramUserId);
     
     if (existingDriver) {
-      // Driver exists, show dashboard
+      // Driver exists, check approval status  
       if (!existingDriver.isApproved) {
         await ctx.reply('⏳ Your driver application is under review.\n\nStatus: Pending Approval\nWe will notify you once your application is approved.');
       } else {
-        // Enhanced workflow: First show location sharing instructions
+        // Approved driver - show location sharing instructions first
         const locationInstructions = `🚗 **Welcome back, ${existingDriver.name}!**
 
-📍 **To start receiving deliveries, please share your live location:**
+You are an approved driver! To start working:
 
-**Step-by-step instructions:**
+📍 **Step 1: Share your live location to go online**
 1. Click the 📎 attachment icon below
 2. Select 📍 **Location** from the menu  
 3. Choose **"Share My Live Location for..."**
 4. Select **"until I turn it off"** for continuous tracking
 5. Tap **Share** to start location sharing
 
-✅ **After sharing your location, you can access your driver dashboard!**
-
-This allows restaurants and customers to track your delivery progress in real-time.`;
+Once you share your location, you'll be online and can access your delivery dashboard.`;
 
         await ctx.reply(locationInstructions, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '❓ Need Help with Location Sharing', callback_data: 'location_help' }]
+              [{ text: '❓ Need Help with Location Sharing', callback_data: 'location_help' }],
+              [{ text: '📋 View Driver Requirements', callback_data: 'driver_requirements' }]
             ]
           }
         });
@@ -152,38 +151,56 @@ Hello ${firstName}! I'm your driver assistant for managing deliveries.
         // Registered but not approved
         await ctx.reply('⏳ Your driver application is under review.\n\nStatus: Pending Approval\nWe will notify you once your application is approved.');
       } else {
-        // Approved driver - show dashboard
+        // Approved driver - check if they're online first
         const statusText = driver.isOnline ? (driver.isAvailable ? '🟢 Online & Available' : '🟡 Online & Busy') : '🔴 Offline';
         
-        const locationStatus = driver.isOnline && driver.isAvailable ? '🟢 Sharing Live Location' : '🔴 Location Not Shared';
-        
-        const keyboard = {
-          inline_keyboard: [
-            [
-              { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
-              { text: '💰 Earnings', callback_data: 'driver_earnings' }
-            ]
-          ]
-        };
+        if (!driver.isOnline) {
+          // Driver not online - need to share location first
+          await ctx.reply(`🚗 **Driver Status: OFFLINE**
 
-        const instructionMessage = driver.isOnline && driver.isAvailable 
-          ? "You are currently sharing your live location and receiving orders!"
-          : `📍 **Start Working:**
+📍 To start receiving orders, you need to share your live location first:
+
+**Instructions:**
 1. Click 📎 attachment icon below
-2. Select 📍 Location  
+2. Select 📍 Location
 3. Choose "Share My Live Location for..."
 4. Select "until I turn it off"
-5. Tap Share to go online`;
+5. Tap Share to go online
 
-        await ctx.reply(`🚗 Driver Dashboard
+After sharing your location, you can access your dashboard.`, {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '❓ Need Help with Location Sharing', callback_data: 'location_help' }],
+                [{ text: '📋 Driver Requirements', callback_data: 'driver_requirements' }]
+              ]
+            }
+          });
+        } else {
+          // Driver is online - show dashboard access
+          const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+            : 'https://replit.com';
+            
+          const keyboard = {
+            inline_keyboard: [
+              [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
+              [
+                { text: '📋 My Deliveries', callback_data: 'my_deliveries' },
+                { text: '💰 Earnings', callback_data: 'driver_earnings' }
+              ]
+            ]
+          };
 
-${locationStatus}
-Rating: ${driver.rating}⭐ (${driver.totalDeliveries || 0} deliveries)
-Zone: ${driver.zone || 'Not assigned'}
+          await ctx.reply(`🚗 **Driver Dashboard**
 
-${instructionMessage}
+🟢 Status: ${statusText}
+⭐ Rating: ${driver.rating} (${driver.totalDeliveries || 0} deliveries)
+📍 Zone: ${driver.zone || 'Not assigned'}
 
-Choose an option:`, { reply_markup: keyboard });
+You are online and can receive delivery orders!`, { 
+            reply_markup: keyboard 
+          });
+        }
       }
     } catch (error) {
       console.error('Error in driver command:', error);
@@ -296,6 +313,21 @@ Your location will be shared only while you're working and can be stopped anytim
           await ctx.reply('🚗 Access your driver dashboard:', { reply_markup: dashboardKeyboard });
           break;
 
+        case 'driver_status':
+          await ctx.answerCbQuery();
+          const statusMessage = `🚗 **Your Driver Status**
+
+📊 **Current Status:** ${driver.isOnline ? '🟢 Online' : '🔴 Offline'}
+📍 **Location Sharing:** ${driver.isOnline ? '✅ Active' : '❌ Not sharing'}
+⭐ **Rating:** ${driver.rating}
+🚚 **Total Deliveries:** ${driver.totalDeliveries || 0}
+💰 **Total Earnings:** ${driver.totalEarnings || 0} ETB
+
+${driver.isOnline ? 'You are receiving orders!' : 'Share your live location to start receiving orders.'}`;
+          
+          await ctx.reply(statusMessage);
+          break;
+
         case 'driver_requirements':
           await ctx.answerCbQuery();
           await ctx.reply(`📋 Driver Requirements
@@ -351,10 +383,11 @@ Ready to apply? Use the registration form!`);
 
 🟢 **You are now ONLINE and available for deliveries!**
 
-Your live location is being tracked for real-time delivery updates.`, {
+Your live location is being tracked for real-time delivery updates. You can now access your driver dashboard to view available orders.`, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }]
+              [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
+              [{ text: '📋 My Status', callback_data: 'driver_status' }]
             ]
           }
         });

@@ -3096,6 +3096,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver authentication for Telegram Mini Apps
+  app.get('/api/drivers/by-telegram/:telegramId', async (req, res) => {
+    try {
+      const { telegramId } = req.params;
+      
+      const driver = await storage.getDriverByTelegramId(telegramId);
+      
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+      
+      // Return driver info for authentication
+      res.json({
+        id: driver.id,
+        name: driver.name,
+        isApproved: driver.isApproved,
+        isOnline: driver.isOnline,
+        isAvailable: driver.isAvailable,
+        telegramId: driver.telegramId
+      });
+    } catch (error) {
+      console.error('Error fetching driver by telegram ID:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Driver Telegram session authentication
+  app.get('/api/telegram/driver-session', async (req, res) => {
+    try {
+      const { telegramUserId } = req.query;
+
+      if (!telegramUserId) {
+        return res.status(400).json({ error: 'Missing Telegram user ID' });
+      }
+
+      const driver = await storage.getDriverByTelegramId(telegramUserId as string);
+      
+      if (!driver) {
+        return res.status(404).json({ error: 'Driver not found' });
+      }
+
+      if (!driver.isApproved) {
+        return res.status(403).json({ error: 'Driver not approved' });
+      }
+
+      // Return driver session data
+      res.json({
+        driverId: driver.id,
+        name: driver.name,
+        isOnline: driver.isOnline,
+        isAvailable: driver.isAvailable,
+        isApproved: driver.isApproved,
+        sessionValid: true
+      });
+    } catch (error) {
+      console.error('Error retrieving driver session:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Debug route to clear orders collection and fix index issues
   app.post('/api/superadmin/debug/fix-orders', requireSession, requireSuperadmin, async (req, res) => {
     try {
@@ -4100,8 +4160,8 @@ Use the buttons below to get started:`;
         return res.status(404).json({ message: 'No pending credit request found for this driver' });
       }
 
-      const requestedAmount = driver.requestedCreditAmount || 0;
-      const newBalance = (driver.creditBalance || 0) + requestedAmount;
+      const requestedAmount = Number(driver.requestedCreditAmount) || 0;
+      const newBalance = (Number(driver.creditBalance) || 0) + requestedAmount;
 
       // Update driver: add credit and clear request
       await storage.updateDriverCreditRequest(driverId, {
