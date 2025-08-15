@@ -3106,21 +3106,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filesCount: Array.isArray(req.files) ? req.files.length : 0
       });
 
-      // Validate required fields
-      if (!telegramId || !name || !phoneNumber || !vehicleType) {
-        console.log('❌ Missing required fields');
+      // Enhanced validation for required fields
+      const missingFields = [];
+      if (!telegramId || telegramId.trim() === '') missingFields.push('telegramId');
+      if (!name || name.trim() === '') missingFields.push('name');
+      if (!phoneNumber || phoneNumber.trim() === '') missingFields.push('phoneNumber');
+      if (!vehicleType || vehicleType.trim() === '') missingFields.push('vehicleType');
+      
+      if (missingFields.length > 0) {
+        console.log('❌ Missing or empty required fields:', missingFields);
         return res.status(400).json({ 
-          message: 'Missing required fields: telegramId, name, phoneNumber, vehicleType',
-          received: { telegramId, name, phoneNumber, vehicleType }
+          message: `Missing or empty required fields: ${missingFields.join(', ')}`,
+          missingFields,
+          received: { telegramId, name, phoneNumber, vehicleType, vehiclePlate }
         });
       }
 
       // Validate vehicle plate for motorcycles only
-      if (vehicleType === 'motorcycle' && !vehiclePlate) {
+      if (vehicleType === 'motorcycle' && (!vehiclePlate || vehiclePlate.trim() === '')) {
         console.log('❌ Missing vehicle plate for motorcycle');
         return res.status(400).json({ 
           message: 'Vehicle plate number is required for motorcycles' 
         });
+      }
+
+      // Validate field lengths and formats
+      if (telegramId.length < 5) {
+        return res.status(400).json({ message: 'Invalid telegram ID format' });
+      }
+      if (phoneNumber.length < 10) {
+        return res.status(400).json({ message: 'Invalid phone number format' });
+      }
+      if (!['motorcycle', 'bicycle'].includes(vehicleType)) {
+        return res.status(400).json({ message: 'Vehicle type must be motorcycle or bicycle' });
       }
 
       // Check if driver already exists

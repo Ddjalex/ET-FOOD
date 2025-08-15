@@ -70,6 +70,9 @@ export class MongoStorage implements IStorage {
   }
 
   private convertMongoDriver(driver: any): DriverType {
+    if (!driver || !driver._id) {
+      throw new Error('Invalid driver data: missing _id');
+    }
     return {
       id: driver._id.toString(),
       userId: driver.userId,
@@ -687,11 +690,21 @@ export class MongoStorage implements IStorage {
 
   async createDriver(driverData: InsertDriver): Promise<DriverType> {
     try {
+      console.log('📝 Creating driver with data:', driverData);
+      
+      // Validate required fields
+      if (!driverData.telegramId || !driverData.name || !driverData.phoneNumber) {
+        throw new Error('Missing required fields: telegramId, name, or phoneNumber');
+      }
+      
       const driver = new DriverModel(driverData);
       const savedDriver = await driver.save();
+      
+      console.log('✅ Driver saved successfully:', savedDriver._id);
+      
       return this.convertMongoDriver(savedDriver.toObject());
     } catch (error) {
-      console.error('Error creating driver:', error);
+      console.error('❌ Error creating driver:', error);
       throw error;
     }
   }

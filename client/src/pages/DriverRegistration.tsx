@@ -56,6 +56,25 @@ function DriverRegistration() {
         telegramId: telegramId
       };
 
+      // Frontend validation
+      const missingFields = [];
+      if (!jsonData.name || jsonData.name.trim() === '') missingFields.push('name');
+      if (!jsonData.phoneNumber || jsonData.phoneNumber.trim() === '') missingFields.push('phone number');
+      if (!jsonData.vehicleType || jsonData.vehicleType.trim() === '') missingFields.push('vehicle type');
+      if (!jsonData.telegramId || jsonData.telegramId.trim() === '') missingFields.push('telegram ID');
+      if (jsonData.vehicleType === 'motorcycle' && (!jsonData.vehiclePlate || jsonData.vehiclePlate.trim() === '')) {
+        missingFields.push('vehicle plate number');
+      }
+
+      if (missingFields.length > 0) {
+        toast({
+          title: "Missing Information",
+          description: `Please fill in the following fields: ${missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       console.log('🔍 Frontend sending JSON data:', jsonData);
       console.log('🔍 URL params:', { phoneFromUrl, nameFromUrl });
       console.log('🔍 Telegram WebApp data:', tgWebApp?.initDataUnsafe?.user);
@@ -76,12 +95,36 @@ function DriverRegistration() {
         setLocation('/driver-login');
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        console.error('🚫 Registration failed:', errorData);
+        
+        // Show specific validation errors if available
+        let errorMessage = errorData.message || 'Registration failed';
+        if (errorData.missingFields && errorData.missingFields.length > 0) {
+          errorMessage = `Missing fields: ${errorData.missingFields.join(', ')}`;
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error) {
+      console.error('🚫 Registration error:', error);
+      
+      let errorMessage = "There was an error submitting your application. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Missing') || error.message.includes('required')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('validation')) {
+          errorMessage = "Please check all required fields are filled correctly.";
+        } else if (error.message.includes('already exists')) {
+          errorMessage = "A driver with this information already exists.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Registration Failed",
-        description: error instanceof Error ? error.message : "There was an error submitting your application. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
