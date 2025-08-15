@@ -49,20 +49,30 @@ function DriverRegistration() {
       }
       submitData.append('telegramId', '383870190'); // For demo, in production get from auth
       
-      // Add files if selected
-      if (files.profileImage) {
-        submitData.append('profileImage', files.profileImage);
-      }
-      if (files.governmentIdFront) {
-        submitData.append('governmentIdFront', files.governmentIdFront);
-      }
-      if (files.governmentIdBack) {
-        submitData.append('governmentIdBack', files.governmentIdBack);
-      }
+      // DEBUGGING: Skip file uploads temporarily
+      console.log('🔍 Frontend form data:', {
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
+        vehicleType: formData.vehicleType,
+        vehiclePlate: formData.vehiclePlate,
+        telegramId: '383870190'
+      });
+
+      // Convert FormData to JSON for debugging
+      const jsonData = {
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
+        vehicleType: formData.vehicleType,
+        vehiclePlate: formData.vehiclePlate,
+        telegramId: '383870190'
+      };
 
       const response = await fetch('/api/drivers/register', {
         method: 'POST',
-        body: submitData, // Send FormData, not JSON
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData), // Send JSON, not FormData
       });
 
       if (response.ok) {

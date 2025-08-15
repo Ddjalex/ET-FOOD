@@ -3077,26 +3077,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Driver registration endpoint with dedicated multer config
-  const driverUpload = multer({
-    dest: 'uploads/',
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-      console.log('🔍 File received:', file.fieldname, file.mimetype);
-      if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only image files are allowed'));
-      }
-    }
-  });
-
-  app.post('/api/drivers/register', driverUpload.any(), async (req, res) => {
+  // Driver registration endpoint WITHOUT multer (debugging)
+  app.post('/api/drivers/register', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
       console.log('📥 RAW REQUEST DATA:');
-      console.log('Body:', req.body);
-      console.log('Files:', req.files);
+      console.log('Body keys:', Object.keys(req.body));
+      console.log('Body values:', req.body);
       console.log('Content-Type:', req.headers['content-type']);
+      console.log('Method:', req.method);
+      console.log('URL:', req.url);
       
       const {
         telegramId,
@@ -3166,24 +3155,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         creditBalance: '0'
       };
 
-      // Add file paths if uploaded
-      const files = req.files as Express.Multer.File[];
-      console.log('📁 Processing files:', files?.map(f => ({ fieldname: f.fieldname, filename: f.filename })));
+      // Skip file processing for now (debugging)
+      console.log('📁 Skipping file processing for debugging');
       
-      // Find files by fieldname
-      const profileImage = files?.find(f => f.fieldname === 'profileImage');
-      const governmentIdFront = files?.find(f => f.fieldname === 'governmentIdFront');
-      const governmentIdBack = files?.find(f => f.fieldname === 'governmentIdBack');
-      
-      if (profileImage) {
-        driverData.profileImageUrl = `/uploads/${profileImage.filename}`;
-      }
-      if (governmentIdFront) {
-        driverData.governmentIdFrontUrl = `/uploads/${governmentIdFront.filename}`;
-      }
-      if (governmentIdBack) {
-        driverData.governmentIdBackUrl = `/uploads/${governmentIdBack.filename}`;
-      }
+      // Set file URLs to null temporarily
+      driverData.profileImageUrl = null;
+      driverData.governmentIdFrontUrl = null;
+      driverData.governmentIdBackUrl = null;
 
       // Create driver record
       const driver = await storage.createDriver(driverData);
