@@ -1240,34 +1240,140 @@ class DriverApp {
     showRegistrationScreen(telegramUserId = null) {
         console.log('📋 Showing registration screen for Telegram user:', telegramUserId);
         
+        // Get URL parameters for auto-filling
+        const urlParams = new URLSearchParams(window.location.search);
+        const phoneNumber = urlParams.get('phone') || '';
+        const fullName = urlParams.get('name') || '';
+        
+        // Get telegram data if available
+        const telegramData = this.tg.initDataUnsafe;
+        const actualTelegramId = telegramUserId || (telegramData && telegramData.user ? telegramData.user.id : '');
+        const telegramUsername = telegramData && telegramData.user ? telegramData.user.username : '';
+        const displayName = fullName || (telegramData && telegramData.user ? `${telegramData.user.first_name || ''} ${telegramData.user.last_name || ''}`.trim() : '');
+        
         const container = document.querySelector('.container');
         container.innerHTML = `
             <div class="header">
-                <h1>BeU Driver Registration</h1>
-                <p>Complete your driver profile to start delivering</p>
+                <h1>BeU Driver</h1>
+                <p>Your delivery partner</p>
             </div>
-            <div class="main-content">
-                <div class="status-screen">
-                    <div class="status-icon">📋</div>
-                    <h2>Driver Registration Required</h2>
-                    <p>You need to complete your driver registration before accessing the dashboard.</p>
-                    
-                    <div style="margin-top: 30px;">
-                        <p><strong>Requirements:</strong></p>
-                        <ul style="text-align: left; margin: 20px 0; padding-left: 20px;">
-                            <li>Valid driving license</li>
-                            <li>Vehicle registration</li>
-                            <li>Phone number verification</li>
-                            <li>Profile photo</li>
-                        </ul>
+            <div class="main-content" style="padding: 10px;">
+                <div class="registration-form">
+                    <div class="form-header">
+                        <div class="form-icon">👤</div>
+                        <h2>Driver Registration</h2>
                     </div>
                     
-                    <p style="color: #6B7280; font-size: 14px; margin-top: 20px;">
-                        Please go back to the Telegram bot and use the /start command to begin your registration process.
-                    </p>
+                    <form id="driverRegistrationForm">
+                        <!-- Profile Picture -->
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="upload-area" id="profileUpload">
+                                <div class="upload-content">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text">Upload Profile Picture</div>
+                                    <div class="upload-subtext">Tap to select image</div>
+                                </div>
+                                <input type="file" id="profilePicture" accept="image/*" style="display: none;">
+                                <div class="image-preview" id="profilePreview" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" value="${displayName}" placeholder="Enter your full name" required>
+                        </div>
+
+                        <!-- Telegram ID (Read-only) -->
+                        <div class="form-group">
+                            <div class="telegram-id-display">
+                                📱 Telegram ID: ${actualTelegramId} ${telegramUsername ? `(@${telegramUsername})` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" id="phoneNumber" value="${phoneNumber}" placeholder="Enter your phone number" required>
+                        </div>
+
+                        <!-- Vehicle Type -->
+                        <div class="form-group">
+                            <label for="vehicleType">Vehicle Type</label>
+                            <select id="vehicleType" required>
+                                <option value="">Select vehicle type</option>
+                                <option value="motorcycle">Motorcycle</option>
+                                <option value="bicycle">Bicycle</option>
+                                <option value="car">Car</option>
+                                <option value="scooter">Scooter</option>
+                            </select>
+                        </div>
+
+                        <!-- Vehicle Plate -->
+                        <div class="form-group">
+                            <label for="vehiclePlate">Vehicle Plate Number</label>
+                            <input type="text" id="vehiclePlate" placeholder="Enter plate number" required>
+                        </div>
+
+                        <!-- Government ID Front -->
+                        <div class="form-group">
+                            <label>Government ID (Front)</label>
+                            <div class="upload-area" id="idFrontUpload">
+                                <div class="upload-content">
+                                    <div class="upload-icon">📝</div>
+                                    <div class="upload-text">Upload Front of Government ID</div>
+                                    <div class="upload-subtext">Tap to select image</div>
+                                </div>
+                                <input type="file" id="idFront" accept="image/*" style="display: none;" required>
+                                <div class="image-preview" id="idFrontPreview" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Government ID Back -->
+                        <div class="form-group">
+                            <label>Government ID (Back)</label>
+                            <div class="upload-area" id="idBackUpload">
+                                <div class="upload-content">
+                                    <div class="upload-icon">📝</div>
+                                    <div class="upload-text">Upload Back of Government ID</div>
+                                    <div class="upload-subtext">Tap to select image</div>
+                                </div>
+                                <input type="file" id="idBack" accept="image/*" style="display: none;" required>
+                                <div class="image-preview" id="idBackPreview" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Driving License -->
+                        <div class="form-group">
+                            <label>Driving License</label>
+                            <div class="upload-area" id="licenseUpload">
+                                <div class="upload-content">
+                                    <div class="upload-icon">🚗</div>
+                                    <div class="upload-text">Upload Driving License</div>
+                                    <div class="upload-subtext">Tap to select image</div>
+                                </div>
+                                <input type="file" id="license" accept="image/*" style="display: none;" required>
+                                <div class="image-preview" id="licensePreview" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitRegistration">
+                                🚀 Submit Registration
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         `;
+        
+        // Add registration form styles
+        this.addRegistrationStyles();
+        
+        // Setup form event listeners
+        this.setupRegistrationFormEvents(actualTelegramId);
     }
 
     showPendingApprovalScreen() {
@@ -1324,6 +1430,230 @@ class DriverApp {
                 </div>
             </div>
         `;
+    }
+    
+    addRegistrationStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .registration-form {
+                background: white;
+                border-radius: 16px;
+                padding: 20px;
+                margin: 10px 0;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            
+            .form-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #E5E7EB;
+            }
+            
+            .form-icon {
+                width: 40px;
+                height: 40px;
+                background: #3B82F6;
+                color: white;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                margin-right: 12px;
+            }
+            
+            .form-header h2 {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1F2937;
+                margin: 0;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
+            }
+            
+            .form-group input, .form-group select {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #E5E7EB;
+                border-radius: 8px;
+                font-size: 16px;
+                background: #F9FAFB;
+                transition: border-color 0.2s;
+            }
+            
+            .form-group input:focus, .form-group select:focus {
+                outline: none;
+                border-color: #3B82F6;
+                background: white;
+            }
+            
+            .telegram-id-display {
+                background: #DBEAFE;
+                color: #1E40AF;
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                border: 2px solid #93C5FD;
+            }
+            
+            .upload-area {
+                border: 2px dashed #10B981;
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: #F0FDF4;
+                min-height: 120px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .upload-area:hover {
+                border-color: #059669;
+                background: #ECFDF5;
+            }
+            
+            .upload-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .upload-icon {
+                font-size: 32px;
+                margin-bottom: 8px;
+                color: #059669;
+            }
+            
+            .upload-text {
+                font-size: 16px;
+                font-weight: 600;
+                color: #065F46;
+                margin-bottom: 4px;
+            }
+            
+            .upload-subtext {
+                font-size: 12px;
+                color: #6B7280;
+            }
+            
+            .image-preview {
+                width: 100%;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .image-preview img {
+                width: 100%;
+                height: 120px;
+                object-fit: cover;
+                border-radius: 8px;
+            }
+            
+            .form-actions {
+                margin-top: 32px;
+                padding-top: 20px;
+                border-top: 1px solid #E5E7EB;
+            }
+            
+            .form-actions .btn {
+                width: 100%;
+                padding: 16px;
+                font-size: 16px;
+                font-weight: 600;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    setupRegistrationFormEvents(telegramUserId) {
+        // Setup file upload events
+        ['profilePicture', 'idFront', 'idBack', 'license'].forEach(inputId => {
+            const uploadArea = document.getElementById(`${inputId}Upload`) || document.getElementById(`${inputId.replace('Picture', '')}Upload`);
+            const fileInput = document.getElementById(inputId);
+            const preview = document.getElementById(`${inputId}Preview`) || document.getElementById(`${inputId.replace('Picture', '')}Preview`);
+            
+            if (uploadArea && fileInput) {
+                uploadArea.addEventListener('click', () => fileInput.click());
+                
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file && preview) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                            preview.style.display = 'block';
+                            uploadArea.querySelector('.upload-content').style.display = 'none';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+        
+        // Setup form submission
+        const form = document.getElementById('driverRegistrationForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.submitDriverRegistration(telegramUserId);
+        });
+    }
+    
+    async submitDriverRegistration(telegramUserId) {
+        const submitBtn = document.getElementById('submitRegistration');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Submitting...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('telegramUserId', telegramUserId);
+            formData.append('fullName', document.getElementById('fullName').value);
+            formData.append('phoneNumber', document.getElementById('phoneNumber').value);
+            formData.append('vehicleType', document.getElementById('vehicleType').value);
+            formData.append('vehiclePlate', document.getElementById('vehiclePlate').value);
+            
+            // Add files
+            const files = ['profilePicture', 'idFront', 'idBack', 'license'];
+            files.forEach(fileId => {
+                const fileInput = document.getElementById(fileId);
+                if (fileInput.files[0]) {
+                    formData.append(fileId, fileInput.files[0]);
+                }
+            });
+            
+            const response = await fetch('/api/drivers/register', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                this.showPendingApprovalScreen();
+                this.showNotification('Registration Submitted', 'Your driver registration has been submitted for review!', 'success');
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || 'Registration failed');
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            this.showNotification('Registration Failed', error.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '🚀 Submit Registration';
+        }
     }
 
 

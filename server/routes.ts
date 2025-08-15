@@ -3096,6 +3096,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Driver registration endpoint
+  app.post('/api/drivers/register', upload.fields([
+    { name: 'profilePicture', maxCount: 1 },
+    { name: 'idFront', maxCount: 1 },
+    { name: 'idBack', maxCount: 1 },
+    { name: 'license', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const {
+        telegramUserId,
+        fullName,
+        phoneNumber,
+        vehicleType,
+        vehiclePlate
+      } = req.body;
+
+      console.log('🚗 Driver registration request:', {
+        telegramUserId,
+        fullName,
+        phoneNumber,
+        vehicleType,
+        vehiclePlate,
+        files: Object.keys(req.files || {})
+      });
+
+      // Validate required fields
+      if (!telegramUserId || !fullName || !phoneNumber || !vehicleType || !vehiclePlate) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: telegramUserId, fullName, phoneNumber, vehicleType, vehiclePlate' 
+        });
+      }
+
+      // Check if driver already exists
+      const existingDriver = await storage.getDriverByTelegramId(telegramUserId);
+      if (existingDriver) {
+        return res.status(409).json({ message: 'Driver already registered' });
+      }
+
+      // Ensure user exists or create one
+      let user = await storage.getUserByTelegramId(telegramUserId);
+      if (!user) {
+        user = await storage.upsertUser({
+          telegramUserId,
+          role: 'driver',
+          firstName: fullName.split(' ')[0] || fullName,
+          lastName: fullName.split(' ').slice(1).join(' ') || ''
+        });
+      }
+
+      // Prepare driver data
+      const driverData: any = {
+        userId: user.id,
+        telegramId: telegramUserId,
+        name: fullName,
+        phoneNumber,
+        vehicleType,
+        vehiclePlate,
+        isApproved: false,
+        isOnline: false,
+        isAvailable: false,
+        status: 'pending',
+        rating: '5.0',
+        totalDeliveries: 0,
+        totalEarnings: '0',
+        todayEarnings: '0',
+        weeklyEarnings: '0',
+        creditBalance: '0'
+      };
+
+      // Add file paths if uploaded
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      if (files?.profilePicture?.[0]) {
+        driverData.profileImageUrl = `/uploads/${files.profilePicture[0].filename}`;
+      }
+      if (files?.idFront?.[0]) {
+        driverData.idFrontImageUrl = `/uploads/${files.idFront[0].filename}`;
+      }
+      if (files?.idBack?.[0]) {
+        driverData.idBackImageUrl = `/uploads/${files.idBack[0].filename}`;
+      }
+      if (files?.license?.[0]) {
+        driverData.licenseImageUrl = `/uploads/${files.license[0].filename}`;
+      }
+
+      // Create driver record
+      const driver = await storage.createDriver(driverData);
+
+      console.log('✅ Driver registration completed:', driver.id);
+
+      res.json({
+        success: true,
+        message: 'Driver registration submitted successfully',
+        driverId: driver.id
+      });
+
+    } catch (error) {
+      console.error('❌ Driver registration error:', error);
+      res.status(500).json({ 
+        message: 'Registration failed: ' + (error as Error).message 
+      });
+    }
+  });
+
   // Driver authentication for Telegram Mini Apps
   app.get('/api/drivers/by-telegram/:telegramId', async (req, res) => {
     try {
