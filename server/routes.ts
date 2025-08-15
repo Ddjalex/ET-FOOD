@@ -2208,15 +2208,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Access denied' });
       }
 
+      // Get driver details before rejection
+      const driver = await storage.getDriverById(req.params.id);
+      if (!driver) {
+        return res.status(404).json({ message: 'Driver not found' });
+      }
+
+      // Update driver status to rejected and set isApproved to false
       await storage.rejectDriver(req.params.id);
       
-      // Broadcast driver rejection to connected clients
+      // Real-time WebSocket notifications
+      console.log(`📢 Broadcasting driver rejection for ID: ${req.params.id}`);
+      
+      // 1. Broadcast to all superadmin dashboards for real-time list update
       broadcast('driver-rejected', {
         driverId: req.params.id,
-        status: 'rejected'
+        driverName: driver.name,
+        telegramId: driver.telegramId,
+        status: 'rejected',
+        timestamp: new Date().toISOString(),
+        message: 'Driver application has been rejected'
       });
       
-      res.json({ message: 'Driver rejected successfully' });
+      // 2. Send specific notification to driver's Telegram (will be handled by bot)
+      broadcast('driver-status-update', {
+        driverId: req.params.id,
+        telegramId: driver.telegramId,
+        status: 'rejected',
+        message: '❌ Your driver application has been rejected. Please contact support if you have questions.',
+        timestamp: new Date().toISOString()
+      });
+      
+      // 3. Update dashboard stats in real-time
+      broadcast('dashboard-stats-update', {
+        type: 'driver_rejected',
+        driverId: req.params.id
+      });
+
+      console.log(`✅ Driver ${driver.name} (${driver.telegramId}) rejected successfully`);
+      
+      res.json({ 
+        message: 'Driver rejected successfully',
+        driverId: req.params.id,
+        driverName: driver.name
+      });
     } catch (error) {
       console.error('Failed to reject driver:', error);
       res.status(500).json({ message: 'Failed to reject driver' });

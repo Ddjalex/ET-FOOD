@@ -841,17 +841,25 @@ function SuperAdminDashboardContent() {
         }
         return res.json();
       }),
-    onSuccess: () => {
+    onSuccess: (data, driverId) => {
+      // Real-time update: immediately refetch drivers to remove from pending list
       queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      
+      // Show success notification to superadmin
       toast({
-        title: 'Success',
-        description: 'Driver rejected'
+        title: 'Driver Rejected',
+        description: 'Driver application has been rejected and removed from pending approvals',
+        variant: 'destructive'
       });
+      
+      // Real-time notification - WebSocket will handle driver notification automatically
+      console.log(`Driver ${driverId} rejected - WebSocket notification sent via server`);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to reject driver',
+        title: 'Rejection Failed',
+        description: error.message || 'Failed to reject driver application',
         variant: 'destructive'
       });
     }
@@ -1017,6 +1025,31 @@ function SuperAdminDashboardContent() {
         console.log('Driver location updated:', data);
         
         // Refresh driver data to show updated location
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
+      // Real-time driver rejection updates
+      newSocket.on('driver-rejected', (data) => {
+        console.log('Driver rejected:', data);
+        setPendingNotifications(prev => prev + 1);
+        
+        // Immediately refresh driver list to remove from pending approvals
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+        
+        // Show real-time notification
+        toast({
+          title: 'Driver Rejected',
+          description: `${data.driverName || 'Driver'} has been rejected and removed from pending approvals`,
+          variant: 'destructive',
+          duration: 5000
+        });
+      });
+
+      // Dashboard stats updates
+      newSocket.on('dashboard-stats-update', (data) => {
+        console.log('Dashboard stats updated:', data);
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
         queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
       });
 
