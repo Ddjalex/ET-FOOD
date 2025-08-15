@@ -1298,6 +1298,16 @@ class DriverApp {
                             <input type="tel" id="phoneNumber" value="${phoneNumber}" placeholder="Enter your phone number" required>
                         </div>
 
+                        <!-- New Requirements Banner -->
+                        <div style="background: linear-gradient(135deg, #10B981, #059669); color: white; padding: 16px; border-radius: 12px; margin: 20px 0;">
+                            <h4 style="margin: 0 0 8px 0; font-size: 16px;">✅ Updated Requirements</h4>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                                <li>Only motorcycles and bicycles allowed</li>
+                                <li>Government ID required (no driving license needed)</li>
+                                <li>Motorcycle plate number required for motorcycles only</li>
+                            </ul>
+                        </div>
+
                         <!-- Vehicle Type -->
                         <div class="form-group">
                             <label for="vehicleType">Vehicle Type</label>
@@ -1305,15 +1315,13 @@ class DriverApp {
                                 <option value="">Select vehicle type</option>
                                 <option value="motorcycle">Motorcycle</option>
                                 <option value="bicycle">Bicycle</option>
-                                <option value="car">Car</option>
-                                <option value="scooter">Scooter</option>
                             </select>
                         </div>
 
-                        <!-- Vehicle Plate -->
-                        <div class="form-group">
-                            <label for="vehiclePlate">Vehicle Plate Number</label>
-                            <input type="text" id="vehiclePlate" placeholder="Enter plate number" required>
+                        <!-- Vehicle Plate (Only for Motorcycles) -->
+                        <div class="form-group" id="vehiclePlateGroup" style="display: none;">
+                            <label for="vehiclePlate">Motorcycle Plate Number</label>
+                            <input type="text" id="vehiclePlate" placeholder="Enter motorcycle plate number">
                         </div>
 
                         <!-- Government ID Front -->
@@ -1344,19 +1352,7 @@ class DriverApp {
                             </div>
                         </div>
 
-                        <!-- Driving License -->
-                        <div class="form-group">
-                            <label>Driving License</label>
-                            <div class="upload-area" id="licenseUpload">
-                                <div class="upload-content">
-                                    <div class="upload-icon">🚗</div>
-                                    <div class="upload-text">Upload Driving License</div>
-                                    <div class="upload-subtext">Tap to select image</div>
-                                </div>
-                                <input type="file" id="license" accept="image/*" style="display: none;" required>
-                                <div class="image-preview" id="licensePreview" style="display: none;"></div>
-                            </div>
-                        </div>
+
 
                         <!-- Submit Button -->
                         <div class="form-actions">
@@ -1582,8 +1578,8 @@ class DriverApp {
     }
     
     setupRegistrationFormEvents(telegramUserId) {
-        // Setup file upload events
-        ['profilePicture', 'idFront', 'idBack', 'license'].forEach(inputId => {
+        // Setup file upload events (removed 'license' from the list)
+        ['profilePicture', 'idFront', 'idBack'].forEach(inputId => {
             const uploadArea = document.getElementById(`${inputId}Upload`) || document.getElementById(`${inputId.replace('Picture', '')}Upload`);
             const fileInput = document.getElementById(inputId);
             const preview = document.getElementById(`${inputId}Preview`) || document.getElementById(`${inputId.replace('Picture', '')}Preview`);
@@ -1606,6 +1602,22 @@ class DriverApp {
             }
         });
         
+        // Add vehicle type change event listener
+        const vehicleTypeSelect = document.getElementById('vehicleType');
+        const vehiclePlateGroup = document.getElementById('vehiclePlateGroup');
+        const vehiclePlateInput = document.getElementById('vehiclePlate');
+        
+        vehicleTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'motorcycle') {
+                vehiclePlateGroup.style.display = 'block';
+                vehiclePlateInput.required = true;
+            } else {
+                vehiclePlateGroup.style.display = 'none';
+                vehiclePlateInput.required = false;
+                vehiclePlateInput.value = '';
+            }
+        });
+        
         // Setup form submission
         const form = document.getElementById('driverRegistrationForm');
         form.addEventListener('submit', async (e) => {
@@ -1621,18 +1633,29 @@ class DriverApp {
         
         try {
             const formData = new FormData();
-            formData.append('telegramUserId', telegramUserId);
-            formData.append('fullName', document.getElementById('fullName').value);
+            formData.append('telegramId', telegramUserId);
+            formData.append('name', document.getElementById('fullName').value);
             formData.append('phoneNumber', document.getElementById('phoneNumber').value);
             formData.append('vehicleType', document.getElementById('vehicleType').value);
-            formData.append('vehiclePlate', document.getElementById('vehiclePlate').value);
             
-            // Add files
-            const files = ['profilePicture', 'idFront', 'idBack', 'license'];
+            // Only add plate number if motorcycle is selected
+            const vehicleType = document.getElementById('vehicleType').value;
+            if (vehicleType === 'motorcycle') {
+                formData.append('vehiclePlate', document.getElementById('vehiclePlate').value);
+            }
+            
+            // Add files (removed 'license' from the list)
+            const files = ['profilePicture', 'idFront', 'idBack'];
             files.forEach(fileId => {
                 const fileInput = document.getElementById(fileId);
-                if (fileInput.files[0]) {
-                    formData.append(fileId, fileInput.files[0]);
+                if (fileInput && fileInput.files[0]) {
+                    // Map to correct API field names
+                    let apiFieldName = fileId;
+                    if (fileId === 'profilePicture') apiFieldName = 'profileImage';
+                    if (fileId === 'idFront') apiFieldName = 'governmentIdFront';
+                    if (fileId === 'idBack') apiFieldName = 'governmentIdBack';
+                    
+                    formData.append(apiFieldName, fileInput.files[0]);
                 }
             });
             

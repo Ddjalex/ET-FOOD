@@ -17,7 +17,7 @@ The system features real-time order tracking, automated real-time driver assignm
 ### Feature Specifications
 Key features include:
 - **Order Management**: Real-time order status updates, preparation notifications, and assignment.
-- **Driver Management**: Automated assignment, real-time location tracking, credit management, and performance history.
+- **Driver Management**: Automated assignment, real-time location tracking, credit management, and performance history. Updated registration requirements: motorcycle/bicycle only, government ID (no driving license), conditional plate numbers.
 - **Restaurant Administration**: Order oversight, menu management, and special offers creation.
 - **Customer Experience**: Telegram bot ordering, real-time notifications, and an intuitive Mini Web App.
 - **Special Offers System**: Complete CRUD operations for kitchen staff including create, edit, delete, and toggle functionality. Customer mini webapp displays real-time data with uploaded images from all active kitchen staff restaurants via responsive slider interface.
