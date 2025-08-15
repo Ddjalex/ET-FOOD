@@ -3077,16 +3077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Driver registration endpoint WITHOUT multer (debugging)
-  app.post('/api/drivers/register', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
+  // Driver registration endpoint - handle both JSON and multipart
+  app.post('/api/drivers/register', upload.any(), express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
       console.log('📥 RAW REQUEST DATA:');
-      console.log('Body keys:', Object.keys(req.body));
-      console.log('Body values:', req.body);
       console.log('Content-Type:', req.headers['content-type']);
       console.log('Method:', req.method);
       console.log('URL:', req.url);
+      console.log('Body keys:', Object.keys(req.body));
+      console.log('Body values:', req.body);
+      console.log('Files:', req.files ? req.files.length : 0);
       
+      // Extract data from body (works for both JSON and form data)
       const {
         telegramId,
         name,
@@ -3106,13 +3108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate required fields
       if (!telegramId || !name || !phoneNumber || !vehicleType) {
+        console.log('❌ Missing required fields');
         return res.status(400).json({ 
-          message: 'Missing required fields: telegramId, name, phoneNumber, vehicleType' 
+          message: 'Missing required fields: telegramId, name, phoneNumber, vehicleType',
+          received: { telegramId, name, phoneNumber, vehicleType }
         });
       }
 
       // Validate vehicle plate for motorcycles only
       if (vehicleType === 'motorcycle' && !vehiclePlate) {
+        console.log('❌ Missing vehicle plate for motorcycle');
         return res.status(400).json({ 
           message: 'Vehicle plate number is required for motorcycles' 
         });

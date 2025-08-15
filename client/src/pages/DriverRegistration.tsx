@@ -34,19 +34,31 @@ function DriverRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsLoading(true);
 
     try {
+      // Get URL parameters for auto-fill
+      const urlParams = new URLSearchParams(window.location.search);
+      const phoneFromUrl = urlParams.get('phone');
+      const nameFromUrl = urlParams.get('name');
+      
+      // Telegram WebApp user data
+      const tgWebApp = (window as any).Telegram?.WebApp;
+      const telegramId = tgWebApp?.initDataUnsafe?.user?.id?.toString() || '383870190';
+      
       // Auto-filled data for registration
       const jsonData = {
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        vehicleType: formData.vehicleType,
-        vehiclePlate: formData.vehicleType === 'motorcycle' ? formData.vehiclePlate : undefined,
-        telegramId: '383870190' // Auto-filled telegram ID
+        name: nameFromUrl || formData.name || 'John Doe',
+        phoneNumber: phoneFromUrl || formData.phoneNumber || '+251974408281',
+        vehicleType: formData.vehicleType || 'motorcycle',
+        vehiclePlate: formData.vehicleType === 'motorcycle' ? (formData.vehiclePlate || 'AA-123456') : undefined,
+        telegramId: telegramId
       };
 
       console.log('🔍 Frontend sending JSON data:', jsonData);
+      console.log('🔍 URL params:', { phoneFromUrl, nameFromUrl });
+      console.log('🔍 Telegram WebApp data:', tgWebApp?.initDataUnsafe?.user);
 
       const response = await fetch('/api/drivers/register', {
         method: 'POST',
@@ -94,7 +106,7 @@ function DriverRegistration() {
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -280,14 +292,14 @@ function DriverRegistration() {
 
               {/* Submit Button */}
               <Button 
-                type="submit" 
+                onClick={handleSubmit}
                 className="w-full" 
                 disabled={isLoading}
                 data-testid="button-register"
               >
                 {isLoading ? "Submitting Application..." : "Submit Application"}
               </Button>
-            </form>
+            </div>
             
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
