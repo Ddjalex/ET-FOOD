@@ -1370,27 +1370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/drivers', upload.fields([
-    { name: 'licenseImage', maxCount: 1 },
-    { name: 'vehicleImage', maxCount: 1 },
-    { name: 'idCardImage', maxCount: 1 }
-  ]), async (req, res) => {
-    try {
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      const validatedData = insertDriverSchema.parse({
-        ...req.body,
-        licenseImageUrl: files.licenseImage?.[0]?.path,
-        vehicleImageUrl: files.vehicleImage?.[0]?.path,
-        idCardImageUrl: files.idCardImage?.[0]?.path,
-      });
-      const driver = await storage.createDriver(validatedData);
-      broadcast('driver_registered', driver);
-      res.status(201).json(driver);
-    } catch (error) {
-      console.error("Error creating driver:", error);
-      res.status(500).json({ message: "Failed to create driver" });
-    }
-  });
+  // Old driver route - disabled to avoid conflicts
+  // app.post('/api/drivers', upload.fields([...]))
 
   app.post('/api/drivers/:id/approve', isAuthenticated, async (req, res) => {
     try {
@@ -3562,7 +3543,7 @@ Use the buttons below to get started:`;
         telegramId: driver.telegramId
       });
 
-      // Send real-time notification to SuperAdmin
+      // Send real-time notification to SuperAdmin dashboard
       broadcast('driverRegistration', {
         type: 'new_driver_registration',
         driver: {
@@ -3570,11 +3551,19 @@ Use the buttons below to get started:`;
           name: driver.name,
           phoneNumber: driver.phoneNumber,
           telegramId: driver.telegramId,
+          vehicleType: driver.vehicleType,
+          vehiclePlate: driver.vehiclePlate,
           status: driver.status,
-          createdAt: driver.createdAt
+          profileImageUrl: driver.profileImageUrl,
+          idFrontImageUrl: driver.idFrontImageUrl,
+          idBackImageUrl: driver.idBackImageUrl,
+          createdAt: new Date().toISOString()
         },
-        message: `New driver registration: ${driver.name}`
+        message: `New driver registration: ${driver.name}`,
+        timestamp: new Date().toISOString()
       });
+
+      console.log('✅ Driver registration completed and superadmin notified:', driver.id);
 
       res.json({ 
         message: 'Driver registration successful', 
