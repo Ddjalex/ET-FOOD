@@ -3077,8 +3077,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Driver registration endpoint
-  app.post('/api/drivers/register', upload.fields([
+  // Driver registration endpoint with dedicated multer config
+  const driverUpload = multer({
+    dest: 'uploads/',
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      console.log('🔍 File received:', file.fieldname, file.mimetype);
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/drivers/register', driverUpload.fields([
     { name: 'profileImage', maxCount: 1 },
     { name: 'governmentIdFront', maxCount: 1 },
     { name: 'governmentIdBack', maxCount: 1 }
@@ -3158,10 +3171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         driverData.profileImageUrl = `/uploads/${files.profileImage[0].filename}`;
       }
       if (files?.governmentIdFront?.[0]) {
-        driverData.idFrontImageUrl = `/uploads/${files.governmentIdFront[0].filename}`;
+        driverData.governmentIdFrontUrl = `/uploads/${files.governmentIdFront[0].filename}`;
       }
       if (files?.governmentIdBack?.[0]) {
-        driverData.idBackImageUrl = `/uploads/${files.governmentIdBack[0].filename}`;
+        driverData.governmentIdBackUrl = `/uploads/${files.governmentIdBack[0].filename}`;
       }
 
       // Create driver record
@@ -3555,8 +3568,8 @@ Use the buttons below to get started:`;
           vehiclePlate: driver.vehiclePlate,
           status: driver.status,
           profileImageUrl: driver.profileImageUrl,
-          idFrontImageUrl: driver.idFrontImageUrl,
-          idBackImageUrl: driver.idBackImageUrl,
+          governmentIdFrontUrl: driver.governmentIdFrontUrl,
+          governmentIdBackUrl: driver.governmentIdBackUrl,
           createdAt: new Date().toISOString()
         },
         message: `New driver registration: ${driver.name}`,
