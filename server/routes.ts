@@ -3151,7 +3151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isApproved: false,
         isOnline: false,
         isAvailable: false,
-        status: 'pending',
+        status: 'pending_approval',
         rating: '5.0',
         totalDeliveries: 0,
         totalEarnings: '0',
