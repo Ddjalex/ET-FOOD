@@ -3091,12 +3091,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/drivers/register', driverUpload.fields([
-    { name: 'profileImage', maxCount: 1 },
-    { name: 'governmentIdFront', maxCount: 1 },
-    { name: 'governmentIdBack', maxCount: 1 }
-  ]), async (req, res) => {
+  app.post('/api/drivers/register', driverUpload.any(), async (req, res) => {
     try {
+      console.log('📥 RAW REQUEST DATA:');
+      console.log('Body:', req.body);
+      console.log('Files:', req.files);
+      console.log('Content-Type:', req.headers['content-type']);
+      
       const {
         telegramId,
         name,
@@ -3111,7 +3112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber,
         vehicleType,
         vehiclePlate,
-        files: Object.keys(req.files || {})
+        filesCount: Array.isArray(req.files) ? req.files.length : 0
       });
 
       // Validate required fields
@@ -3166,15 +3167,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Add file paths if uploaded
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      if (files?.profileImage?.[0]) {
-        driverData.profileImageUrl = `/uploads/${files.profileImage[0].filename}`;
+      const files = req.files as Express.Multer.File[];
+      console.log('📁 Processing files:', files?.map(f => ({ fieldname: f.fieldname, filename: f.filename })));
+      
+      // Find files by fieldname
+      const profileImage = files?.find(f => f.fieldname === 'profileImage');
+      const governmentIdFront = files?.find(f => f.fieldname === 'governmentIdFront');
+      const governmentIdBack = files?.find(f => f.fieldname === 'governmentIdBack');
+      
+      if (profileImage) {
+        driverData.profileImageUrl = `/uploads/${profileImage.filename}`;
       }
-      if (files?.governmentIdFront?.[0]) {
-        driverData.governmentIdFrontUrl = `/uploads/${files.governmentIdFront[0].filename}`;
+      if (governmentIdFront) {
+        driverData.governmentIdFrontUrl = `/uploads/${governmentIdFront.filename}`;
       }
-      if (files?.governmentIdBack?.[0]) {
-        driverData.governmentIdBackUrl = `/uploads/${files.governmentIdBack[0].filename}`;
+      if (governmentIdBack) {
+        driverData.governmentIdBackUrl = `/uploads/${governmentIdBack.filename}`;
       }
 
       // Create driver record
