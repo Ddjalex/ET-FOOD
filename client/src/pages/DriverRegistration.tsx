@@ -10,10 +10,10 @@ import { useLocation } from 'wouter';
 
 function DriverRegistration() {
   const [formData, setFormData] = useState({
-    name: '',
-    phoneNumber: '',
-    vehicleType: '',
-    vehiclePlate: '',
+    name: 'John Doe', // Auto-filled for testing
+    phoneNumber: '+251974408281', // Auto-filled for testing  
+    vehicleType: 'motorcycle', // Auto-filled for testing
+    vehiclePlate: 'AA-123456', // Auto-filled for testing
   });
   const [files, setFiles] = useState({
     profileImage: null as File | null,
@@ -37,42 +37,23 @@ function DriverRegistration() {
     setIsLoading(true);
 
     try {
-      // Create FormData for file upload
-      const submitData = new FormData();
-      
-      // Add form fields
-      submitData.append('name', formData.name);
-      submitData.append('phoneNumber', formData.phoneNumber);
-      submitData.append('vehicleType', formData.vehicleType);
-      if (formData.vehicleType === 'motorcycle' && formData.vehiclePlate) {
-        submitData.append('vehiclePlate', formData.vehiclePlate);
-      }
-      submitData.append('telegramId', '383870190'); // For demo, in production get from auth
-      
-      // DEBUGGING: Skip file uploads temporarily
-      console.log('🔍 Frontend form data:', {
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        vehicleType: formData.vehicleType,
-        vehiclePlate: formData.vehiclePlate,
-        telegramId: '383870190'
-      });
-
-      // Convert FormData to JSON for debugging
+      // Auto-filled data for registration
       const jsonData = {
         name: formData.name,
         phoneNumber: formData.phoneNumber,
         vehicleType: formData.vehicleType,
-        vehiclePlate: formData.vehiclePlate,
-        telegramId: '383870190'
+        vehiclePlate: formData.vehicleType === 'motorcycle' ? formData.vehiclePlate : undefined,
+        telegramId: '383870190' // Auto-filled telegram ID
       };
+
+      console.log('🔍 Frontend sending JSON data:', jsonData);
 
       const response = await fetch('/api/drivers/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(jsonData), // Send JSON, not FormData
+        body: JSON.stringify(jsonData),
       });
 
       if (response.ok) {
