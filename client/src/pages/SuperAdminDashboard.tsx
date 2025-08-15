@@ -2150,7 +2150,76 @@ function SuperAdminDashboardContent() {
                             </div>
                           </div>
 
-                          <div className="text-xs text-muted-foreground">
+                          {/* Driver Documents Section */}
+                          <div className="mt-4 border-t pt-4">
+                            <h4 className="text-sm font-semibold mb-3">Uploaded Documents</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Profile Image */}
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground">Profile Picture</label>
+                                {driver.profileImageUrl ? (
+                                  <div className="mt-1">
+                                    <img 
+                                      src={driver.profileImageUrl} 
+                                      alt="Driver Profile" 
+                                      className="w-20 h-20 object-cover rounded-lg border"
+                                      onClick={() => window.open(driver.profileImageUrl, '_blank')}
+                                      style={{ cursor: 'pointer' }}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 w-20 h-20 bg-gray-100 rounded-lg border border-dashed flex items-center justify-center">
+                                    <User className="w-6 h-6 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Government ID Front */}
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground">Government ID (Front)</label>
+                                {driver.governmentIdFrontUrl ? (
+                                  <div className="mt-1">
+                                    <img 
+                                      src={driver.governmentIdFrontUrl} 
+                                      alt="Government ID Front" 
+                                      className="w-20 h-20 object-cover rounded-lg border"
+                                      onClick={() => window.open(driver.governmentIdFrontUrl, '_blank')}
+                                      style={{ cursor: 'pointer' }}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 w-20 h-20 bg-gray-100 rounded-lg border border-dashed flex items-center justify-center">
+                                    <Shield className="w-6 h-6 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Government ID Back */}
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground">Government ID (Back)</label>
+                                {driver.governmentIdBackUrl ? (
+                                  <div className="mt-1">
+                                    <img 
+                                      src={driver.governmentIdBackUrl} 
+                                      alt="Government ID Back" 
+                                      className="w-20 h-20 object-cover rounded-lg border"
+                                      onClick={() => window.open(driver.governmentIdBackUrl, '_blank')}
+                                      style={{ cursor: 'pointer' }}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 w-20 h-20 bg-gray-100 rounded-lg border border-dashed flex items-center justify-center">
+                                    <Shield className="w-6 h-6 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground mt-4">
                             Applied: {new Date(driver.createdAt).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'long',

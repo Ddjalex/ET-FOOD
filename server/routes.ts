@@ -3185,13 +3185,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't set licenseNumber at all to avoid null conflicts
       // Based on updated requirements, license is not needed
 
-      // Skip file processing for now (debugging)
-      console.log('📁 Skipping file processing for debugging');
+      // Process uploaded files
+      console.log('📁 Processing uploaded files...');
       
-      // Set file URLs to null temporarily
-      driverData.profileImageUrl = null;
-      driverData.governmentIdFrontUrl = null;
-      driverData.governmentIdBackUrl = null;
+      if (req.files) {
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        console.log('📎 Files received:', Object.keys(files));
+        
+        // Process files by fieldname or position
+        const fileArray = Array.isArray(req.files) ? req.files : null;
+        
+        if (files.profileImage && files.profileImage[0]) {
+          driverData.profileImageUrl = `/uploads/${files.profileImage[0].filename}`;
+          console.log('✅ Profile image saved:', driverData.profileImageUrl);
+        } else if (fileArray && fileArray[0]) {
+          // Fallback: first file is profile image
+          driverData.profileImageUrl = `/uploads/${fileArray[0].filename}`;
+          console.log('✅ Profile image saved (fallback):', driverData.profileImageUrl);
+        }
+        
+        if (files.governmentIdFront && files.governmentIdFront[0]) {
+          driverData.governmentIdFrontUrl = `/uploads/${files.governmentIdFront[0].filename}`;
+          console.log('✅ Government ID front saved:', driverData.governmentIdFrontUrl);
+        } else if (fileArray && fileArray[1]) {
+          // Fallback: second file is government ID front
+          driverData.governmentIdFrontUrl = `/uploads/${fileArray[1].filename}`;
+          console.log('✅ Government ID front saved (fallback):', driverData.governmentIdFrontUrl);
+        }
+        
+        if (files.governmentIdBack && files.governmentIdBack[0]) {
+          driverData.governmentIdBackUrl = `/uploads/${files.governmentIdBack[0].filename}`;
+          console.log('✅ Government ID back saved:', driverData.governmentIdBackUrl);
+        } else if (fileArray && fileArray[2]) {
+          // Fallback: third file is government ID back
+          driverData.governmentIdBackUrl = `/uploads/${fileArray[2].filename}`;
+          console.log('✅ Government ID back saved (fallback):', driverData.governmentIdBackUrl);
+        }
+        
+        // Set null for any missing files
+        if (!driverData.profileImageUrl) driverData.profileImageUrl = null;
+        if (!driverData.governmentIdFrontUrl) driverData.governmentIdFrontUrl = null;
+        if (!driverData.governmentIdBackUrl) driverData.governmentIdBackUrl = null;
+        
+      } else {
+        console.log('⚠️ No files uploaded');
+        driverData.profileImageUrl = null;
+        driverData.governmentIdFrontUrl = null;
+        driverData.governmentIdBackUrl = null;
+      }
 
       // Create driver record
       const driver = await storage.createDriver(driverData);
