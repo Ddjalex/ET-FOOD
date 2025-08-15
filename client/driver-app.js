@@ -29,8 +29,8 @@ class DriverApp {
         // Setup event listeners
         this.setupEventListeners();
 
-        // Set initial UI state
-        this.showWaitingScreen();
+        // UI state will be set by initializeDriverSession based on driver status
+        // this.showWaitingScreen(); // Moved to be conditional
     }
 
     async initializeDriverSession() {
@@ -44,12 +44,25 @@ class DriverApp {
                 const response = await fetch(`/api/drivers/by-telegram/${telegramData.user.id}`);
                 if (response.ok) {
                     const driver = await response.json();
+                    
+                    if (!driver.isApproved) {
+                        this.showPendingApprovalScreen();
+                        return;
+                    }
+                    
                     this.driverId = driver.id;
                     console.log('✅ Driver session initialized from Telegram:', this.driverId);
                     this.updateStatusBadge('offline', 'Click "Go Online" to start');
 
                     // Load credit balance
                     await this.loadCreditBalance();
+                    
+                    // Show waiting screen for approved drivers
+                    this.showWaitingScreen();
+                    return;
+                } else if (response.status === 404) {
+                    // Driver not found - show registration
+                    this.showRegistrationScreen(telegramData.user.id);
                     return;
                 }
             }
@@ -63,23 +76,33 @@ class DriverApp {
                     const driverResponse = await fetch(`/api/drivers/by-user/${data.userId}`);
                     if (driverResponse.ok) {
                         const driver = await driverResponse.json();
+                        
+                        if (!driver.isApproved) {
+                            this.showPendingApprovalScreen();
+                            return;
+                        }
+                        
                         this.driverId = driver.id;
                         console.log('✅ Driver session initialized from API:', this.driverId);
                         this.updateStatusBadge('offline', 'Click "Go Online" to start');
 
                         // Load credit balance
                         await this.loadCreditBalance();
+                        
+                        // Show waiting screen for approved drivers
+                        this.showWaitingScreen();
                         return;
                     }
                 }
             }
 
+            // If we get here, driver is not authenticated
             console.error('❌ Failed to get driver session');
-            this.updateStatusBadge('offline', 'Not Authenticated');
+            this.showRegistrationScreen();
 
         } catch (error) {
             console.error('❌ Error initializing driver session:', error);
-            this.updateStatusBadge('offline', 'Connection Error');
+            this.showErrorScreen('Connection Error');
         }
     }
 
@@ -1212,6 +1235,95 @@ class DriverApp {
             console.error('❌ Error handling withdrawal:', error);
             this.showNotification('Withdrawal Error', 'Failed to process withdrawal request', 'error');
         }
+    }
+
+    showRegistrationScreen(telegramUserId = null) {
+        console.log('📋 Showing registration screen for Telegram user:', telegramUserId);
+        
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="header">
+                <h1>BeU Driver Registration</h1>
+                <p>Complete your driver profile to start delivering</p>
+            </div>
+            <div class="main-content">
+                <div class="status-screen">
+                    <div class="status-icon">📋</div>
+                    <h2>Driver Registration Required</h2>
+                    <p>You need to complete your driver registration before accessing the dashboard.</p>
+                    
+                    <div style="margin-top: 30px;">
+                        <p><strong>Requirements:</strong></p>
+                        <ul style="text-align: left; margin: 20px 0; padding-left: 20px;">
+                            <li>Valid driving license</li>
+                            <li>Vehicle registration</li>
+                            <li>Phone number verification</li>
+                            <li>Profile photo</li>
+                        </ul>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 14px; margin-top: 20px;">
+                        Please go back to the Telegram bot and use the /start command to begin your registration process.
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    showPendingApprovalScreen() {
+        console.log('⏳ Showing pending approval screen');
+        
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="header">
+                <h1>BeU Driver</h1>
+                <p>Registration Under Review</p>
+            </div>
+            <div class="main-content">
+                <div class="status-screen">
+                    <div class="status-icon waiting">⏳</div>
+                    <h2>Application Under Review</h2>
+                    <p>Your driver application is being reviewed by our team. This usually takes 24-48 hours.</p>
+                    
+                    <div style="background: #FEF3C7; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <p><strong>What happens next?</strong></p>
+                        <ol style="text-align: left; margin: 10px 0; padding-left: 20px;">
+                            <li>We verify your documents</li>
+                            <li>Background check (if required)</li>
+                            <li>You'll receive approval notification</li>
+                            <li>Start earning with BeU!</li>
+                        </ol>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 14px;">
+                        You'll receive a notification in the Telegram bot once approved.
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    showErrorScreen(message) {
+        console.log('❌ Showing error screen:', message);
+        
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="header">
+                <h1>BeU Driver</h1>
+                <p>Connection Issue</p>
+            </div>
+            <div class="main-content">
+                <div class="status-screen">
+                    <div class="status-icon" style="background: #FEF2F2; color: #DC2626;">❌</div>
+                    <h2>Connection Error</h2>
+                    <p>${message || 'Unable to connect to the server. Please check your internet connection and try again.'}</p>
+                    
+                    <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 20px;">
+                        🔄 Retry
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
 
