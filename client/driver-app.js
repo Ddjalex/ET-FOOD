@@ -1644,18 +1644,17 @@ class DriverApp {
                 formData.append('vehiclePlate', document.getElementById('vehiclePlate').value);
             }
             
-            // Add files (removed 'license' from the list)
-            const files = ['profilePicture', 'idFront', 'idBack'];
-            files.forEach(fileId => {
-                const fileInput = document.getElementById(fileId);
+            // Add files with correct field names that match server expectations
+            const files = [
+                { inputId: 'profilePicture', apiField: 'profileImage' },
+                { inputId: 'idFront', apiField: 'governmentIdFront' },
+                { inputId: 'idBack', apiField: 'governmentIdBack' }
+            ];
+            
+            files.forEach(({ inputId, apiField }) => {
+                const fileInput = document.getElementById(inputId);
                 if (fileInput && fileInput.files[0]) {
-                    // Map to correct API field names
-                    let apiFieldName = fileId;
-                    if (fileId === 'profilePicture') apiFieldName = 'profileImage';
-                    if (fileId === 'idFront') apiFieldName = 'governmentIdFront';
-                    if (fileId === 'idBack') apiFieldName = 'governmentIdBack';
-                    
-                    formData.append(apiFieldName, fileInput.files[0]);
+                    formData.append(apiField, fileInput.files[0]);
                 }
             });
             
