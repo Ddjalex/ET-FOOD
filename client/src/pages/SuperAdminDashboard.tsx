@@ -211,6 +211,88 @@ function SuperAdminDashboardContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Setup WebSocket connection for real-time notifications
+  useEffect(() => {
+    if ((user as any)?.id) {
+      console.log('Setting up SuperAdmin Socket.IO connection for user:', (user as any).id);
+      
+      const newSocket = io();
+      
+      newSocket.on('connect', () => {
+        console.log('SuperAdmin Socket.IO connected:', newSocket.id);
+        setIsConnected(true);
+        // Authenticate the socket connection with user ID
+        newSocket.emit('authenticate', { userId: (user as any).id });
+        console.log('SuperAdmin authenticated:', (user as any).id);
+      });
+
+      newSocket.on('authenticated', (data) => {
+        console.log('SuperAdmin socket authenticated successfully:', data);
+      });
+
+      // Listen for driver approval/rejection updates
+      newSocket.on('driver-approved', (data) => {
+        console.log('✅ Driver approved notification received:', data);
+        toast({
+          title: "Driver Approved",
+          description: `${data.driverName} has been approved and can now access their dashboard`,
+          duration: 5000,
+        });
+        
+        // Refresh drivers list and stats without page reload
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      });
+
+      newSocket.on('driver-rejected', (data) => {
+        console.log('❌ Driver rejected notification received:', data);
+        toast({
+          title: "Driver Rejected",
+          description: `${data.driverName}'s application has been rejected`,
+          duration: 5000,
+        });
+        
+        // Refresh drivers list and stats without page reload
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      });
+
+      // Listen for driver status updates
+      newSocket.on('driver-status-update', (data) => {
+        console.log('🔄 Driver status update received:', data);
+        // Refresh drivers list for real-time status updates
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
+      // Listen for new driver registrations
+      newSocket.on('new-driver-registration', (data) => {
+        console.log('👤 New driver registration notification:', data);
+        toast({
+          title: "New Driver Registration",
+          description: `${data.driverName} has registered and requires approval`,
+          duration: 6000,
+        });
+        
+        // Increment pending notifications and refresh data
+        setPendingNotifications(prev => prev + 1);
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      });
+
+      newSocket.on('disconnect', () => {
+        console.log('SuperAdmin Socket.IO disconnected');
+        setIsConnected(false);
+      });
+
+      setSocket(newSocket);
+
+      // Cleanup on unmount
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [(user as any)?.id, toast, queryClient]);
+
   // Forms
   const restaurantForm = useForm<RestaurantFormData>({
     resolver: zodResolver(restaurantFormSchema),
@@ -1101,23 +1183,17 @@ function SuperAdminDashboardContent() {
         <div className="flex items-center space-x-4">
           {/* WebSocket connection status */}
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-xs text-muted-foreground">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} data-testid="connection-status-indicator" />
+            <span className="text-sm text-muted-foreground" data-testid="connection-status-text">
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
+            {pendingNotifications > 0 && (
+              <div className="flex items-center space-x-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs" data-testid="pending-notifications">
+                <span className="font-medium">{pendingNotifications}</span>
+                <span>new</span>
+              </div>
+            )}
           </div>
-          
-          {/* Notification badge */}
-          {pendingNotifications > 0 && (
-            <div className="flex items-center space-x-1">
-              <Bell className="h-4 w-4 text-orange-500" />
-              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full cursor-pointer" 
-                    onClick={() => setPendingNotifications(0)}
-                    title="Click to clear notifications">
-                {pendingNotifications}
-              </span>
-            </div>
-          )}
           
           <span className="text-sm text-muted-foreground">
             Welcome, {(user as any)?.firstName || 'Super Admin'}

@@ -362,16 +362,27 @@ Ready to apply? Use the registration form!`);
 
     try {
       const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) return;
+      if (!user) {
+        await ctx.reply('Please register first using /start command.');
+        return;
+      }
 
       const driver = await storage.getDriverByUserId(user.id);
-      if (!driver || !driver.isApproved) return;
+      if (!driver) {
+        await ctx.reply('Please complete your driver registration first.');
+        return;
+      }
+
+      if (!driver.isApproved) {
+        await ctx.reply('⏳ Your driver application is still under review. You cannot start working until approved.');
+        return;
+      }
 
       const { latitude, longitude } = ctx.message.location;
       const live_period = (ctx.message.location as any).live_period;
 
       if (live_period) {
-        // Live location started - make driver online
+        // Live location started - make driver online and show dashboard access
         await storage.updateDriverLocation(driver.id, { lat: latitude, lng: longitude });
         await storage.updateDriverStatus(driver.id, true, true);
 
@@ -379,24 +390,47 @@ Ready to apply? Use the registration form!`);
           ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
           : 'https://replit.com';
 
-        await ctx.reply(`✅ **Location sharing started successfully!**
+        await ctx.reply(`🟢 **You're now ONLINE!**
 
-🟢 **You are now ONLINE and available for deliveries!**
+📍 Live location sharing activated
+🚗 Ready to receive delivery orders
+⭐ Current rating: ${driver.rating}
 
-Your live location is being tracked for real-time delivery updates. You can now access your driver dashboard to view available orders.`, {
+Welcome to your shift, ${driver.name}!`, {
           reply_markup: {
             inline_keyboard: [
               [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
-              [{ text: '📋 My Status', callback_data: 'driver_status' }]
+              [
+                { text: '📊 My Stats', callback_data: 'driver_status' },
+                { text: '💰 Earnings', callback_data: 'driver_earnings' }
+              ],
+              [{ text: '📋 Help & Support', callback_data: 'driver_help' }]
             ]
           }
         });
+
+        console.log(`✅ Driver ${driver.name} (${driver.id}) is now online with live location sharing`);
       } else {
-        // Regular location update
-        await storage.updateDriverLocation(driver.id, { lat: latitude, lng: longitude });
+        // Static location received - remind about live location requirement
+        await ctx.reply(`📍 **Location received, but you need to share **Live Location** to go online and receive orders.**
+
+To start working:
+1. Click 📎 attachment icon
+2. Select 📍 Location
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"
+
+This ensures real-time tracking for customers and efficient order delivery.`, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '❓ Need Help?', callback_data: 'location_help' }]
+            ]
+          }
+        });
       }
     } catch (error) {
       console.error('Error handling location update:', error);
+      await ctx.reply('Sorry, there was an error processing your location. Please try again.');
     }
   });
 
@@ -495,6 +529,100 @@ You are now OFFLINE. To receive deliveries again:
       await ctx.reply('❌ Failed to process contact information. Please try again.');
     }
   });
+}
+
+// Send approval notification to driver via Telegram
+export async function sendApprovalNotificationToDriver(telegramId: string, driverName: string) {
+  try {
+    console.log(`📱 Sending approval notification to driver ${telegramId} (${driverName})`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+      : 'https://replit.com';
+
+    const approvalMessage = `🎉 **CONGRATULATIONS!**
+
+✅ Your driver application has been **APPROVED!**
+
+🚗 You are now an official BeU Delivery driver!
+
+**Next Steps:**
+📍 Share your live location to start receiving orders
+🚗 Access your driver dashboard
+💰 Start earning with deliveries
+
+**Important:** To receive orders, you must share your live location first:
+1. Click 📎 attachment icon
+2. Select 📍 Location  
+3. Choose "Share My Live Location for..."
+4. Select "until I turn it off"
+
+Welcome to the BeU family, ${driverName}! 🎉`;
+
+    await driverBot.telegram.sendMessage(telegramId, approvalMessage, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
+          [{ text: '📍 How to Share Live Location', callback_data: 'location_help' }],
+          [{ text: '📋 Driver Guide', callback_data: 'driver_requirements' }]
+        ]
+      },
+      parse_mode: 'Markdown'
+    });
+
+    console.log(`✅ Approval notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending approval notification to driver:', error);
+  }
+}
+
+// Send rejection notification to driver via Telegram
+export async function sendRejectionNotificationToDriver(telegramId: string, driverName: string, reason?: string) {
+  try {
+    console.log(`📱 Sending rejection notification to driver ${telegramId} (${driverName})`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const rejectionMessage = `❌ **Application Status Update**
+
+Unfortunately, your driver application has been **declined**.
+
+${reason ? `**Reason:** ${reason}` : ''}
+
+**What you can do:**
+• Review our driver requirements
+• Ensure all documents are clear and valid
+• Contact support if you have questions
+• You can reapply after addressing any issues
+
+We encourage you to review the requirements and apply again when ready.
+
+Thank you for your interest in BeU Delivery.`;
+
+    await driverBot.telegram.sendMessage(telegramId, rejectionMessage, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📋 Review Requirements', callback_data: 'driver_requirements' }],
+          [{ text: '📞 Contact Support', url: 'https://t.me/BeUSupport' }]
+        ]
+      },
+      parse_mode: 'Markdown'
+    });
+
+    console.log(`✅ Rejection notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending rejection notification to driver:', error);
+  }
 }
 
 // Broadcast message to all drivers

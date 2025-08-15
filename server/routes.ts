@@ -2273,6 +2273,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         driverId: req.params.id
       });
 
+      // Send rejection notification to driver via Telegram
+      try {
+        if (driver.telegramId) {
+          const { sendRejectionNotificationToDriver } = await import('./telegram/driverBot');
+          await sendRejectionNotificationToDriver(driver.telegramId, driver.name || '', req.body.reason);
+        }
+      } catch (notificationError) {
+        console.error('Failed to send rejection notification to driver:', notificationError);
+        // Don't fail the rejection if notification fails
+      }
+
       console.log(`✅ Driver ${driver.name} (${driver.telegramId}) rejected successfully`);
       
       res.json({ 

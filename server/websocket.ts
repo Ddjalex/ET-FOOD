@@ -130,6 +130,38 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
       console.log('📢 Enhanced interactive notification sent to all drivers');
     });
 
+    // Driver status update notifications
+    socket.on('driver-status-update', async (data) => {
+      console.log('🔄 Driver status update received:', data);
+      // Broadcast to superadmin dashboard for real-time updates
+      io.to('role:superadmin').emit('driver-status-update', data);
+      // Also notify the specific driver
+      if (data.driverId) {
+        io.to(`driver:${data.driverId}`).emit('approval-status-change', data);
+      }
+    });
+
+    // Real-time driver approval notifications
+    socket.on('driver-approved', async (data) => {
+      console.log('✅ Driver approved notification:', data);
+      // Notify superadmin dashboard
+      io.to('role:superadmin').emit('driver-approved', data);
+      // Notify specific driver
+      if (data.driverId) {
+        io.to(`driver:${data.driverId}`).emit('driver-approved', data);
+      }
+    });
+
+    socket.on('driver-rejected', async (data) => {
+      console.log('❌ Driver rejected notification:', data);
+      // Notify superadmin dashboard
+      io.to('role:superadmin').emit('driver-rejected', data);
+      // Notify specific driver
+      if (data.driverId) {
+        io.to(`driver:${data.driverId}`).emit('driver-rejected', data);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
     });
