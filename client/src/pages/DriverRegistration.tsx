@@ -98,7 +98,7 @@ function DriverRegistration() {
             </div>
             <CardTitle className="text-2xl">Driver Registration</CardTitle>
             <p className="text-gray-600 dark:text-gray-400">
-              Join our delivery network and start earning
+              Join our delivery network (Motorcycles & Bicycles Only)
             </p>
           </CardHeader>
           
@@ -176,6 +176,11 @@ function DriverRegistration() {
               {/* Government ID Documents */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Government ID Documents</h3>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>New Requirements:</strong> Only government ID required - no driving license needed for bicycle and motorcycle delivery
+                  </p>
+                </div>
                 
                 {/* Government ID Front */}
                 <div className="space-y-2">
@@ -243,6 +248,11 @@ function DriverRegistration() {
               {/* Vehicle Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Vehicle Information</h3>
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    <strong>Available Vehicles:</strong> Choose between motorcycle (requires plate number) or bicycle (no plate needed)
+                  </p>
+                </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="vehicleType">Vehicle Type</Label>
