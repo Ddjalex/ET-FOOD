@@ -3149,13 +3149,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Ensure user exists or create one
       let user = await storage.getUserByTelegramId(telegramId);
+      console.log('🔍 Existing user check for telegramId', telegramId, ':', user ? `Found user with ID ${user.id}` : 'No user found');
+      
       if (!user) {
+        console.log('🆕 Creating new user for telegramId:', telegramId);
         user = await storage.upsertUser({
           telegramUserId: telegramId,
           role: 'driver',
           firstName: name.split(' ')[0] || name,
           lastName: name.split(' ').slice(1).join(' ') || ''
         });
+        console.log('✅ Created/upserted user:', user.id);
       }
 
       // Prepare driver data
@@ -3177,6 +3181,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weeklyEarnings: '0',
         creditBalance: '0'
       };
+
+      // Don't set licenseNumber at all to avoid null conflicts
+      // Based on updated requirements, license is not needed
 
       // Skip file processing for now (debugging)
       console.log('📁 Skipping file processing for debugging');

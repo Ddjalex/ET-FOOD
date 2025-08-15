@@ -117,5 +117,8 @@ const DriverSchema = new Schema<IDriver>({
 DriverSchema.index({ telegramId: 1 }, { unique: true });
 DriverSchema.index({ userId: 1 }, { unique: true });
 
+// Remove license number unique constraint entirely since it's no longer needed
+// Based on updated requirements: no driving license required
+
 export const Driver = mongoose.model<IDriver>('Driver', DriverSchema);
 export default Driver;
