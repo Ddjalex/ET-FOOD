@@ -34,7 +34,7 @@ The architecture is component-based, utilizing `wouter` for lightweight client-s
 - **Telegraf.js**: Telegram Bot API framework
 
 ### Database
-- **MongoDB**: Primary NoSQL database (with existing production data, managed with Mongoose ODM)
+- **MongoDB**: Primary NoSQL database (connected to user's production MongoDB cluster, managed with Mongoose ODM)
 
 ### UI and Styling
 - **Radix UI**: Accessible component primitives
