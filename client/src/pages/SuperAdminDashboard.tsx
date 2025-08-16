@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -3940,6 +3940,26 @@ export default function SuperAdminDashboard() {
   const { user, isLoading, isAuthenticated } = useAdminAuth();
   const [, navigate] = useLocation();
 
+  // Use useEffect to handle navigation to prevent state updates during render
+  React.useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated || (user as any)?.role !== 'superadmin') {
+        // Redirect based on user role
+        if (isAuthenticated && user) {
+          const userRole = (user as any)?.role;
+          if (userRole === 'restaurant_admin') {
+            navigate('/admin');
+            return;
+          } else if (userRole === 'kitchen_staff') {
+            navigate('/kitchen');
+            return;
+          }
+        }
+        navigate('/superadmin-login');
+      }
+    }
+  }, [isLoading, isAuthenticated, user, navigate]);
+
   // Auth check - early return to avoid hooks order issues
   if (isLoading) {
     return (
@@ -3953,19 +3973,7 @@ export default function SuperAdminDashboard() {
   }
 
   if (!isAuthenticated || (user as any)?.role !== 'superadmin') {
-    // Redirect based on user role
-    if (isAuthenticated && user) {
-      const userRole = (user as any)?.role;
-      if (userRole === 'restaurant_admin') {
-        navigate('/admin');
-        return null;
-      } else if (userRole === 'kitchen_staff') {
-        navigate('/kitchen');
-        return null;
-      }
-    }
-    navigate('/superadmin-login');
-    return null;
+    return null; // Let useEffect handle navigation
   }
 
   return <SuperAdminDashboardContent />;

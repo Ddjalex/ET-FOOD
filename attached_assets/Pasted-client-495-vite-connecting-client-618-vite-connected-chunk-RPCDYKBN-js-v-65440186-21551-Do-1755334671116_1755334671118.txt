@@ -1,0 +1,203 @@
+client:495 [vite] connecting...
+client:618 [vite] connected.
+chunk-RPCDYKBN.js?v=65440186:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+api/auth/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+api/admin/me:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+chunk-RPCDYKBN.js?v=65440186:521 Warning: Cannot update a component (`SuperAdminDashboard`) while rendering a different component (`SuperAdminDashboard`). To locate the bad setState() call inside `SuperAdminDashboard`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at SuperAdminDashboard (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/pages/SuperAdminDashboard.tsx:8414:48)
+    at Route (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=65440186:323:16)
+    at Switch (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=65440186:379:17)
+    at Router (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/App.tsx?v=5_0y5LLD46_oTq8CFnYTB:52:42)
+    at Provider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W6PG6DRF.js?v=65440186:38:15)
+    at TooltipProvider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=65440186:59:5)
+    at QueryClientProvider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=65440186:2805:3)
+    at App
+printWarning @ chunk-RPCDYKBN.js?v=65440186:521
+SuperAdminDashboard.tsx:390 Drivers data: Array(0)
+SuperAdminDashboard.tsx:225 Setting up SuperAdmin Socket.IO connection for user: 68920ba28fc4ce934718bd75
+SuperAdminDashboard.tsx:390 Drivers data: Array(0)
+SuperAdminDashboard.tsx:390 Drivers data: Array(0)
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: Object
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: Object
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: Object
+SuperAdminDashboard.tsx:230 SuperAdmin Socket.IO connected: 3WF85MiVbBUmUl-yAAAC
+SuperAdminDashboard.tsx:234 SuperAdmin authenticated: 68920ba28fc4ce934718bd75
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: Object
+SuperAdminDashboard.tsx:1062 WebSocket connected
+SuperAdminDashboard.tsx:238 SuperAdmin socket authenticated successfully: Object
+SuperAdminDashboard.tsx:1074 WebSocket authenticated: Object
+SuperAdminDashboard.tsx:390 Drivers data: Array(1)
+SuperAdminDashboard.tsx:392 First driver: Object
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: Object
+SuperAdminDashboard.tsx:390 Drivers data: [{…}]
+SuperAdminDashboard.tsx:392 First driver: {id: '68a041f9a736236d0512bd91', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+SuperAdminDashboard.tsx:393 Driver name: DJ ALEX
+SuperAdminDashboard.tsx:394 Driver phoneNumber: 251974408281
+SuperAdminDashboard.tsx:395 Driver user: undefined
+DriverLocationMap.tsx:98 Total drivers: 1
+DriverLocationMap.tsx:99 Drivers with valid location: 1
+DriverLocationMap.tsx:101 First driver with location: {id: '68a041f9a736236d0512bd91', userId: '688c844eb154013d32b1b987', telegramId: '383870190', phoneNumber: '251974408281', name: 'DJ ALEX', …}
+chunk-RPCDYKBN.js?v=65440186:16670 Uncaught Error: Invalid LatLng object: (NaN, NaN)
+    at new LatLng (chunk-JQURRHX6.js?v=65440186:941:17)
+    at toLatLng (chunk-JQURRHX6.js?v=65440186:1000:20)
+    at NewClass.setView (chunk-JQURRHX6.js?v=65440186:2058:38)
+    at react-leaflet.js?v=65440186:559:13
+    at commitAttachRef (chunk-RPCDYKBN.js?v=65440186:17279:28)
+    at commitLayoutEffectOnFiber (chunk-RPCDYKBN.js?v=65440186:17168:17)
+    at commitLayoutMountEffects_complete (chunk-RPCDYKBN.js?v=65440186:17980:17)
+    at commitLayoutEffects_begin (chunk-RPCDYKBN.js?v=65440186:17969:15)
+    at commitLayoutEffects (chunk-RPCDYKBN.js?v=65440186:17920:11)
+    at commitRootImpl (chunk-RPCDYKBN.js?v=65440186:19353:13)
+LatLng @ chunk-JQURRHX6.js?v=65440186:941
+toLatLng @ chunk-JQURRHX6.js?v=65440186:1000
+setView @ chunk-JQURRHX6.js?v=65440186:2058
+(anonymous) @ react-leaflet.js?v=65440186:559
+commitAttachRef @ chunk-RPCDYKBN.js?v=65440186:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=65440186:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=65440186:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=65440186:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=65440186:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=65440186:19353
+commitRoot @ chunk-RPCDYKBN.js?v=65440186:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=65440186:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=65440186:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=65440186:18627
+chunk-LG2722TT.js?v=65440186:335 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ chunk-LG2722TT.js?v=65440186:335
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=65440186:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=65440186:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=65440186:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=65440186:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=65440186:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=65440186:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=65440186:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=65440186:19416
+commitRoot @ chunk-RPCDYKBN.js?v=65440186:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=65440186:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=65440186:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=65440186:18627
+chunk-RPCDYKBN.js?v=65440186:14032 The above error occurred in the <div> component:
+
+    at div
+    at MapContainerComponent (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-leaflet.js?v=65440186:545:34)
+    at div
+    at div
+    at div
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=65440186:42:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-KWR5FH5J.js?v=65440186:59:7
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=65440186:79:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=65440186:56:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=65440186:42:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5AYXPB2H.js?v=65440186:29:5
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LG2722TT.js?v=65440186:231:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LG2722TT.js?v=65440186:154:58
+    at Presence (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3CMVZURD.js?v=65440186:24:11)
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LG2722TT.js?v=65440186:145:64
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=65440186:79:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=65440186:56:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-AXMZZQ2X.js?v=65440186:42:13
+    at https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-KWR5FH5J.js?v=65440186:258:22
+    at Presence (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-3CMVZURD.js?v=65440186:24:11)
+    at Provider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W6PG6DRF.js?v=65440186:38:15)
+    at DialogPortal (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LG2722TT.js?v=65440186:107:11)
+    at _c3 (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/components/ui/dialog.tsx:52:12)
+    at Provider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W6PG6DRF.js?v=65440186:38:15)
+    at Dialog (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-LG2722TT.js?v=65440186:48:5)
+    at DriverLocationModal (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/components/DriverLocationModal.tsx:75:3)
+    at div
+    at div
+    at SuperAdminDashboardContent (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/pages/SuperAdminDashboard.tsx:91:20)
+    at SuperAdminDashboard (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/pages/SuperAdminDashboard.tsx:8414:48)
+    at Route (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=65440186:323:16)
+    at Switch (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=65440186:379:17)
+    at Router (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/src/App.tsx?v=5_0y5LLD46_oTq8CFnYTB:52:42)
+    at Provider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-W6PG6DRF.js?v=65440186:38:15)
+    at TooltipProvider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=65440186:59:5)
+    at QueryClientProvider (https://d4f16389-77e5-40ed-8d1c-d06c5ff1a628-00-161ewzjthlwh0.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=65440186:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-RPCDYKBN.js?v=65440186:14032
+update.callback @ chunk-RPCDYKBN.js?v=65440186:14052
+callCallback @ chunk-RPCDYKBN.js?v=65440186:11248
+commitUpdateQueue @ chunk-RPCDYKBN.js?v=65440186:11265
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=65440186:17093
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=65440186:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=65440186:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=65440186:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=65440186:19353
+commitRoot @ chunk-RPCDYKBN.js?v=65440186:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=65440186:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=65440186:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=65440186:18627
+chunk-RPCDYKBN.js?v=65440186:9129 Uncaught Error: Invalid LatLng object: (NaN, NaN)
+    at new LatLng (chunk-JQURRHX6.js?v=65440186:941:17)
+    at toLatLng (chunk-JQURRHX6.js?v=65440186:1000:20)
+    at NewClass.setView (chunk-JQURRHX6.js?v=65440186:2058:38)
+    at react-leaflet.js?v=65440186:559:13
+    at commitAttachRef (chunk-RPCDYKBN.js?v=65440186:17279:28)
+    at commitLayoutEffectOnFiber (chunk-RPCDYKBN.js?v=65440186:17168:17)
+    at commitLayoutMountEffects_complete (chunk-RPCDYKBN.js?v=65440186:17980:17)
+    at commitLayoutEffects_begin (chunk-RPCDYKBN.js?v=65440186:17969:15)
+    at commitLayoutEffects (chunk-RPCDYKBN.js?v=65440186:17920:11)
+    at commitRootImpl (chunk-RPCDYKBN.js?v=65440186:19353:13)
+LatLng @ chunk-JQURRHX6.js?v=65440186:941
+toLatLng @ chunk-JQURRHX6.js?v=65440186:1000
+setView @ chunk-JQURRHX6.js?v=65440186:2058
+(anonymous) @ react-leaflet.js?v=65440186:559
+commitAttachRef @ chunk-RPCDYKBN.js?v=65440186:17279
+commitLayoutEffectOnFiber @ chunk-RPCDYKBN.js?v=65440186:17168
+commitLayoutMountEffects_complete @ chunk-RPCDYKBN.js?v=65440186:17980
+commitLayoutEffects_begin @ chunk-RPCDYKBN.js?v=65440186:17969
+commitLayoutEffects @ chunk-RPCDYKBN.js?v=65440186:17920
+commitRootImpl @ chunk-RPCDYKBN.js?v=65440186:19353
+commitRoot @ chunk-RPCDYKBN.js?v=65440186:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=65440186:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=65440186:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=65440186:18627
+SuperAdminDashboard.tsx:291 SuperAdmin Socket.IO disconnected
+SuperAdminDashboard.tsx:1070 WebSocket disconnected

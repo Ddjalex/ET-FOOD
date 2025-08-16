@@ -71,9 +71,11 @@ interface Driver {
   isAvailable: boolean;
   vehicleType?: string;
   currentLocation?: {
-    lat: number;
-    lng: number;
-  };
+    lat?: number;
+    lng?: number;
+    latitude?: number;
+    longitude?: number;
+  } | [number, number];
   user?: {
     firstName?: string;
     lastName?: string;
@@ -96,15 +98,42 @@ export const DriverLocationModal: React.FC<DriverLocationModalProps> = ({
     return null;
   }
 
+  // Helper function to extract coordinates from various formats
+  const getCoordinates = (location: any): [number, number] | null => {
+    if (!location) return null;
+    
+    // Handle array format [lat, lng]
+    if (Array.isArray(location) && location.length === 2) {
+      const lat = Number(location[0]);
+      const lng = Number(location[1]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lat, lng];
+      }
+    }
+    
+    // Handle object format with lat/lng or latitude/longitude
+    if (typeof location === 'object') {
+      const lat = Number(location.lat || location.latitude);
+      const lng = Number(location.lng || location.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lat, lng];
+      }
+    }
+    
+    return null;
+  };
+
+  const coordinates = getCoordinates(driver.currentLocation);
+  if (!coordinates) {
+    return null;
+  }
+
   const driverName = driver.name || 
     (driver.user?.firstName && driver.user?.lastName 
       ? `${driver.user.firstName} ${driver.user.lastName}`
       : driver.user?.firstName || driver.user?.lastName || 'Unknown Driver');
 
-  const driverPosition: [number, number] = [
-    Number(driver.currentLocation.lat), 
-    Number(driver.currentLocation.lng)
-  ];
+  const driverPosition: [number, number] = coordinates;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -185,7 +214,7 @@ export const DriverLocationModal: React.FC<DriverLocationModalProps> = ({
                         )}
                       </div>
                       <div className="mt-2 text-xs text-gray-500">
-                        📍 {Number(driver.currentLocation.lat).toFixed(6)}, {Number(driver.currentLocation.lng).toFixed(6)}
+                        📍 {coordinates[0].toFixed(6)}, {coordinates[1].toFixed(6)}
                       </div>
                     </div>
                   </div>
