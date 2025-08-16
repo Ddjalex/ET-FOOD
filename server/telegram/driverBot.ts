@@ -51,28 +51,19 @@ export async function notifyDriverApproval(telegramId: string, driverData: any) 
       return;
     }
 
-    const message = `🎉 CONGRATULATIONS! Your driver application has been APPROVED!
+    const message = `🎉 Congratulations ${driverData.name}! Your driver application has been approved.
 
-✅ **Status**: Approved Driver
-👤 **Name**: ${driverData.name}
-🚗 **Vehicle**: ${driverData.vehicleType}${driverData.vehiclePlate ? ` (${driverData.vehiclePlate})` : ''}
+✅ You can now start accepting delivery orders!
 
-📍 **NEXT STEP: Share Your Live Location**
-To start receiving delivery orders, you need to share your live location:
+📍 **IMPORTANT: To receive orders, you must share your live location when you go online.**
 
-1. Click the 📎 attachment icon below
-2. Select 📍 **Location**
-3. Choose **"Share My Live Location for..."**
-4. Select **"until I turn it off"**
-5. Tap **Share** to go online
-
-Once your location is shared, you'll automatically access your driver dashboard!`;
+Use the buttons below to get started:`;
 
     await driverBot.telegram.sendMessage(telegramId, message, {
       reply_markup: {
         inline_keyboard: [
-          [{ text: '📍 How to Share Live Location', callback_data: 'location_help' }],
-          [{ text: '📋 Driver Guidelines', callback_data: 'driver_requirements' }]
+          [{ text: '📍 Share Location & Go Online', callback_data: 'share_location_instructions' }],
+          [{ text: '🚗 Open Driver Dashboard', callback_data: 'open_dashboard_with_location_check' }]
         ]
       }
     });
@@ -624,6 +615,74 @@ For any questions or issues with your driver application:
 • Technical support
 
 Our support team will respond within 24 hours.`);
+          break;
+
+        case 'share_location_instructions':
+          await ctx.answerCbQuery();
+          await ctx.reply(`📍 **How to Share Live Location**
+
+**Step-by-step instructions:**
+1. Click the 📎 attachment icon below
+2. Select 📍 **Location** from the menu  
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"** for continuous tracking
+5. Tap **Share** to start location sharing
+
+⚠️ **Important**: You must share **LIVE LOCATION** (not just current location) to go online and receive delivery orders.
+
+Once you share live location, you'll automatically go online!`);
+          break;
+
+        case 'open_dashboard_with_location_check':
+          await ctx.answerCbQuery();
+          
+          // First check if user has an approved driver account
+          const driverForDashboard = await storage.getDriverByTelegramId(telegramUserId);
+          
+          if (!driverForDashboard || !driverForDashboard.isApproved) {
+            await ctx.reply('❌ Driver account not found or not approved. Please complete registration first.');
+            return;
+          }
+          
+          // Check if driver is online (has shared location)
+          if (!driverForDashboard.isOnline) {
+            await ctx.reply(`📍 **Location Required First**
+
+To access your driver dashboard, you must share your live location:
+
+1. Click 📎 attachment icon below
+2. Select 📍 **Location**
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"**
+5. Tap **Share**
+
+After sharing your location, you can access the dashboard.`, {
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: '📍 Location Help', callback_data: 'share_location_instructions' }]
+                ]
+              }
+            });
+            return;
+          }
+          
+          // Driver is online, provide dashboard access
+          const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+            : 'https://replit.com';
+            
+          await ctx.reply(`🚗 **Driver Dashboard Access**
+
+✅ Location shared - You're online!
+🟢 Status: Ready for orders
+
+Access your dashboard:`, {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }]
+              ]
+            }
+          });
           break;
       }
 

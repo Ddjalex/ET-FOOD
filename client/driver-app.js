@@ -52,7 +52,14 @@ class DriverApp {
                     
                     this.driverId = driver.id;
                     console.log('✅ Driver session initialized from Telegram:', this.driverId);
-                    this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                    
+                    // Check if driver is already online (has shared live location)
+                    if (driver.isOnline) {
+                        this.isOnline = true;
+                        this.updateStatusBadge('online', 'Online & Ready');
+                    } else {
+                        this.updateStatusBadge('offline', 'Share location to go online');
+                    }
 
                     // Load credit balance
                     await this.loadCreditBalance();
@@ -84,7 +91,14 @@ class DriverApp {
                         
                         this.driverId = driver.id;
                         console.log('✅ Driver session initialized from API:', this.driverId);
-                        this.updateStatusBadge('offline', 'Click "Go Online" to start');
+                        
+                        // Check if driver is already online (has shared live location)
+                        if (driver.isOnline) {
+                            this.isOnline = true;
+                            this.updateStatusBadge('online', 'Online & Ready');
+                        } else {
+                            this.updateStatusBadge('offline', 'Share location to go online');
+                        }
 
                         // Load credit balance
                         await this.loadCreditBalance();
@@ -904,6 +918,34 @@ class DriverApp {
 
         try {
             const newStatus = !this.isOnline;
+            
+            // If trying to go online, check if driver has shared live location through Telegram
+            if (newStatus) {
+                // First check current driver status from server
+                const driverResponse = await fetch(`/api/drivers/by-telegram/${this.tg.initDataUnsafe?.user?.id}`);
+                if (driverResponse.ok) {
+                    const currentDriver = await driverResponse.json();
+                    if (!currentDriver.isOnline) {
+                        toggleBtn.disabled = false;
+                        toggleBtn.textContent = 'Go Online';
+                        
+                        this.showNotification(
+                            'Live Location Required', 
+                            'You must share your live location in Telegram bot first. Return to bot and share location.', 
+                            'error'
+                        );
+                        
+                        // Try to close the WebApp and return to bot
+                        if (this.tg && this.tg.close) {
+                            setTimeout(() => {
+                                this.tg.close();
+                            }, 3000); // Give user time to read the message
+                        }
+                        
+                        return;
+                    }
+                }
+            }
 
             // Update driver online status via API
             const response = await fetch('/api/drivers/status', {

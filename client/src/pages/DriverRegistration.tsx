@@ -92,7 +92,25 @@ function DriverRegistration() {
           title: "Registration Submitted",
           description: "Your driver application has been submitted for review. You'll be notified once approved.",
         });
-        setLocation('/driver-login');
+        
+        // Send registration confirmation to bot and close WebApp
+        setTimeout(() => {
+          // Close Telegram WebApp and return to bot
+          const tgWebApp = (window as any).Telegram?.WebApp;
+          if (tgWebApp) {
+            // Send data to bot about successful registration
+            tgWebApp.sendData(JSON.stringify({ 
+              action: 'registration_completed',
+              success: true,
+              data: jsonData 
+            }));
+            // Close the WebApp
+            tgWebApp.close();
+          } else {
+            // Fallback for non-Telegram environments
+            setLocation('/driver-login');
+          }
+        }, 2000); // Show toast for 2 seconds before closing
       } else {
         const errorData = await response.json();
         console.error('🚫 Registration failed:', errorData);
