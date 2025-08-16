@@ -7,6 +7,7 @@ import { SystemSettings } from './models/SystemSettings';
 import { MenuCategory as MenuCategoryModel } from './models/MenuCategory';
 import { MenuItem as MenuItemModel } from './models/MenuItem';
 import { Order as OrderModel } from './models/Order';
+import { CommissionSettings } from './models/CommissionSettings';
 import { ObjectId } from 'mongodb';
 import {
   type User as UserType,
@@ -642,6 +643,14 @@ export class MongoStorage implements IStorage {
 
   async updateOrderStatus(id: string, status: string): Promise<Order> {
     try {
+      console.log(`📝 MongoDB updateOrderStatus called for order ${id} to status ${status}`);
+      
+      // Calculate commissions when order is completed/delivered
+      if (status === 'delivered' || status === 'completed') {
+        console.log(`💰 Calculating commissions for completed order ${id}`);
+        await this.calculateOrderCommissions(id);
+      }
+
       const order = await OrderModel.findByIdAndUpdate(
         id,
         { status, updatedAt: new Date() },
@@ -649,9 +658,164 @@ export class MongoStorage implements IStorage {
       ).lean();
       
       if (!order) throw new Error('Order not found');
+      console.log(`✅ MongoDB order ${id} status updated to ${status}`);
       return this.convertMongoOrder(order);
     } catch (error) {
       console.error('Error updating order status:', error);
+      throw error;
+    }
+  }
+
+  // Commission calculation method
+  private async calculateOrderCommissions(orderId: string): Promise<void> {
+    try {
+      console.log(`🧮 Calculating commissions for order ${orderId}`);
+      
+      // Get current commission settings
+      const commissionSettings = await this.getCommissionSettings();
+      const order = await OrderModel.findById(orderId);
+      
+      if (!order) {
+        throw new Error(`Order ${orderId} not found for commission calculation`);
+      }
+
+      const orderTotal = parseFloat(order.total?.toString() || '0');
+      const restaurantCommissionRate = commissionSettings.restaurantCommissionRate;
+      const driverCommissionRate = commissionSettings.driverCommissionRate;
+
+      // Calculate commission amounts
+      const orderCommissionAmount = (orderTotal * restaurantCommissionRate) / 100;
+      const driverCommissionAmount = (orderTotal * driverCommissionRate) / 100;
+      const platformProfit = orderCommissionAmount + driverCommissionAmount;
+
+      // Update order with commission data
+      await OrderModel.findByIdAndUpdate(orderId, {
+        orderCommissionRate: restaurantCommissionRate,
+        orderCommissionAmount,
+        driverCommissionRate,
+        driverCommissionAmount,
+        platformProfit,
+        updatedAt: new Date()
+      });
+
+      console.log(`✅ Commissions calculated for order ${orderId}:`, {
+        orderTotal,
+        restaurantCommission: orderCommissionAmount,
+        driverCommission: driverCommissionAmount,
+        platformProfit
+      });
+    } catch (error) {
+      console.error(`❌ Error calculating commissions for order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  // Get commission settings
+  async getCommissionSettings(): Promise<any> {
+    try {
+      let settings = await CommissionSettings.findOne({ isActive: true }).sort({ createdAt: -1 });
+      
+      // Create default settings if none exist
+      if (!settings) {
+        console.log('🔧 Creating default commission settings');
+        settings = await CommissionSettings.create({
+          restaurantCommissionRate: 15, // 15% default
+          driverCommissionRate: 5, // 5% default
+          isActive: true,
+          updatedBy: 'system'
+        });
+      }
+      
+      return {
+        restaurantCommissionRate: settings.restaurantCommissionRate,
+        driverCommissionRate: settings.driverCommissionRate,
+        updatedAt: settings.updatedAt,
+        updatedBy: settings.updatedBy
+      };
+    } catch (error) {
+      console.error('❌ Error getting commission settings:', error);
+      // Return defaults if error
+      return {
+        restaurantCommissionRate: 15,
+        driverCommissionRate: 5,
+        updatedAt: new Date(),
+        updatedBy: 'system'
+      };
+    }
+  }
+
+  // Update commission settings
+  async updateCommissionSettings(settings: any, updatedBy: string): Promise<any> {
+    try {
+      console.log(`🔧 Updating commission settings:`, settings);
+      
+      // Deactivate old settings
+      await CommissionSettings.updateMany({}, { isActive: false });
+      
+      // Create new settings
+      const newSettings = await CommissionSettings.create({
+        restaurantCommissionRate: settings.restaurantCommissionRate,
+        driverCommissionRate: settings.driverCommissionRate,
+        isActive: true,
+        updatedBy,
+        updatedAt: new Date()
+      });
+
+      console.log(`✅ Commission settings updated successfully`);
+      return this.getCommissionSettings();
+    } catch (error) {
+      console.error('❌ Error updating commission settings:', error);
+      throw error;
+    }
+  }
+
+  // Get financial data for Superadmin dashboard
+  async getFinancialCommissionData(): Promise<any> {
+    try {
+      console.log('📊 Fetching commission financial data');
+      
+      // Get all completed orders with commission data
+      const completedOrders = await OrderModel.find({
+        status: { $in: ['delivered', 'completed'] },
+        platformProfit: { $gt: 0 }
+      }).sort({ createdAt: -1 });
+
+      // Calculate totals
+      const totalCommissionEarned = completedOrders.reduce((sum, order) => sum + (order.platformProfit || 0), 0);
+      const totalRestaurantCommissions = completedOrders.reduce((sum, order) => sum + (order.orderCommissionAmount || 0), 0);
+      const totalDriverCommissions = completedOrders.reduce((sum, order) => sum + (order.driverCommissionAmount || 0), 0);
+      const totalOrders = completedOrders.length;
+
+      // Format individual order breakdowns
+      const orderBreakdowns = completedOrders.map(order => ({
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        total: order.total,
+        restaurantCommission: order.orderCommissionAmount || 0,
+        driverCommission: order.driverCommissionAmount || 0,
+        platformProfit: order.platformProfit || 0,
+        restaurantCommissionRate: order.orderCommissionRate || 0,
+        driverCommissionRate: order.driverCommissionRate || 0,
+        completedAt: order.actualDeliveryTime || order.updatedAt,
+        restaurantName: order.restaurantName || 'Unknown Restaurant'
+      }));
+
+      const result = {
+        summary: {
+          totalCommissionEarned,
+          totalRestaurantCommissions,
+          totalDriverCommissions,
+          totalOrders,
+          averageCommissionPerOrder: totalOrders > 0 ? totalCommissionEarned / totalOrders : 0
+        },
+        orderBreakdowns,
+        lastUpdated: new Date()
+      };
+
+      console.log(`✅ Commission data fetched: ${totalOrders} orders, ${totalCommissionEarned} total commission`);
+      return result;
+    } catch (error) {
+      console.error('❌ Error fetching commission data:', error);
       throw error;
     }
   }

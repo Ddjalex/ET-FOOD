@@ -630,6 +630,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==============================================
+  // COMMISSION SYSTEM API ROUTES (SUPERADMIN ONLY)
+  // ==============================================
+
+  // Get commission settings (Superadmin only)
+  app.get('/api/admin/commission-settings', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      console.log('📊 Fetching commission settings for superadmin');
+      const commissionSettings = await storage.getCommissionSettings();
+      res.json(commissionSettings);
+    } catch (error) {
+      console.error('Error fetching commission settings:', error);
+      res.status(500).json({ message: 'Failed to fetch commission settings' });
+    }
+  });
+
+  // Update commission settings (Superadmin only)
+  app.post('/api/admin/update-commission-settings', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      const user = req.session.user;
+      const { restaurantCommissionRate, driverCommissionRate } = req.body;
+
+      console.log('💰 Updating commission settings:', { restaurantCommissionRate, driverCommissionRate });
+
+      // Validate rates
+      if (typeof restaurantCommissionRate !== 'number' || restaurantCommissionRate < 0 || restaurantCommissionRate > 100) {
+        return res.status(400).json({ message: 'Restaurant commission rate must be between 0 and 100' });
+      }
+
+      if (typeof driverCommissionRate !== 'number' || driverCommissionRate < 0 || driverCommissionRate > 100) {
+        return res.status(400).json({ message: 'Driver commission rate must be between 0 and 100' });
+      }
+
+      const updatedSettings = await storage.updateCommissionSettings({
+        restaurantCommissionRate,
+        driverCommissionRate
+      }, user.id);
+
+      console.log('✅ Commission settings updated successfully');
+      res.json({ 
+        success: true, 
+        message: 'Commission settings updated successfully',
+        settings: updatedSettings 
+      });
+    } catch (error) {
+      console.error('Error updating commission settings:', error);
+      res.status(500).json({ message: 'Failed to update commission settings' });
+    }
+  });
+
+  // Get financial commission data (Superadmin only)
+  app.get('/api/admin/financials/commissions', requireSession, requireSuperadmin, async (req, res) => {
+    try {
+      console.log('📈 Fetching commission financial data for superadmin dashboard');
+      const financialData = await storage.getFinancialCommissionData();
+      
+      // Disable caching for financial data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
+      res.json(financialData);
+    } catch (error) {
+      console.error('Error fetching commission financial data:', error);
+      res.status(500).json({ message: 'Failed to fetch commission data' });
+    }
+  });
+
   // Superadmin Routes
   
   // Get all restaurants for superadmin

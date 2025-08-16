@@ -41,6 +41,14 @@ const OrderSchema = new mongoose.Schema({
   specialInstructions: { type: String },
   estimatedDeliveryTime: { type: Date },
   actualDeliveryTime: { type: Date },
+  
+  // Commission tracking fields
+  orderCommissionRate: { type: Number, default: 0 }, // Restaurant commission rate (percentage)
+  orderCommissionAmount: { type: Number, default: 0 }, // Calculated commission from restaurant
+  driverCommissionRate: { type: Number, default: 0 }, // Driver commission rate (percentage) 
+  driverCommissionAmount: { type: Number, default: 0 }, // Calculated commission from driver
+  platformProfit: { type: Number, default: 0 }, // Total platform profit (orderCommissionAmount + driverCommissionAmount)
+  
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, {

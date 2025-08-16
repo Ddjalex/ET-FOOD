@@ -1212,6 +1212,7 @@ function SuperAdminDashboardContent() {
           { id: 'admins', label: 'Admins' },
           { id: 'drivers', label: 'Drivers' },
           { id: 'credit-requests', label: 'Credit Requests' },
+          { id: 'commissions', label: 'Commissions & Financials' },
           { id: 'broadcast', label: 'Broadcast Messages' },
           { id: 'settings', label: 'System Settings' }
         ].map((tab) => (
@@ -2936,6 +2937,56 @@ function SuperAdminDashboardContent() {
                   variant="outline"
                 >
                   View Credit Requests
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Commissions & Financials Tab */}
+      {selectedTab === 'commissions' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Commissions & Financials</h2>
+              <p className="text-muted-foreground">Manage commission rates and track platform earnings from every order</p>
+            </div>
+            <Button
+              onClick={() => navigate('/superadmin/commissions')}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <DollarSign className="w-4 h-4 mr-2" />
+              Open Full Financial Dashboard
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Commission System Management</h3>
+                <p className="text-gray-600 mb-4">
+                  Configure commission rates for restaurants and drivers, track financial performance, and monitor platform earnings from all completed orders.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900">Restaurant Commissions</h4>
+                    <p className="text-sm text-blue-700">Track earnings from restaurant fees</p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-purple-900">Driver Commissions</h4>
+                    <p className="text-sm text-purple-700">Monitor driver service fees</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-green-900">Platform Profit</h4>
+                    <p className="text-sm text-green-700">Total earnings overview</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => navigate('/superadmin/commissions')}
+                  variant="outline"
+                >
+                  Manage Commissions & Financials
                 </Button>
               </div>
             </CardContent>

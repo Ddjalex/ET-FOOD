@@ -29,6 +29,7 @@ import DriverRegistration from "@/pages/DriverRegistration";
 import { CustomerApp } from "@/pages/CustomerApp";
 import DriverCreditRequest from "@/pages/DriverCreditRequest";
 import SuperadminCreditRequests from "@/pages/SuperadminCreditRequests";
+import CommissionsFinancials from "@/pages/CommissionsFinancials";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/driver-panel" component={DriverPanel} />
       <Route path="/driver-credit-request" component={DriverCreditRequest} />
       <Route path="/superadmin/credit-requests" component={SuperadminCreditRequests} />
+      <Route path="/superadmin/commissions" component={CommissionsFinancials} />
       <Route path="/customer" component={CustomerApp} />
       
       {/* Regular routes with Replit Auth */}
