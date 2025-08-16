@@ -223,28 +223,23 @@ export const DriverLocationModal: React.FC<DriverLocationModalProps> = ({
             </MapContainer>
           </div>
 
-          {/* Location Details */}
+          {/* Location Details - Simplified */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              📍 Location Details
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Latitude:</span>
-                <span className="ml-2 font-mono">{Number(driver.currentLocation.lat).toFixed(6)}</span>
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium flex items-center gap-2">
+                📍 Location Details
+              </h4>
+              <div className="text-xs text-gray-500 font-mono">
+                {coordinates[0].toFixed(6)}, {coordinates[1].toFixed(6)}
               </div>
-              <div>
-                <span className="text-gray-600">Longitude:</span>
-                <span className="ml-2 font-mono">{Number(driver.currentLocation.lng).toFixed(6)}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Status:</span>
-                <span className="ml-2">{driver.isOnline ? 'Sharing live location' : 'Location not active'}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Vehicle:</span>
-                <span className="ml-2">{driver.vehicleType || 'Bicycle'} 🚲</span>
-              </div>
+            </div>
+            <div className="mt-2 flex items-center gap-4 text-sm">
+              <span className="text-gray-600">
+                Status: {driver.isOnline ? 'Live tracking active' : 'Location not active'}
+              </span>
+              <span className="text-gray-600">
+                Vehicle: {driver.vehicleType || 'Bicycle'} 🚲
+              </span>
             </div>
           </div>
         </div>
