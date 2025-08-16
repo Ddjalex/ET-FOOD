@@ -66,13 +66,8 @@ export async function notifyDriverApproval(telegramId: string, driverData: any) 
 
 Once you share your live location, you'll automatically get access to your driver dashboard!`;
 
-    await driverBot.telegram.sendMessage(telegramId, message, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '❓ Location Sharing Help', callback_data: 'share_location_instructions' }]
-        ]
-      }
-    });
+    // Send message WITHOUT any buttons - only instructions
+    await driverBot.telegram.sendMessage(telegramId, message);
 
     console.log(`✅ Approval notification sent to driver ${telegramId}`);
   } catch (error) {

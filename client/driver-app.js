@@ -53,19 +53,18 @@ class DriverApp {
                     this.driverId = driver.id;
                     console.log('✅ Driver session initialized from Telegram:', this.driverId);
                     
-                    // Check if driver is already online (has shared live location)
-                    if (driver.isOnline) {
+                    // Check if driver is actually sharing live location
+                    if (driver.isOnline && driver.currentLocation) {
                         this.isOnline = true;
                         this.updateStatusBadge('online', 'Online & Ready');
+                        // Load credit balance
+                        await this.loadCreditBalance();
+                        // Show waiting screen for drivers with live location
+                        this.showWaitingScreen();
                     } else {
-                        this.updateStatusBadge('offline', 'Share location to go online');
+                        // Driver approved but no live location shared - show location sharing screen
+                        this.showLocationSharingRequiredScreen();
                     }
-
-                    // Load credit balance
-                    await this.loadCreditBalance();
-                    
-                    // Show waiting screen for approved drivers
-                    this.showWaitingScreen();
                     return;
                 } else if (response.status === 404) {
                     // Driver not found - show registration
@@ -92,19 +91,18 @@ class DriverApp {
                         this.driverId = driver.id;
                         console.log('✅ Driver session initialized from API:', this.driverId);
                         
-                        // Check if driver is already online (has shared live location)
-                        if (driver.isOnline) {
+                        // Check if driver is actually sharing live location
+                        if (driver.isOnline && driver.currentLocation) {
                             this.isOnline = true;
                             this.updateStatusBadge('online', 'Online & Ready');
+                            // Load credit balance
+                            await this.loadCreditBalance();
+                            // Show waiting screen for drivers with live location
+                            this.showWaitingScreen();
                         } else {
-                            this.updateStatusBadge('offline', 'Share location to go online');
+                            // Driver approved but no live location shared - show location sharing screen
+                            this.showLocationSharingRequiredScreen();
                         }
-
-                        // Load credit balance
-                        await this.loadCreditBalance();
-                        
-                        // Show waiting screen for approved drivers
-                        this.showWaitingScreen();
                         return;
                     }
                 }
@@ -173,7 +171,7 @@ class DriverApp {
 
             this.socket.on('connect', () => {
                 console.log('✅ WebSocket connected');
-                this.updateStatusBadge('online', 'Online & Ready');
+                // Don't automatically set online status - wait for driver status update
 
                 // Authenticate with driver ID
                 if (this.driverId) {
@@ -1441,6 +1439,47 @@ class DriverApp {
                     
                     <p style="color: #6B7280; font-size: 14px;">
                         You'll receive a notification in the Telegram bot once approved.
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
+    showLocationSharingRequiredScreen() {
+        console.log('📍 Showing location sharing required screen');
+        
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div class="header">
+                <h1>BeU Driver</h1>
+                <p>Location Sharing Required</p>
+            </div>
+            <div class="main-content">
+                <div class="status-screen">
+                    <div class="status-icon" style="background: #FEF3C7; color: #D97706;">📍</div>
+                    <h2>Share Live Location to Go Online</h2>
+                    <p>You're approved! To start receiving delivery orders, please share your live location first.</p>
+                    
+                    <div style="background: #EFF6FF; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left;">
+                        <p><strong>📍 How to Share Live Location:</strong></p>
+                        <ol style="margin: 10px 0; padding-left: 20px;">
+                            <li>Go back to the Telegram bot</li>
+                            <li>Click the 📎 attachment icon</li>
+                            <li>Select 📍 <strong>Location</strong></li>
+                            <li>Choose <strong>"Share My Live Location for..."</strong></li>
+                            <li>Select <strong>"until I turn it off"</strong></li>
+                            <li>Tap <strong>Share</strong></li>
+                        </ol>
+                    </div>
+                    
+                    <div style="background: #FEFCE8; padding: 15px; border-radius: 12px; margin: 20px 0;">
+                        <p style="font-size: 14px; color: #CA8A04;">
+                            <strong>⚠️ Important:</strong> You must share LIVE LOCATION (not just current location) to receive orders.
+                        </p>
+                    </div>
+                    
+                    <p style="color: #6B7280; font-size: 14px;">
+                        Once you share your live location, you'll automatically get access to your driver dashboard.
                     </p>
                 </div>
             </div>
