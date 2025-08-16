@@ -1,7 +1,7 @@
 import { Telegraf, Context } from 'telegraf';
 import { storage } from '../storage';
 
-// Driver notification function
+// Driver notification function for new orders
 export async function notifyDriverNewOrder(telegramId: string, orderData: any) {
   try {
     console.log(`📱 Sending order notification to driver ${telegramId}`);
@@ -37,6 +37,167 @@ Open your driver app to accept this order!`;
     console.log(`✅ Order notification sent to driver ${telegramId}`);
   } catch (error) {
     console.error('❌ Error sending order notification to driver:', error);
+  }
+}
+
+// Real-time driver approval notification
+export async function notifyDriverApproval(telegramId: string, driverData: any) {
+  try {
+    console.log(`🎉 Sending approval notification to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const message = `🎉 CONGRATULATIONS! Your driver application has been APPROVED!
+
+✅ **Status**: Approved Driver
+👤 **Name**: ${driverData.name}
+🚗 **Vehicle**: ${driverData.vehicleType}${driverData.vehiclePlate ? ` (${driverData.vehiclePlate})` : ''}
+
+📍 **NEXT STEP: Share Your Live Location**
+To start receiving delivery orders, you need to share your live location:
+
+1. Click the 📎 attachment icon below
+2. Select 📍 **Location**
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"**
+5. Tap **Share** to go online
+
+Once your location is shared, you'll automatically access your driver dashboard!`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📍 How to Share Live Location', callback_data: 'location_help' }],
+          [{ text: '📋 Driver Guidelines', callback_data: 'driver_requirements' }]
+        ]
+      }
+    });
+
+    console.log(`✅ Approval notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending approval notification:', error);
+  }
+}
+
+// Real-time driver registration confirmation notification
+export async function notifyDriverRegistrationReceived(telegramId: string, driverData: any) {
+  try {
+    console.log(`📋 Sending registration confirmation to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const message = `📋 **Registration Received Successfully!**
+
+✅ **Thank you for registering as a driver**
+👤 **Name**: ${driverData.name}
+📱 **Phone**: ${driverData.phoneNumber}
+🚗 **Vehicle**: ${driverData.vehicleType}${driverData.vehiclePlate ? ` (${driverData.vehiclePlate})` : ''}
+
+⏳ **Status**: Pending Approval
+Your application is now under review by our admin team.
+
+📋 **What happens next?**
+1. Our team will review your documents
+2. You'll receive a notification once approved
+3. After approval, share your live location to start receiving orders
+
+**Note**: Approval usually takes 24-48 hours. You'll be notified immediately via this bot once approved!`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📋 Check Application Status', callback_data: 'check_status' }],
+          [{ text: '📞 Contact Support', callback_data: 'contact_support' }]
+        ]
+      }
+    });
+
+    console.log(`✅ Registration confirmation sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending registration confirmation:', error);
+  }
+}
+
+// Real-time driver rejection notification
+export async function notifyDriverRejection(telegramId: string, reason?: string) {
+  try {
+    console.log(`❌ Sending rejection notification to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const message = `❌ **Driver Application Update**
+
+Unfortunately, your driver application has been rejected.
+
+${reason ? `**Reason**: ${reason}` : '**Reason**: Please contact support for more details.'}
+
+📞 **Need Help?**
+Contact our support team if you have questions about this decision.
+
+You can reapply after addressing the mentioned issues.`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📝 Apply Again', callback_data: 'reapply_driver' }],
+          [{ text: '📞 Contact Support', callback_data: 'contact_support' }]
+        ]
+      }
+    });
+
+    console.log(`✅ Rejection notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending rejection notification:', error);
+  }
+}
+
+// Notify driver when they go online after sharing location
+export async function notifyDriverOnline(telegramId: string, driverData: any) {
+  try {
+    console.log(`🟢 Sending online notification to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+      : 'https://replit.com';
+
+    const message = `🟢 **YOU'RE NOW ONLINE!**
+
+✅ Live location shared successfully
+🚗 **Status**: Online & Available for deliveries
+📍 **Zone**: ${driverData.zone || 'City-wide'}
+
+You can now receive delivery orders! Your driver dashboard is ready.`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🚗 Open Driver Dashboard', web_app: { url: driverAppUrl } }],
+          [{ text: '📊 View Earnings', callback_data: 'driver_earnings' }, { text: '📋 My Orders', callback_data: 'my_deliveries' }]
+        ]
+      }
+    });
+
+    console.log(`✅ Online notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending online notification:', error);
   }
 }
 
@@ -208,6 +369,120 @@ You are online and can receive delivery orders!`, {
     }
   });
 
+  // Handle location messages for live location sharing  
+  bot.on('location', async (ctx) => {
+    const telegramUserId = ctx.from?.id.toString();
+    const location = ctx.message.location;
+    
+    if (!telegramUserId || !location) return;
+
+    try {
+      console.log(`📍 Received location from driver ${telegramUserId}:`, location);
+      
+      // Get driver by telegram ID
+      const driver = await storage.getDriverByTelegramId(telegramUserId);
+      
+      if (!driver) {
+        await ctx.reply('❌ Driver not found. Please register first using /start');
+        return;
+      }
+
+      if (!driver.isApproved) {
+        await ctx.reply('⏳ Your driver application is still pending approval. You\'ll be notified once approved.');
+        return;
+      }
+
+      // Check if this is live location using proper type assertion
+      const locationWithLivePeriod = location as any;
+      if (locationWithLivePeriod.live_period && locationWithLivePeriod.live_period > 0) {
+        console.log(`🔴 Live location sharing started by driver ${driver.id}`);
+        
+        // Update driver location and set online
+        await storage.updateDriverLocation(driver.id, {
+          lat: location.latitude,
+          lng: location.longitude
+        });
+        
+        // Set driver online and available
+        await storage.updateDriverStatus(driver.id, true, true);
+        
+        // Send success notification with dashboard access
+        await notifyDriverOnline(telegramUserId, driver);
+        
+        console.log(`✅ Driver ${driver.id} is now online and available`);
+      } else {
+        // Regular location, not live location
+        await ctx.reply(`📍 **Location received, but you need to share LIVE LOCATION to go online.**
+
+To start working:
+1. Click 📎 attachment icon below
+2. Select 📍 **Location**
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"**
+5. Tap **Share**
+
+This will make you available for delivery orders!`);
+      }
+    } catch (error) {
+      console.error('Error handling location:', error);
+      await ctx.reply('❌ Error processing location. Please try again.');
+    }
+  });
+
+  // Handle contact sharing for new driver registration
+  bot.on('contact', async (ctx) => {
+    const telegramUserId = ctx.from?.id.toString();
+    const contact = ctx.message.contact;
+    
+    if (!telegramUserId || !contact) return;
+
+    try {
+      console.log(`📱 Received contact from ${telegramUserId}:`, contact);
+      
+      // Check if user is sharing their own contact
+      if (contact.user_id?.toString() === telegramUserId) {
+        const firstName = ctx.from?.first_name || contact.first_name;
+        const lastName = ctx.from?.last_name || contact.last_name || '';
+        const phoneNumber = contact.phone_number;
+        
+        // Create or update user
+        const userData = {
+          telegramUserId,
+          telegramUsername: ctx.from?.username,
+          firstName,
+          lastName,
+          role: 'driver',
+        };
+        
+        const user = await storage.upsertUser(userData);
+        
+        // Generate registration URL with auto-fill data
+        const driverRegUrl = process.env.REPLIT_DEV_DOMAIN 
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html?phone=${encodeURIComponent(phoneNumber)}&name=${encodeURIComponent(`${firstName} ${lastName}`.trim())}`
+          : 'https://replit.com';
+          
+        await ctx.reply(`✅ **Contact received!** 
+        
+Thanks ${firstName}! Your information has been saved.
+
+📝 **Next: Complete Your Driver Registration**
+Your phone number (${phoneNumber}) will be auto-filled in the registration form.`, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🚗 Complete Driver Registration', web_app: { url: driverRegUrl } }],
+              [{ text: '📋 View Requirements', callback_data: 'driver_requirements' }]
+            ]
+          }
+        });
+      } else {
+        await ctx.reply('❌ Please share your own contact information.');
+      }
+    } catch (error) {
+      console.error('Error handling contact:', error);
+      await ctx.reply('❌ Error processing contact. Please try again.');
+    }
+  });
+
   // Handle driver-specific callback queries
   bot.on('callback_query', async (ctx) => {
     const data = 'data' in ctx.callbackQuery ? ctx.callbackQuery.data : undefined;
@@ -217,16 +492,11 @@ You are online and can receive delivery orders!`, {
 
     try {
       const user = await storage.getUserByTelegramId(telegramUserId);
-      if (!user) return;
-
-      const driver = await storage.getDriverByUserId(user.id);
-      if (!driver) return;
-
+      
       switch (data) {
-
         case 'location_help':
           await ctx.answerCbQuery();
-          await ctx.reply(`📍 **Need Help with Location Sharing?**
+          await ctx.reply(`📍 **How to Share Live Location**
 
 **Step-by-step instructions:**
 1. Click the 📎 attachment icon below
@@ -235,24 +505,144 @@ You are online and can receive delivery orders!`, {
 4. Select **"until I turn it off"** for continuous tracking
 5. Tap **Share** to start location sharing
 
-**Location received, but you need to share **Live Location** to go online and receive orders.**
+⚠️ **Important**: You must share **LIVE LOCATION** (not just current location) to go online and receive delivery orders.
 
-To start working:
-1. Click 📎 attachment icon
-2. Select 📍 Location
-3. Choose "Share My Live Location for..."
-4. Select "until I turn it off"`);
+Once you share live location, you'll automatically go online!`);
           break;
+
+        case 'reapply_driver':
+          await ctx.answerCbQuery();
+          const driverRegUrl = process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
+            : 'https://replit.com';
+          
+          await ctx.reply('📝 **Ready to reapply?**\n\nMake sure to address any previous issues mentioned in your rejection notice.', {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🚗 Start New Application', web_app: { url: driverRegUrl } }]
+              ]
+            }
+          });
+          break;
+
+        case 'contact_support':
+          await ctx.answerCbQuery();
+          await ctx.reply(`📞 **Contact Support**
+
+For assistance with your driver application:
+
+📧 **Email**: support@beudelivery.com
+📱 **Phone**: +251-XXX-XXXX
+⏰ **Hours**: 9 AM - 6 PM (Monday - Friday)
+
+Our support team will help resolve any issues with your application.`);
+          break;
+
+        case 'driver_requirements':
+          await ctx.answerCbQuery();
+          await ctx.reply(`📋 **Driver Requirements**
+
+✅ **Vehicle Requirements:**
+- Motorcycle or Bicycle only
+- Valid vehicle registration
+- Plate number (for motorcycles)
+
+✅ **Documents Required:**
+- Government ID (Kebele ID or Passport)
+- Profile photo
+- Contact information
+
+✅ **Other Requirements:**
+- Must be 18+ years old
+- Reliable phone with internet access
+- Ability to share live location
+
+**Note:** Driving license is NOT required for delivery drivers.`);
+          break;
+
+        case 'check_status':
+          await ctx.answerCbQuery();
+          
+          // Check driver's current status
+          const currentDriver = await storage.getDriverByTelegramId(user.id.toString());
+          if (!currentDriver) {
+            await ctx.reply('❌ No driver application found. Please register first using /start command.');
+            return;
+          }
+
+          let statusMessage = `📋 **Driver Application Status**
+
+👤 **Name**: ${currentDriver.name}
+📱 **Phone**: ${currentDriver.phoneNumber}
+🚗 **Vehicle**: ${currentDriver.vehicleType}${currentDriver.vehiclePlate ? ` (${currentDriver.vehiclePlate})` : ''}
+
+`;
+
+          if (currentDriver.isApproved) {
+            statusMessage += `✅ **Status**: APPROVED
+🟢 **You can now start receiving orders!**
+
+📍 To go online and receive orders:
+1. Share your live location
+2. Use the dashboard to manage deliveries`;
+          } else if (currentDriver.status === 'rejected') {
+            statusMessage += `❌ **Status**: REJECTED
+📝 **Reason**: Application did not meet requirements
+
+You can contact support for more information.`;
+          } else {
+            statusMessage += `⏳ **Status**: PENDING APPROVAL
+📝 Your application is under review.
+
+⏰ **Typical review time**: 24-48 hours
+📱 You'll receive an instant notification once approved!`;
+          }
+
+          await ctx.reply(statusMessage, {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🔄 Refresh Status', callback_data: 'check_status' }],
+                [{ text: '📞 Contact Support', callback_data: 'contact_support' }]
+              ]
+            }
+          });
+          break;
+
+        case 'contact_support':
+          await ctx.answerCbQuery();
+          await ctx.reply(`📞 **Contact Support**
+
+For any questions or issues with your driver application:
+
+📧 **Email**: support@beudelivery.com
+📱 **WhatsApp**: +251911234567
+⏰ **Support Hours**: 8 AM - 10 PM (Monday to Sunday)
+
+🚀 **Common Questions:**
+• Application status updates
+• Document verification issues
+• Technical support
+
+Our support team will respond within 24 hours.`);
+          break;
+      }
+
+      // Get driver for driver-specific queries
+      if (!user) return;
+      const driver = await storage.getDriverByUserId(user.id);
+      if (!driver) return;
+
+      switch (data) {
 
         case 'my_deliveries':
           await ctx.answerCbQuery();
-          const deliveries = await storage.getDeliveriesByDriver(driver.id);
+          const driverDeliveries = await storage.getDeliveriesByDriver(driver.id);
           
-          if (deliveries.length === 0) {
+          if (driverDeliveries.length === 0) {
             await ctx.reply('📋 No deliveries yet. Go online to start receiving orders!');
           } else {
             let deliveriesList = '📋 Your Recent Deliveries:\n\n';
-            deliveries.slice(0, 5).forEach((delivery, index) => {
+            driverDeliveries.slice(0, 5).forEach((delivery, index) => {
               deliveriesList += `${index + 1}. Order #${delivery.orderId}\n`;
               deliveriesList += `   Status: ${delivery.status}\n`;
               deliveriesList += `   Earnings: ${delivery.earnings || 0} ETB\n`;

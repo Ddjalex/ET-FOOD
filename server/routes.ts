@@ -62,8 +62,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Also update driver status to online when location is shared
       console.log('Updating driver status to online...');
-      await storage.updateDriverStatus(driverId, true, true);
+      const driverAfterStatusUpdate = await storage.updateDriverStatus(driverId, true, true);
       console.log('Driver status updated successfully');
+
+      // Send real-time notification to driver that they're now online
+      if (driverAfterStatusUpdate?.telegramId && driverAfterStatusUpdate.isApproved) {
+        console.log(`🟢 Driver ${driverId} is now online, sending notification...`);
+        const { notifyDriverOnline } = await import('./telegram/driverBot');
+        await notifyDriverOnline(driverAfterStatusUpdate.telegramId, driverAfterStatusUpdate);
+      }
 
       broadcast('driver_location_updated', {
         driverId,
@@ -1375,12 +1382,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/drivers/:id/approve', isAuthenticated, async (req, res) => {
     try {
+      console.log(`🎉 Approving driver ${req.params.id}...`);
       const driver = await storage.approveDriver(req.params.id);
+      
+      // Real-time WebSocket broadcast to admin dashboards
       broadcast('driver_approved', driver);
+      
+      // Send real-time Telegram notification to the driver
+      if (driver.telegramId) {
+        console.log(`📱 Sending approval notification to driver telegram: ${driver.telegramId}`);
+        const { notifyDriverApproval } = await import('./telegram/driverBot');
+        await notifyDriverApproval(driver.telegramId, driver);
+      }
+      
+      console.log(`✅ Driver ${driver.id} approved successfully`);
       res.json(driver);
     } catch (error) {
       console.error("Error approving driver:", error);
       res.status(500).json({ message: "Failed to approve driver" });
+    }
+  });
+
+  // Add driver rejection route with real-time notifications
+  app.post('/api/drivers/:id/reject', isAuthenticated, async (req, res) => {
+    try {
+      const { reason } = req.body;
+      console.log(`❌ Rejecting driver ${req.params.id} with reason: ${reason || 'Not specified'}`);
+      
+      const driver = await storage.rejectDriver(req.params.id, reason);
+      
+      // Real-time WebSocket broadcast to admin dashboards
+      broadcast('driver_rejected', driver);
+      
+      // Send real-time Telegram notification to the driver
+      if (driver && driver.telegramId) {
+        console.log(`📱 Sending rejection notification to driver telegram: ${driver.telegramId}`);
+        const { notifyDriverRejection } = await import('./telegram/driverBot');
+        await notifyDriverRejection(driver.telegramId, reason);
+      }
+      
+      console.log(`❌ Driver ${driver?.id} rejected successfully`);
+      res.json(driver);
+    } catch (error) {
+      console.error("Error rejecting driver:", error);
+      res.status(500).json({ message: "Failed to reject driver" });
     }
   });
 
@@ -3687,7 +3732,7 @@ Use the buttons below to get started:`;
         telegramId: driver.telegramId
       });
 
-      // Send real-time notification to SuperAdmin dashboard
+      // Send enhanced real-time notification to SuperAdmin dashboard
       broadcast('driverRegistration', {
         type: 'new_driver_registration',
         driver: {
@@ -3704,8 +3749,16 @@ Use the buttons below to get started:`;
           createdAt: new Date().toISOString()
         },
         message: `New driver registration: ${driver.name}`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        needsApproval: true
       });
+
+      // Send immediate notification to driver via Telegram
+      if (driver.telegramId) {
+        console.log(`📱 Sending registration confirmation to driver telegram: ${driver.telegramId}`);
+        const { notifyDriverRegistrationReceived } = await import('./telegram/driverBot');
+        await notifyDriverRegistrationReceived(driver.telegramId, driver);
+      }
 
       console.log('✅ Driver registration completed and superadmin notified:', driver.id);
 
