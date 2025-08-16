@@ -3629,29 +3629,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 ✅ You can now start accepting delivery orders!
 
-📍 IMPORTANT: To receive orders, you must share your live location when you go online.
+📍 **IMPORTANT: To receive orders, you must share your live location first.**
 
-Use the buttons below to get started:`;
+**Next Step:**
+1. Click the 📎 attachment icon below
+2. Select 📍 **Location**  
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"**
+5. Tap **Share**
 
-      // Send notification via driver bot
-      await driverBot.telegram.sendMessage(telegramId, message, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: '🚗 Open Driver Dashboard',
-                callback_data: 'driver_dashboard'
-              }
-            ],
-            [
-              {
-                text: '📍 Share Location & Go Online',
-                callback_data: 'share_live_location'
-              }
-            ]
-          ]
-        }
-      });
+Once you share your live location, you'll automatically get access to your driver dashboard!`;
+
+      // Send message WITHOUT any buttons - only instructions
+      await driverBot.telegram.sendMessage(telegramId, message);
 
       console.log(`Approval notification sent to driver ${driverName} (${telegramId})`);
     } catch (error) {
