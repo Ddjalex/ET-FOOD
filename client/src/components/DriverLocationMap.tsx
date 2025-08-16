@@ -37,9 +37,11 @@ interface Driver {
   isOnline: boolean;
   isAvailable: boolean;
   currentLocation?: {
-    lat: number;
-    lng: number;
-  };
+    lat?: number;
+    lng?: number;
+    latitude?: number;
+    longitude?: number;
+  } | [number, number];
   user?: {
     firstName?: string;
     lastName?: string;
@@ -59,19 +61,39 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
   // Default center (Addis Ababa, Ethiopia)
   const defaultCenter: [number, number] = [9.0155, 38.7635];
 
+  // Helper function to extract coordinates from various formats
+  const getDriverCoordinates = (location: any): [number, number] | null => {
+    if (!location) return null;
+    
+    // Handle array format [lat, lng]
+    if (Array.isArray(location) && location.length === 2) {
+      const lat = Number(location[0]);
+      const lng = Number(location[1]);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return [lat, lng];
+      }
+    }
+    
+    // Handle object format with lat/lng or latitude/longitude
+    if (typeof location === 'object') {
+      const lat = Number(location.lat || location.latitude);
+      const lng = Number(location.lng || location.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return [lat, lng];
+      }
+    }
+    
+    return null;
+  };
+
   // Filter drivers with valid locations
   const driversWithLocation = drivers.filter(d => {
-    // More flexible location checking
-    const hasLocation = d.currentLocation && 
-      (typeof d.currentLocation.lat === 'number' || typeof d.currentLocation.lat === 'string') && 
-      (typeof d.currentLocation.lng === 'number' || typeof d.currentLocation.lng === 'string') &&
-      !isNaN(Number(d.currentLocation.lat)) &&
-      !isNaN(Number(d.currentLocation.lng)) &&
-      Number(d.currentLocation.lat) !== 0 &&
-      Number(d.currentLocation.lng) !== 0;
-    
-    return hasLocation;
-  });
+    const coords = getDriverCoordinates(d.currentLocation);
+    return coords !== null;
+  }).map(d => ({
+    ...d,
+    coordinates: getDriverCoordinates(d.currentLocation)!
+  })) as (Driver & { coordinates: [number, number] })[];
 
   console.log('Total drivers:', drivers.length);
   console.log('Drivers with valid location:', driversWithLocation.length);
@@ -98,7 +120,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
         {driversWithLocation.map((driver) => (
           <Marker
             key={driver.id}
-            position={[Number(driver.currentLocation!.lat), Number(driver.currentLocation!.lng)]}
+            position={driver.coordinates}
             icon={driver.isOnline ? onlineDriverIcon : offlineDriverIcon}
           >
             <Popup>
@@ -128,7 +150,7 @@ export const DriverLocationMap: React.FC<DriverLocationMapProps> = ({
                   )}
                 </div>
                 <div className="mt-1 text-xs text-gray-500">
-                  {Number(driver.currentLocation!.lat).toFixed(4)}, {Number(driver.currentLocation!.lng).toFixed(4)}
+                  {driver.coordinates[0].toFixed(4)}, {driver.coordinates[1].toFixed(4)}
                 </div>
               </div>
             </Popup>

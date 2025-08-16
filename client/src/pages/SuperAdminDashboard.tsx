@@ -211,6 +211,11 @@ function SuperAdminDashboardContent() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [pendingNotifications, setPendingNotifications] = useState<number>(0);
+  const [imageViewModal, setImageViewModal] = useState<{isOpen: boolean, imageUrl: string, title: string}>({
+    isOpen: false,
+    imageUrl: '',
+    title: ''
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2276,7 +2281,11 @@ function SuperAdminDashboardContent() {
                                       src={driver.profileImageUrl} 
                                       alt="Driver Profile" 
                                       className="w-20 h-20 object-cover rounded-lg border"
-                                      onClick={() => window.open(driver.profileImageUrl, '_blank')}
+                                      onClick={() => setImageViewModal({
+                                        isOpen: true,
+                                        imageUrl: driver.profileImageUrl || '',
+                                        title: 'Driver Profile Photo'
+                                      })}
                                       style={{ cursor: 'pointer' }}
                                     />
                                     <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
@@ -2297,7 +2306,11 @@ function SuperAdminDashboardContent() {
                                       src={driver.governmentIdFrontUrl} 
                                       alt="Government ID Front" 
                                       className="w-20 h-20 object-cover rounded-lg border"
-                                      onClick={() => window.open(driver.governmentIdFrontUrl, '_blank')}
+                                      onClick={() => setImageViewModal({
+                                        isOpen: true,
+                                        imageUrl: driver.governmentIdFrontUrl || '',
+                                        title: 'Government ID Front'
+                                      })}
                                       style={{ cursor: 'pointer' }}
                                     />
                                     <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
@@ -2318,7 +2331,11 @@ function SuperAdminDashboardContent() {
                                       src={driver.governmentIdBackUrl} 
                                       alt="Government ID Back" 
                                       className="w-20 h-20 object-cover rounded-lg border"
-                                      onClick={() => window.open(driver.governmentIdBackUrl, '_blank')}
+                                      onClick={() => setImageViewModal({
+                                        isOpen: true,
+                                        imageUrl: driver.governmentIdBackUrl || '',
+                                        title: 'Government ID Back'
+                                      })}
                                       style={{ cursor: 'pointer' }}
                                     />
                                     <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>
@@ -3896,6 +3913,24 @@ function SuperAdminDashboardContent() {
         </DialogContent>
       </Dialog>
 
+      {/* Image View Modal */}
+      <Dialog 
+        open={imageViewModal.isOpen} 
+        onOpenChange={(open) => setImageViewModal(prev => ({...prev, isOpen: open}))}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{imageViewModal.title}</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 pt-0 flex justify-center">
+            <img 
+              src={imageViewModal.imageUrl}
+              alt={imageViewModal.title}
+              className="max-w-full max-h-[70vh] object-contain rounded-lg"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
