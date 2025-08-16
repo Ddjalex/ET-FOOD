@@ -55,15 +55,21 @@ export async function notifyDriverApproval(telegramId: string, driverData: any) 
 
 ✅ You can now start accepting delivery orders!
 
-📍 **IMPORTANT: To receive orders, you must share your live location when you go online.**
+📍 **IMPORTANT: To receive orders, you must share your live location first.**
 
-Use the buttons below to get started:`;
+**Next Step:**
+1. Click the 📎 attachment icon below
+2. Select 📍 **Location**  
+3. Choose **"Share My Live Location for..."**
+4. Select **"until I turn it off"**
+5. Tap **Share**
+
+Once you share your live location, you'll automatically get access to your driver dashboard!`;
 
     await driverBot.telegram.sendMessage(telegramId, message, {
       reply_markup: {
         inline_keyboard: [
-          [{ text: '📍 Share Location & Go Online', callback_data: 'share_location_instructions' }],
-          [{ text: '🚗 Open Driver Dashboard', callback_data: 'open_dashboard_with_location_check' }]
+          [{ text: '❓ Location Sharing Help', callback_data: 'share_location_instructions' }]
         ]
       }
     });
