@@ -561,7 +561,7 @@ Our support team will help resolve any issues with your application.`);
           await ctx.answerCbQuery();
           
           // Check driver's current status
-          const currentDriver = await storage.getDriverByTelegramId(user.id.toString());
+          const currentDriver = await storage.getDriverByTelegramId(telegramUserId);
           if (!currentDriver) {
             await ctx.reply('❌ No driver application found. Please register first using /start command.');
             return;
