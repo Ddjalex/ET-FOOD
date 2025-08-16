@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Building2, Truck, DollarSign, Plus, UserPlus, Settings, Upload, Eye, EyeOff, CheckCircle, XCircle, MapPin, Clock, Edit, Trash2, MessageSquare, X, User, Bell, Shield, Map, Filter, Phone, Mail, Calendar, Star, TrendingUp, Award, Copy, Send, CreditCard } from 'lucide-react';
 import { DriverLocationMap } from '@/components/DriverLocationMap';
+import { DriverLocationModal } from '@/components/DriverLocationModal';
 import { DriverCreditManager } from '@/components/DriverCreditManager';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -195,6 +196,8 @@ function SuperAdminDashboardContent() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isDriverInfoDialogOpen, setIsDriverInfoDialogOpen] = useState(false);
+  const [selectedDriverForLocation, setSelectedDriverForLocation] = useState<Driver | null>(null);
+  const [isDriverLocationModalOpen, setIsDriverLocationModalOpen] = useState(false);
   const [isBroadcastDialogOpen, setIsBroadcastDialogOpen] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -2531,23 +2534,9 @@ function SuperAdminDashboardContent() {
                                 variant="outline" 
                                 className="text-xs bg-green-50 text-green-700 cursor-pointer hover:bg-green-100 hover:text-green-800 transition-colors"
                                 onClick={() => {
-                                  // Scroll to the Live Driver Locations map
-                                  const mapElement = document.querySelector('[data-driver-map]');
-                                  if (mapElement) {
-                                    mapElement.scrollIntoView({ 
-                                      behavior: 'smooth', 
-                                      block: 'center' 
-                                    });
-                                    // Highlight the driver on the map
-                                    toast({
-                                      title: "Driver Location",
-                                      description: `Showing ${driver.name || 
-                                        (driver.user?.firstName && driver.user?.lastName 
-                                          ? `${driver.user.firstName} ${driver.user.lastName}`
-                                          : driver.user?.firstName || driver.user?.lastName || 'Unknown Driver')
-                                      } on the Live Driver Locations map`,
-                                    });
-                                  }
+                                  // Open the driver location modal
+                                  setSelectedDriverForLocation(driver);
+                                  setIsDriverLocationModalOpen(true);
                                 }}
                               >
                                 📍 Live GPS
@@ -2905,6 +2894,16 @@ function SuperAdminDashboardContent() {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Driver Location Modal */}
+          <DriverLocationModal 
+            driver={selectedDriverForLocation}
+            isOpen={isDriverLocationModalOpen}
+            onClose={() => {
+              setIsDriverLocationModalOpen(false);
+              setSelectedDriverForLocation(null);
+            }}
+          />
         </div>
       )}
 
