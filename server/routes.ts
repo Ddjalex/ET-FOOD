@@ -241,10 +241,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Customer routes (public access for Telegram mini-apps)
-  app.use('/api', customerRoutes);
+  // Auth middleware
+  await setupAuth(app);
 
-  // Auth routes - Define BEFORE setupAuth to avoid middleware conflicts
+  // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
       // Skip authentication in development mode
@@ -274,8 +274,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth middleware
-  await setupAuth(app);
+  // Customer routes (public access for Telegram mini-apps)
+  app.use('/api', customerRoutes);
 
   // Setup Telegram bots
   await setupTelegramBots();
