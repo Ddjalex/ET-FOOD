@@ -398,10 +398,22 @@ You are online and can receive delivery orders!`, {
         // Set driver online and available
         await storage.updateDriverStatus(driver.id, true, true);
         
+        // Broadcast real-time status update to admin dashboards
+        const { broadcast } = await import('../websocket');
+        broadcast('driver_status_changed', {
+          driverId: driver.id,
+          name: driver.name,
+          isOnline: true,
+          isAvailable: true,
+          lastOnline: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          source: 'telegram_live_location'
+        });
+        
         // Send success notification with dashboard access
         await notifyDriverOnline(telegramUserId, driver);
         
-        console.log(`✅ Driver ${driver.id} is now online and available`);
+        console.log(`✅ Driver ${driver.id} is now online and available via Telegram live location`);
       } else {
         // Regular location, not live location
         await ctx.reply(`📍 **Location received, but you need to share LIVE LOCATION to go online.**
@@ -835,6 +847,18 @@ Ready to apply? Use the registration form!`);
         // Live location started - make driver online and show dashboard access
         await storage.updateDriverLocation(driver.id, { lat: latitude, lng: longitude });
         await storage.updateDriverStatus(driver.id, true, true);
+        
+        // Broadcast real-time status update to admin dashboards
+        const { broadcast } = await import('../websocket');
+        broadcast('driver_status_changed', {
+          driverId: driver.id,
+          name: driver.name,
+          isOnline: true,
+          isAvailable: true,
+          lastOnline: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          source: 'telegram_live_location'
+        });
 
         const driverAppUrl = process.env.REPLIT_DEV_DOMAIN 
           ? `https://${process.env.REPLIT_DEV_DOMAIN}/driver-app.html`
@@ -904,6 +928,18 @@ This ensures real-time tracking for customers and efficient order delivery.`, {
       if (live_period === 0) {
         // Live location stopped - make driver offline
         await storage.updateDriverStatus(driver.id, false, false);
+        
+        // Broadcast real-time status update to admin dashboards
+        const { broadcast } = await import('../websocket');
+        broadcast('driver_status_changed', {
+          driverId: driver.id,
+          name: driver.name,
+          isOnline: false,
+          isAvailable: false,
+          lastOnline: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          source: 'telegram_live_location_stopped'
+        });
 
         await ctx.reply(`🔴 **Live location sharing stopped**
 

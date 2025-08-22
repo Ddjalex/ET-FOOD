@@ -219,6 +219,26 @@ class DriverApp {
                 }
             });
 
+            // Listen for driver status changes from Telegram live location
+            this.socket.on('driver_status_changed', (data) => {
+                if (data.driverId === this.driverId) {
+                    console.log('🔄 Received status update from Telegram:', data);
+                    
+                    // Update webapp status to match Telegram status
+                    if (data.isOnline !== this.isOnline) {
+                        this.isOnline = data.isOnline;
+                        
+                        if (data.isOnline) {
+                            this.updateStatusBadge('online', 'Online & Ready');
+                            this.showNotification('You\'re Online!', 'Live location activated via Telegram', 'success');
+                        } else {
+                            this.updateStatusBadge('offline', 'Offline');
+                            this.showNotification('You\'re Offline', 'Live location stopped in Telegram', 'info');
+                        }
+                    }
+                }
+            });
+
             // Listen for order updates
             this.socket.on('order_status_updated', (data) => {
                 console.log('📋 Order status updated:', data);
@@ -919,29 +939,29 @@ class DriverApp {
             
             // If trying to go online, check if driver has shared live location through Telegram
             if (newStatus) {
-                // First check current driver status from server
+                // Check if driver is already online via Telegram live location sharing
                 const driverResponse = await fetch(`/api/drivers/by-telegram/${this.tg.initDataUnsafe?.user?.id}`);
                 if (driverResponse.ok) {
                     const currentDriver = await driverResponse.json();
+                    
+                    // If driver is not online, they need to share live location through Telegram
                     if (!currentDriver.isOnline) {
                         toggleBtn.disabled = false;
                         toggleBtn.textContent = 'Go Online';
                         
-                        this.showNotification(
-                            'Live Location Required', 
-                            'You must share your live location in Telegram bot first. Return to bot and share location.', 
-                            'error'
-                        );
-                        
-                        // Try to close the WebApp and return to bot
-                        if (this.tg && this.tg.close) {
-                            setTimeout(() => {
-                                this.tg.close();
-                            }, 3000); // Give user time to read the message
-                        }
-                        
+                        this.showLocationRequiredModal();
                         return;
                     }
+                    
+                    // If already online via Telegram, just update the webapp status to match
+                    console.log('✅ Driver is already online via Telegram live location');
+                    this.updateStatusBadge('online', 'Online & Ready');
+                    this.isOnline = true;
+                    toggleBtn.disabled = false;
+                    toggleBtn.className = 'online-toggle online';
+                    toggleBtn.textContent = 'Go Offline';
+                    this.showNotification('Already Online!', 'Your Telegram live location is active', 'success');
+                    return;
                 }
             }
 
@@ -985,6 +1005,53 @@ class DriverApp {
         }
     }
 
+    showLocationRequiredModal() {
+        // Remove existing modals
+        document.querySelectorAll('.location-required-modal').forEach(m => m.remove());
+        
+        const modal = document.createElement('div');
+        modal.className = 'location-required-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📍 Live Location Required</h3>
+                    <button class="close-modal" onclick="this.closest('.location-required-modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>To go online, you must share your live location through Telegram first:</strong></p>
+                    <div class="instructions">
+                        <div class="step">1. Return to the Telegram bot</div>
+                        <div class="step">2. Click the 📎 attachment icon</div>
+                        <div class="step">3. Select 📍 <strong>Location</strong></div>
+                        <div class="step">4. Choose <strong>"Share My Live Location for..."</strong></div>
+                        <div class="step">5. Select <strong>"until I turn it off"</strong></div>
+                        <div class="step">6. Tap <strong>Share</strong></div>
+                    </div>
+                    <div class="important-note">
+                        ⚠️ <strong>Important:</strong> You must share LIVE LOCATION (not just current location) to receive orders.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-close-modal" onclick="this.closest('.location-required-modal').remove(); if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close) { window.Telegram.WebApp.close(); }">
+                        Return to Telegram Bot
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Auto close modal and webapp after 10 seconds
+        setTimeout(() => {
+            if (modal.parentElement) {
+                modal.remove();
+                if (this.tg && this.tg.close) {
+                    this.tg.close();
+                }
+            }
+        }, 10000);
+    }
+
     showNotification(title, message, type = 'info') {
         // Remove existing notifications
         document.querySelectorAll('.notification-popup').forEach(n => n.remove());
@@ -1004,6 +1071,37 @@ class DriverApp {
                 notification.remove();
             }
         }, 4000);
+    }
+
+    setupStatusSync() {
+        if (!this.socket) {
+            this.socket = io();
+        }
+
+        // Listen for driver status changes from Telegram
+        this.socket.on('driver_status_changed', (data) => {
+            if (data.driverId === this.driverId) {
+                console.log('🔄 Received status update from Telegram:', data);
+                
+                // Update webapp status to match Telegram status
+                if (data.isOnline !== this.isOnline) {
+                    this.isOnline = data.isOnline;
+                    
+                    if (data.isOnline) {
+                        this.updateStatusBadge('online', 'Online & Ready');
+                        this.showNotification('You\'re Online!', 'Live location activated via Telegram', 'success');
+                    } else {
+                        this.updateStatusBadge('offline', 'Offline');
+                        this.showNotification('You\'re Offline', 'Live location stopped in Telegram', 'info');
+                    }
+                }
+            }
+        });
+
+        // Authenticate socket for this driver
+        if (this.tg?.initDataUnsafe?.user?.id) {
+            this.socket.emit('authenticate', { userId: this.driverId });
+        }
     }
 
     playNotificationSound() {
