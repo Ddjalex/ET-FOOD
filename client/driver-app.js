@@ -1332,6 +1332,13 @@ class DriverApp {
         console.log('🔄 Credit request submit triggered');
         event.preventDefault();
         
+        console.log('🔍 Current driverId:', this.driverId);
+        console.log('🔍 App state:', {
+            isOnline: this.isOnline,
+            creditBalance: this.creditBalance,
+            driverId: this.driverId
+        });
+        
         try {
             const amountInput = document.getElementById('creditAmount');
             const screenshotInput = document.getElementById('paymentScreenshot');
@@ -1395,12 +1402,36 @@ class DriverApp {
                 console.log('🚀 Making fetch request...');
                 response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        // Don't set Content-Type for FormData - browser sets it automatically with boundary
+                    }
                 });
                 console.log('📡 Fetch request completed with status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('❌ HTTP Error:', response.status, response.statusText);
+                    // Try to get error message from response
+                    let errorMessage = `Server error: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (parseError) {
+                        console.log('Could not parse error response as JSON');
+                    }
+                    throw new Error(errorMessage);
+                }
             } catch (fetchError) {
                 console.error('❌ Fetch request failed:', fetchError);
-                throw new Error(`Fetch failed: ${fetchError.message}`);
+                
+                // More specific error handling
+                if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
+                    throw new Error('Network connection failed. Please check your internet connection.');
+                } else if (fetchError.message.includes('NetworkError')) {
+                    throw new Error('Network error occurred. Please check your connection and try again.');
+                } else {
+                    throw fetchError;
+                }
             }
 
             console.log('📡 Response status:', response.status);
@@ -1447,14 +1478,17 @@ class DriverApp {
             let errorMessage = 'An unexpected error occurred. Please try again.';
             let errorTitle = 'Request Failed';
             
-            if (formError.message.includes('Fetch failed')) {
+            if (formError.message.includes('Network connection failed')) {
                 errorMessage = 'Could not connect to server. Please check your internet connection and try again.';
                 errorTitle = 'Connection Error';
-            } else if (formError.message.includes('NetworkError')) {
+            } else if (formError.message.includes('Network error occurred')) {
                 errorMessage = 'Network error. Please check your connection and try again.';
                 errorTitle = 'Network Error';
-            } else if (formError.message.includes('fetch')) {
-                errorMessage = 'Unable to send request. Please check your connection.';
+            } else if (formError.message.includes('Server error')) {
+                errorMessage = formError.message;
+                errorTitle = 'Server Error';
+            } else if (formError.message.includes('Fetch failed')) {
+                errorMessage = 'Could not connect to server. Please check your internet connection and try again.';
                 errorTitle = 'Connection Error';
             } else if (formError.name === 'TypeError') {
                 errorMessage = 'Network error occurred. Please try again.';
