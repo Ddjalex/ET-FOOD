@@ -29,34 +29,60 @@ export default function DriverCreditRequest() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get driver ID from URL params or localStorage
-  const driverId = new URLSearchParams(window.location.search).get('driverId') || 'demo-driver-id';
+  // Get driver ID from URL params or use Telegram WebApp data
+  const urlParams = new URLSearchParams(window.location.search);
+  const driverId = urlParams.get('driverId');
+  const telegramId = urlParams.get('telegramId') || window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString();
+
+  // First get driver ID from Telegram ID if needed
+  const { data: driverData, isLoading: driverLoading } = useQuery({
+    queryKey: ['/api/drivers/by-telegram', telegramId],
+    queryFn: async () => {
+      if (driverId) {
+        return { id: driverId }; // Use direct driver ID if available
+      }
+      if (!telegramId) {
+        throw new Error('No driver ID or Telegram ID provided');
+      }
+      const response = await fetch(`/api/drivers/by-telegram/${telegramId}`);
+      if (!response.ok) throw new Error('Driver not found');
+      return response.json();
+    },
+    enabled: !!(driverId || telegramId)
+  });
+
+  const actualDriverId = driverData?.id;
 
   // Fetch driver profile and credit request status
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['/api/drivers/profile', driverId],
+    queryKey: ['/api/drivers/profile', actualDriverId],
     queryFn: async (): Promise<DriverProfile> => {
-      const response = await fetch(`/api/drivers/profile?driverId=${driverId}`);
+      const response = await fetch(`/api/drivers/profile?driverId=${actualDriverId}`);
       if (!response.ok) throw new Error('Failed to fetch profile');
       return response.json();
-    }
+    },
+    enabled: !!actualDriverId
   });
 
   // Fetch credit request status separately
   const { data: creditStatus } = useQuery({
-    queryKey: ['/api/drivers/credit-request/status', driverId],
+    queryKey: ['/api/drivers/credit-request/status', actualDriverId],
     queryFn: async () => {
-      const response = await fetch(`/api/drivers/${driverId}/credit-request/status`);
+      const response = await fetch(`/api/drivers/${actualDriverId}/credit-request/status`);
       if (!response.ok) throw new Error('Failed to fetch credit status');
       return response.json();
     },
-    refetchInterval: 5000 // Refresh every 5 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds
+    enabled: !!actualDriverId
   });
 
   // Submit credit request mutation
   const submitRequestMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await fetch(`/api/drivers/${driverId}/credit-request`, {
+      if (!actualDriverId) {
+        throw new Error('Driver ID not found');
+      }
+      const response = await fetch(`/api/drivers/${actualDriverId}/credit-request`, {
         method: 'POST',
         body: formData
       });
@@ -144,7 +170,7 @@ export default function DriverCreditRequest() {
     submitRequestMutation.mutate(formData);
   };
 
-  if (isLoading) {
+  if (driverLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

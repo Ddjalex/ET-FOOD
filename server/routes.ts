@@ -4312,7 +4312,7 @@ Once you share your live location, you'll automatically get access to your drive
   });
 
   // Driver Credit Request API endpoints (with screenshot upload)
-  // Request credit with screenshot upload
+  // Request credit with screenshot upload (no session required for driver mini-app)
   app.post('/api/drivers/:driverId/credit-request', uploadCreditScreenshot.single('screenshot'), async (req, res) => {
     try {
       const { driverId } = req.params;
@@ -4386,7 +4386,7 @@ Once you share your live location, you'll automatically get access to your drive
     }
   });
 
-  // Get driver's current credit request status
+  // Get driver's current credit request status (no session required for driver mini-app)
   app.get('/api/drivers/:driverId/credit-request/status', async (req, res) => {
     try {
       const { driverId } = req.params;
