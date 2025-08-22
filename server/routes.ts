@@ -91,7 +91,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: driverAfterStatusUpdate.name,
         isOnline: true,
         isAvailable: true,
-        lastOnline: new Date().toISOString()
+        lastOnline: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       });
 
       res.json({ 
@@ -4751,6 +4752,52 @@ Once you share your live location, you'll automatically get access to your drive
         success: false, 
         message: 'Failed to delete special offer' 
       });
+    }
+  });
+
+  // Test endpoint to manually trigger driver status check (for development)
+  app.post('/api/test/trigger-status-check', async (req, res) => {
+    try {
+      // Manually check driver statuses and update offline ones
+      const drivers = await storage.getAllDrivers();
+      const now = new Date();
+      const offlineThreshold = new Date(now.getTime() - (10 * 60 * 1000)); // 10 minutes ago
+
+      let statusChanges = 0;
+      for (const driver of drivers) {
+        // Skip if driver is already offline
+        if (!driver.isOnline) continue;
+
+        // Check if driver has been inactive
+        const lastOnline = driver.lastOnline ? new Date(driver.lastOnline) : new Date(0);
+        
+        if (lastOnline < offlineThreshold) {
+          console.log(`🔴 Test: Setting driver ${driver.name} (${driver.id}) offline due to inactivity`);
+          
+          // Update driver to offline status
+          await storage.updateDriverStatus(driver.id, false, false);
+          statusChanges++;
+          
+          // Broadcast status update
+          broadcast('driver_status_changed', {
+            driverId: driver.id,
+            name: driver.name,
+            isOnline: false,
+            isAvailable: false,
+            lastOnline: driver.lastOnline,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Status check completed. ${statusChanges} drivers set offline.`,
+        statusChanges 
+      });
+    } catch (error) {
+      console.error('Error triggering status check:', error);
+      res.status(500).json({ message: 'Failed to trigger status check' });
     }
   });
 

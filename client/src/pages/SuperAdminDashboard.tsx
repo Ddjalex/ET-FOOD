@@ -272,6 +272,32 @@ function SuperAdminDashboardContent() {
         queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
       });
 
+      // Listen for real-time driver status changes from status monitor
+      newSocket.on('driver_status_changed', (data) => {
+        console.log('🔄 Driver status changed (auto-monitoring):', data);
+        
+        const statusMessage = data.isOnline 
+          ? `${data.name} is now online and available`
+          : `${data.name} went offline due to inactivity`;
+        
+        toast({
+          title: 'Driver Status Update',
+          description: statusMessage,
+          duration: 4000,
+          variant: data.isOnline ? 'default' : 'secondary'
+        });
+
+        // Immediately refresh driver data
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
+      // Listen for real-time driver location updates
+      newSocket.on('driver_location_updated', (data) => {
+        console.log('📍 Driver location updated:', data);
+        // Refresh driver data to show updated location
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
       // Listen for new driver registrations
       newSocket.on('new-driver-registration', (data) => {
         console.log('👤 New driver registration notification:', data);

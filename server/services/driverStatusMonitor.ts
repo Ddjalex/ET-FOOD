@@ -56,7 +56,8 @@ export class DriverStatusMonitor {
             name: driver.name,
             isOnline: false,
             isAvailable: false,
-            lastOnline: driver.lastOnline
+            lastOnline: driver.lastOnline,
+            timestamp: new Date().toISOString()
           });
         }
       }

@@ -92,6 +92,18 @@ export const initWebSocket = (server: HTTPServer): SocketIOServer => {
             console.log(`🔗 Driver ${user.id} joined driver room`);
           }
           
+          // For superadmins, join superadmin room for enhanced broadcasts
+          if (user.role === 'superadmin') {
+            socket.join('superadmin');
+            console.log(`🔗 SuperAdmin ${user.id} joined superadmin room`);
+          }
+          
+          // For restaurant admins, join admin room
+          if (user.role === 'restaurant_admin' || user.role === 'kitchen_staff') {
+            socket.join('admin');
+            console.log(`🔗 Admin ${user.id} joined admin room`);
+          }
+          
           socket.emit('authenticated', { success: true, user: socket.user });
           console.log(`✅ User ${user.id} authenticated with role ${user.role}${isDriver ? ' (via drivers table)' : ''}`);
         } else {
@@ -180,8 +192,12 @@ export const getSocketIO = (): SocketIOServer => {
 // Notification functions
 export const broadcast = (event: string, data: any) => {
   if (io) {
-    io.emit(event, data);
     console.log(`Broadcasting ${event}:`, data);
+    io.emit(event, data);
+    
+    // Also emit to specific rooms if needed
+    io.to('superadmin').emit(event, data);
+    io.to('admin').emit(event, data);
   }
 };
 
