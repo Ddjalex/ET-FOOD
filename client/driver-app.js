@@ -1341,6 +1341,13 @@ class DriverApp {
 
             console.log('✅ Validation passed. Submitting credit request:', amount, 'ETB');
 
+            // Check if driverId is available
+            if (!this.driverId) {
+                console.error('❌ No driver ID available for credit request');
+                this.showNotification('Session Error', 'Driver session not found. Please reload the app.', 'error');
+                return;
+            }
+
             // Show loading state
             const submitBtn = document.getElementById('submitCreditBtn');
             submitBtn.classList.add('loading');
@@ -1352,18 +1359,30 @@ class DriverApp {
             formData.append('screenshot', screenshot);
 
             console.log('📤 Sending credit request to:', `/api/drivers/${this.driverId}/credit-request`);
+            console.log('💳 Driver ID:', this.driverId);
             console.log('📋 FormData contents:', {
                 amount: formData.get('amount'),
-                screenshot: formData.get('screenshot') ? 'File attached' : 'No file'
+                screenshot: formData.get('screenshot') ? 'File attached' : 'No file',
+                screenshotName: screenshot ? screenshot.name : 'No file',
+                screenshotSize: screenshot ? screenshot.size : 'N/A'
             });
 
-            const response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
-                method: 'POST',
-                body: formData
-            });
+            let response;
+            try {
+                console.log('🚀 Making fetch request...');
+                response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log('📡 Fetch request completed with status:', response.status);
+            } catch (fetchError) {
+                console.error('❌ Fetch request failed:', fetchError);
+                throw new Error(`Fetch failed: ${fetchError.message}`);
+            }
 
             console.log('📡 Response status:', response.status);
-            console.log('📡 Response headers:', response.headers);
+            console.log('📡 Response ok:', response.ok);
+            console.log('📡 Response type:', response.type);
 
             let result;
             try {
@@ -1396,18 +1415,30 @@ class DriverApp {
             console.error('❌ Error details:', {
                 message: formError.message,
                 stack: formError.stack,
-                driverId: this.driverId
+                driverId: this.driverId,
+                errorName: formError.name,
+                errorType: typeof formError
             });
             
             // Show more specific error message
-            let errorMessage = 'Network error. Please check your connection and try again.';
-            if (formError.message.includes('fetch')) {
-                errorMessage = 'Could not connect to server. Please check your internet connection.';
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+            let errorTitle = 'Request Failed';
+            
+            if (formError.message.includes('Fetch failed')) {
+                errorMessage = 'Could not connect to server. Please check your internet connection and try again.';
+                errorTitle = 'Connection Error';
             } else if (formError.message.includes('NetworkError')) {
-                errorMessage = 'Network error. Please try again.';
+                errorMessage = 'Network error. Please check your connection and try again.';
+                errorTitle = 'Network Error';
+            } else if (formError.message.includes('fetch')) {
+                errorMessage = 'Unable to send request. Please check your connection.';
+                errorTitle = 'Connection Error';
+            } else if (formError.name === 'TypeError') {
+                errorMessage = 'Network error occurred. Please try again.';
+                errorTitle = 'Network Error';
             }
             
-            this.showNotification('Connection Error', errorMessage, 'error');
+            this.showNotification(errorTitle, errorMessage, 'error');
             
             // Reset button state on error
             const submitBtn = document.getElementById('submitCreditBtn');
