@@ -1110,6 +1110,25 @@ function SuperAdminDashboardContent() {
         queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
       });
 
+      // Enhanced driver status change events from status monitor
+      newSocket.on('driver_status_changed', (data) => {
+        console.log('Driver status changed (monitor):', data);
+        
+        const statusMessage = data.isOnline 
+          ? `${data.name} is now online and available`
+          : `${data.name} went offline due to inactivity`;
+        
+        toast({
+          title: 'Driver Status Changed',
+          description: statusMessage,
+          duration: 4000,
+          variant: data.isOnline ? 'default' : 'secondary'
+        });
+
+        // Refresh driver data immediately
+        queryClient.invalidateQueries({ queryKey: ['/api/superadmin/drivers'] });
+      });
+
       // Real-time driver location updates
       newSocket.on('driver_location_updated', (data) => {
         console.log('Driver location updated:', data);

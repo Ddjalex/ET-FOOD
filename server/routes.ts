@@ -12,6 +12,7 @@ import { uploadCreditScreenshot, getFileUrl } from "./middleware/upload";
 import { adminAuth, requireSuperadmin, requireRestaurantAdmin, requireKitchenAccess, requireSession, hashPassword, verifyPassword, requireRestaurantAccess, generateRandomPassword } from "./middleware/auth";
 import { initWebSocket, notifyRestaurantAdmin, notifyKitchenStaff, broadcastMenuUpdate, broadcast, notifyDriver } from "./websocket";
 import { insertOrderSchema, insertRestaurantSchema, insertDriverSchema, insertMenuItemSchema, insertMenuCategorySchema, UserRole } from "@shared/schema";
+import { DriverStatusMonitor } from "./services/driverStatusMonitor";
 import { getCustomerSession } from "./telegram/customerBot";
 import customerRoutes from "./routes/customerRoutes";
 import multer from "multer";
@@ -35,6 +36,10 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Initialize driver status monitor with proper type
+  const statusMonitor = new DriverStatusMonitor(storage as any);
+  statusMonitor.start();
 
   // Add driver location routes BEFORE auth middleware to bypass authentication
   // Update driver location (public route for Telegram Mini Apps)
@@ -65,6 +70,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const driverAfterStatusUpdate = await storage.updateDriverStatus(driverId, true, true);
       console.log('Driver status updated successfully');
 
+      // Refresh driver status in monitor
+      await statusMonitor.refreshDriverStatus(driverId);
+
       // Send real-time notification to driver that they're now online
       if (driverAfterStatusUpdate?.telegramId && driverAfterStatusUpdate.isApproved) {
         console.log(`🟢 Driver ${driverId} is now online, sending notification...`);
@@ -72,9 +80,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await notifyDriverOnline(driverAfterStatusUpdate.telegramId, driverAfterStatusUpdate);
       }
 
+      // Broadcast location and status updates
       broadcast('driver_location_updated', {
         driverId,
         location: { lat: parseFloat(latitude), lng: parseFloat(longitude) }
+      });
+      
+      broadcast('driver_status_changed', {
+        driverId,
+        name: driverAfterStatusUpdate.name,
+        isOnline: true,
+        isAvailable: true,
+        lastOnline: new Date().toISOString()
       });
 
       res.json({ 
