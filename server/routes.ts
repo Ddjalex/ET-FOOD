@@ -4300,11 +4300,24 @@ Once you share your live location, you'll automatically get access to your drive
       const { driverId } = req.params;
       const { amount } = req.body;
 
+      console.log('💰 Credit request received:', {
+        driverId,
+        amount,
+        file: req.file ? {
+          fieldname: req.file.fieldname,
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        } : 'No file'
+      });
+
       if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+        console.log('❌ Invalid amount:', amount);
         return res.status(400).json({ message: 'Valid amount is required' });
       }
 
       if (!req.file) {
+        console.log('❌ No file uploaded');
         return res.status(400).json({ message: 'Screenshot is required for credit request' });
       }
 
