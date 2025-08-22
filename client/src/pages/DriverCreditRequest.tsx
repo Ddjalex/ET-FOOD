@@ -40,20 +40,36 @@ export default function DriverCreditRequest() {
   console.log('Pending request?', pendingRequest);
 
   // First get driver ID from Telegram ID if needed
-  const { data: driverData, isLoading: driverLoading } = useQuery({
-    queryKey: ['/api/drivers/by-telegram', telegramId],
+  const { data: driverData, isLoading: driverLoading, error: driverError } = useQuery({
+    queryKey: ['/api/drivers/by-telegram', telegramId, driverId],
     queryFn: async () => {
+      console.log('🔍 Resolving driver ID...', { driverId, telegramId });
+      
       if (driverId) {
+        console.log('✅ Using direct driver ID:', driverId);
         return { id: driverId }; // Use direct driver ID if available
       }
+      
       if (!telegramId) {
         throw new Error('No driver ID or Telegram ID provided');
       }
+      
+      console.log('🔍 Looking up driver by Telegram ID:', telegramId);
       const response = await fetch(`/api/drivers/by-telegram/${telegramId}`);
-      if (!response.ok) throw new Error('Driver not found');
-      return response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Driver lookup failed:', errorText);
+        throw new Error(`Driver not found for Telegram ID ${telegramId}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ Driver found:', result);
+      return result;
     },
-    enabled: !!(driverId || telegramId)
+    enabled: !!(driverId || telegramId),
+    retry: 2,
+    retryDelay: 1000
   });
 
   const actualDriverId = driverData?.id;
@@ -84,18 +100,48 @@ export default function DriverCreditRequest() {
   // Submit credit request mutation
   const submitRequestMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      if (!actualDriverId) {
-        throw new Error('Driver ID not found');
-      }
-      const response = await fetch(`/api/drivers/${actualDriverId}/credit-request`, {
-        method: 'POST',
-        body: formData
+      console.log('🚀 Starting credit request submission...');
+      console.log('📋 Form data:', { 
+        amount: formData.get('amount'), 
+        screenshot: formData.get('screenshot')?.name || 'No file'
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to submit credit request');
+      
+      if (!actualDriverId) {
+        console.error('❌ No driver ID found:', { actualDriverId, driverId, telegramId });
+        throw new Error('Driver ID not found. Please access through proper URL.');
       }
-      return response.json();
+      
+      const apiUrl = `/api/drivers/${actualDriverId}/credit-request`;
+      console.log('🔗 API URL:', apiUrl);
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          body: formData
+        });
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error Response:', errorText);
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.message || `HTTP ${response.status}: ${response.statusText}`);
+          } catch {
+            throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+          }
+        }
+        
+        const result = await response.json();
+        console.log('✅ Success response:', result);
+        return result;
+      } catch (networkError) {
+        console.error('🌐 Network/Fetch Error:', networkError);
+        throw new Error(`Network error: ${networkError.message}. Please check your connection.`);
+      }
     },
     onSuccess: () => {
       toast({
@@ -111,9 +157,10 @@ export default function DriverCreditRequest() {
       queryClient.invalidateQueries({ queryKey: ['/api/drivers/profile'] });
     },
     onError: (error) => {
+      console.error('💥 Credit request error:', error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Credit Request Failed",
+        description: error.message || "Unknown error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -194,10 +241,16 @@ export default function DriverCreditRequest() {
           <CardContent>
             <p>Please access this page through your Telegram driver bot or with proper driver credentials.</p>
             <div className="mt-4 text-sm text-gray-600">
-              <p>Available driver:</p>
-              <p>• DJ ALEX (ID: 68a041f9a736236d0512bd91)</p>
-              <p>• Telegram: 383870190</p>
+              <p>Test URLs:</p>
+              <p>• With Driver ID: ?driverId=68a041f9a736236d0512bd91</p>
+              <p>• With Telegram ID: ?telegramId=383870190</p>
             </div>
+            <Button 
+              onClick={() => window.location.href = '?driverId=68a041f9a736236d0512bd91'}
+              className="mt-4 w-full"
+            >
+              Use Test Driver (DJ ALEX)
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -267,10 +320,14 @@ export default function DriverCreditRequest() {
         <Card className="bg-blue-50">
           <CardContent className="pt-4">
             <div className="text-xs space-y-1">
-              <div><strong>Driver ID:</strong> {actualDriverId || 'None'}</div>
+              <div><strong>URL Driver ID:</strong> {driverId || 'None'}</div>
+              <div><strong>Telegram ID:</strong> {telegramId || 'None'}</div>
+              <div><strong>Resolved Driver ID:</strong> {actualDriverId || 'None'}</div>
+              <div><strong>Driver Loading:</strong> {driverLoading ? 'Yes' : 'No'}</div>
+              <div><strong>Driver Error:</strong> {driverError?.message || 'None'}</div>
               <div><strong>Pending Request:</strong> {pendingRequest ? 'Yes' : 'No'}</div>
               <div><strong>Current Balance:</strong> {creditStatus?.currentBalance || 0} ETB</div>
-              <div><strong>Form Visible:</strong> {!pendingRequest ? 'Yes' : 'No'}</div>
+              <div><strong>Form Visible:</strong> {!pendingRequest && actualDriverId ? 'Yes' : 'No'}</div>
             </div>
           </CardContent>
         </Card>
