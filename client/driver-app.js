@@ -1255,8 +1255,31 @@ class DriverApp {
         avgEarningEl.textContent = `${avgEarning.toFixed(2)} ETB`;
     }
 
-    showCreditRequestModal() {
+    async showCreditRequestModal() {
         console.log('💰 Opening credit request modal');
+        
+        // First check if there's already a pending credit request
+        if (!this.driverId) {
+            this.showNotification('Session Error', 'Driver session not found. Please reload the app.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/drivers/${this.driverId}/credit-request/status`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.creditRequest.pending) {
+                    // There's already a pending request
+                    const amount = data.creditRequest.amount;
+                    const createdAt = new Date(data.creditRequest.createdAt).toLocaleDateString();
+                    this.showNotification('Request Pending', `You already have a pending credit request for ${amount} ETB submitted on ${createdAt}. Please wait for approval.`, 'info');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error checking credit request status:', error);
+        }
+
         const modal = document.getElementById('creditRequestModal');
         modal.classList.add('show');
         
