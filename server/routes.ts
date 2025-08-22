@@ -244,6 +244,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer routes (public access for Telegram mini-apps)
   app.use('/api', customerRoutes);
 
+  // Auth routes - Define BEFORE setupAuth to avoid middleware conflicts
+  app.get('/api/auth/user', async (req: any, res) => {
+    try {
+      // Skip authentication in development mode
+      const skipAuth = !process.env.REPLIT_DOMAINS || !process.env.REPL_ID;
+      
+      if (skipAuth) {
+        console.log('🔄 Development mode: returning mock user for /api/auth/user');
+        // Return a mock user for development mode
+        return res.json({
+          id: 'dev-user',
+          email: 'dev@example.com',
+          firstName: 'Development',
+          lastName: 'User',
+          profileImageUrl: null
+        });
+      }
+
+      // Use the isAuthenticated middleware for production
+      return isAuthenticated(req, res, async () => {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        res.json(user);
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // Auth middleware
   await setupAuth(app);
 
@@ -252,18 +282,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize Socket.IO for real-time updates
   const io = initWebSocket(httpServer);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
 
   // Admin Authentication Routes
   app.post('/api/admin/login', async (req, res) => {
