@@ -190,6 +190,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Driver ID is required' });
       }
       
+      // Get driver details for Telegram notification
+      const driverBeforeUpdate = await storage.getDriverById(driverId);
+      
       const driver = await storage.updateDriverStatus(driverId, isOnline, isAvailable);
       broadcast('driver_status_updated', {
         driverId: driver.id,
@@ -198,6 +201,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: isOnline ? 'online' : 'offline',
         driver: driver
       });
+
+      // If going offline from dashboard, notify driver to stop live location sharing
+      if (!isOnline && driverBeforeUpdate?.isOnline && driverBeforeUpdate.telegramId) {
+        const { notifyDriverToStopLiveLocation } = await import('./telegram/driverBot');
+        notifyDriverToStopLiveLocation(driverBeforeUpdate.telegramId);
+      }
       
       res.json({ 
         success: true,

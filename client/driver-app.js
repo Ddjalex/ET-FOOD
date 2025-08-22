@@ -990,7 +990,10 @@ class DriverApp {
                     this.getCurrentLocation();
                 } else {
                     this.updateStatusBadge('offline', 'Offline');
-                    this.showNotification('You\'re Offline', 'You won\'t receive new orders', 'info');
+                    this.showNotification('Going Offline', 'Check Telegram to stop live location sharing', 'warning');
+                    
+                    // Show modal to guide driver to stop live location in Telegram
+                    this.showStopLocationModal();
                 }
             } else {
                 console.error('❌ Failed to update driver status:', result);
@@ -1050,6 +1053,48 @@ class DriverApp {
                 }
             }
         }, 10000);
+    }
+
+    showStopLocationModal() {
+        // Remove existing modals
+        document.querySelectorAll('.stop-location-modal').forEach(m => m.remove());
+        
+        const modal = document.createElement('div');
+        modal.className = 'stop-location-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🔴 Stop Live Location Sharing</h3>
+                    <button class="close-modal" onclick="this.closest('.stop-location-modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>You went offline from your dashboard. Please stop live location sharing in Telegram:</strong></p>
+                    <div class="instructions">
+                        <div class="step">1. Go to the Telegram bot chat</div>
+                        <div class="step">2. Look for "Live Location - You" at the top</div>
+                        <div class="step">3. Tap the <strong>X</strong> button to stop sharing</div>
+                        <div class="step">4. This will officially set you offline</div>
+                    </div>
+                    <div class="important-note">
+                        ⚠️ <strong>Important:</strong> You must stop live location sharing to be properly offline and avoid receiving new orders.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-close-modal" onclick="this.closest('.stop-location-modal').remove(); if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.close) { window.Telegram.WebApp.close(); }">
+                        Return to Telegram Bot
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Auto close modal after 12 seconds
+        setTimeout(() => {
+            if (modal.parentElement) {
+                modal.remove();
+            }
+        }, 12000);
     }
 
     showNotification(title, message, type = 'info') {

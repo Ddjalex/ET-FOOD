@@ -1209,3 +1209,37 @@ export async function broadcastToAllDrivers(broadcastData: {
     throw error;
   }
 }
+
+// Function to notify driver to stop live location sharing when going offline from dashboard
+export async function notifyDriverToStopLiveLocation(telegramId: string) {
+  try {
+    console.log(`🔴 Sending live location stop notification to driver ${telegramId}`);
+    
+    const { driverBot } = await import('./bot');
+    if (!driverBot) {
+      console.error('❌ Driver bot not available');
+      return;
+    }
+
+    const message = `🔴 **You went offline from your dashboard**
+
+📍 **Please stop your live location sharing:**
+1. Look for "Live Location - You" at the top of this chat
+2. Tap the **X** button to stop sharing your location
+3. This will officially set you offline
+
+⚠️ **Important:** You must stop live location sharing to be properly offline and avoid receiving new orders.`;
+
+    await driverBot.telegram.sendMessage(telegramId, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '❓ Need Help?', callback_data: 'offline_help' }]
+        ]
+      }
+    });
+
+    console.log(`✅ Live location stop notification sent to driver ${telegramId}`);
+  } catch (error) {
+    console.error('❌ Error sending live location stop notification:', error);
+  }
+}
