@@ -33,6 +33,8 @@ export default function DriverCreditRequest() {
   const urlParams = new URLSearchParams(window.location.search);
   const driverId = urlParams.get('driverId');
   const telegramId = urlParams.get('telegramId') || window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString();
+  
+  console.log('Driver authentication:', { driverId, telegramId, hasWebApp: !!window.Telegram?.WebApp });
 
   // First get driver ID from Telegram ID if needed
   const { data: driverData, isLoading: driverLoading } = useQuery({
@@ -174,6 +176,48 @@ export default function DriverCreditRequest() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show error if no driver credentials provided
+  if (!driverId && !telegramId) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Access Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Please access this page through your Telegram driver bot or with proper driver credentials.</p>
+            <div className="mt-4 text-sm text-gray-600">
+              <p>Available driver:</p>
+              <p>• DJ ALEX (ID: 68a041f9a736236d0512bd91)</p>
+              <p>• Telegram: 383870190</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error if driver not found
+  if (!actualDriverId) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Driver Not Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Driver credentials not found in database.</p>
+            <div className="mt-4 text-sm text-gray-600">
+              <p>Provided credentials:</p>
+              <p>• Driver ID: {driverId || 'Not provided'}</p>
+              <p>• Telegram ID: {telegramId || 'Not provided'}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
