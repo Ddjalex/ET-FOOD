@@ -944,23 +944,32 @@ class DriverApp {
                 if (driverResponse.ok) {
                     const currentDriver = await driverResponse.json();
                     
-                    // If driver is not online, they need to share live location through Telegram
-                    if (!currentDriver.isOnline) {
+                    // Check if driver is online AND has current location (indicating live location sharing)
+                    if (currentDriver.isOnline && currentDriver.currentLocation && currentDriver.currentLocation.length > 0) {
+                        // Driver is already online via Telegram live location, sync webapp status
+                        console.log('✅ Driver is already online via Telegram live location');
+                        this.updateStatusBadge('online', 'Online & Ready');
+                        this.isOnline = true;
+                        toggleBtn.disabled = false;
+                        toggleBtn.className = 'online-toggle online';
+                        toggleBtn.textContent = 'Go Offline';
+                        this.showNotification('Already Online!', 'Your Telegram live location is active', 'success');
+                        return;
+                    }
+                    
+                    // If driver is not online or no live location, they need to share live location
+                    if (!currentDriver.isOnline || !currentDriver.currentLocation) {
                         toggleBtn.disabled = false;
                         toggleBtn.textContent = 'Go Online';
                         
                         this.showLocationRequiredModal();
                         return;
                     }
-                    
-                    // If already online via Telegram, just update the webapp status to match
-                    console.log('✅ Driver is already online via Telegram live location');
-                    this.updateStatusBadge('online', 'Online & Ready');
-                    this.isOnline = true;
+                } else {
+                    // API call failed, show location required modal as fallback
                     toggleBtn.disabled = false;
-                    toggleBtn.className = 'online-toggle online';
-                    toggleBtn.textContent = 'Go Offline';
-                    this.showNotification('Already Online!', 'Your Telegram live location is active', 'success');
+                    toggleBtn.textContent = 'Go Online';
+                    this.showLocationRequiredModal();
                     return;
                 }
             }
@@ -1342,12 +1351,28 @@ class DriverApp {
             formData.append('amount', amount);
             formData.append('screenshot', screenshot);
 
+            console.log('📤 Sending credit request to:', `/api/drivers/${this.driverId}/credit-request`);
+            console.log('📋 FormData contents:', {
+                amount: formData.get('amount'),
+                screenshot: formData.get('screenshot') ? 'File attached' : 'No file'
+            });
+
             const response = await fetch(`/api/drivers/${this.driverId}/credit-request`, {
                 method: 'POST',
                 body: formData
             });
 
-            const result = await response.json();
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response headers:', response.headers);
+
+            let result;
+            try {
+                result = await response.json();
+                console.log('📄 Response data:', result);
+            } catch (parseError) {
+                console.error('❌ Failed to parse response JSON:', parseError);
+                result = { message: `Server response was not valid JSON. Status: ${response.status}` };
+            }
 
             if (response.ok) {
                 console.log('✅ Credit request submitted successfully');
@@ -1358,7 +1383,8 @@ class DriverApp {
                 await this.loadCreditBalance();
             } else {
                 console.error('❌ Credit request failed:', result);
-                this.showNotification('Request Failed', result.message || 'Could not submit request', 'error');
+                console.error('❌ Response status:', response.status);
+                this.showNotification('Request Failed', result.message || `Server error: ${response.status}. Please try again.`, 'error');
             }
 
             // Reset button state
@@ -1367,7 +1393,21 @@ class DriverApp {
         
         } catch (formError) {
             console.error('❌ Form handling error:', formError);
-            this.showNotification('Form Error', 'An error occurred while processing the form', 'error');
+            console.error('❌ Error details:', {
+                message: formError.message,
+                stack: formError.stack,
+                driverId: this.driverId
+            });
+            
+            // Show more specific error message
+            let errorMessage = 'Network error. Please check your connection and try again.';
+            if (formError.message.includes('fetch')) {
+                errorMessage = 'Could not connect to server. Please check your internet connection.';
+            } else if (formError.message.includes('NetworkError')) {
+                errorMessage = 'Network error. Please try again.';
+            }
+            
+            this.showNotification('Connection Error', errorMessage, 'error');
             
             // Reset button state on error
             const submitBtn = document.getElementById('submitCreditBtn');
