@@ -35,6 +35,9 @@ export default function DriverCreditRequest() {
   const telegramId = urlParams.get('telegramId') || window.Telegram?.WebApp?.initDataUnsafe?.user?.id?.toString();
   
   console.log('Driver authentication:', { driverId, telegramId, hasWebApp: !!window.Telegram?.WebApp });
+  console.log('Driver data from API:', driverData);
+  console.log('Credit status:', creditStatus);
+  console.log('Pending request?', pendingRequest);
 
   // First get driver ID from Telegram ID if needed
   const { data: driverData, isLoading: driverLoading } = useQuery({
@@ -255,10 +258,22 @@ export default function DriverCreditRequest() {
             <Clock className="h-4 w-4" />
             <AlertDescription>
               You have a pending credit request for {creditStatus.creditRequest.amount} ETB. 
-              Please wait for admin approval.
+              Please wait for admin approval before submitting a new request.
             </AlertDescription>
           </Alert>
         )}
+        
+        {/* Debug Info (remove in production) */}
+        <Card className="bg-blue-50">
+          <CardContent className="pt-4">
+            <div className="text-xs space-y-1">
+              <div><strong>Driver ID:</strong> {actualDriverId || 'None'}</div>
+              <div><strong>Pending Request:</strong> {pendingRequest ? 'Yes' : 'No'}</div>
+              <div><strong>Current Balance:</strong> {creditStatus?.currentBalance || 0} ETB</div>
+              <div><strong>Form Visible:</strong> {!pendingRequest ? 'Yes' : 'No'}</div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Credit Request Form */}
         {!pendingRequest && (
